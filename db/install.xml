@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/aiknowledgecheck/db" VERSION="20251201" COMMENT="XMLDB file for AI Knowledge Check module"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+    <TABLE NAME="aiknowledgecheck" COMMENT="AI Knowledge Check activity instances">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course ID"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Activity name"/>
+        <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Activity introduction"/>
+        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="grade" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Maximum grade (point value)"/>
+        <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts (0=unlimited)"/>
+        <FIELD NAME="questioncount" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Number of questions"/>
+        <FIELD NAME="passinggrade" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Passing grade percentage"/>
+        <FIELD NAME="completionallcorrect" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Complete when all correct"/>
+        <FIELD NAME="completionpassgrade" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Complete when passing grade achieved"/>
+        <FIELD NAME="ccemail" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="CC email for notifications"/>
+        <FIELD NAME="voiceoverenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether voiceover is enabled (1=yes, 0=no)"/>
+        <FIELD NAME="voicelanguage" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="en-AU" SEQUENCE="false" COMMENT="Voice language code"/>
+        <FIELD NAME="voicegender" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="female" SEQUENCE="false" COMMENT="Voice gender"/>
+        <FIELD NAME="voicestyle" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="Aoede" SEQUENCE="false" COMMENT="Voice style/ID"/>
+        <FIELD NAME="videourl" TYPE="char" LENGTH="512" NOTNULL="false" SEQUENCE="false" COMMENT="YouTube video URL for video gate"/>
+        <FIELD NAME="videorequirement" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="none" SEQUENCE="false" COMMENT="Video watch requirement: none, seconds, full"/>
+        <FIELD NAME="videominseconds" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Minimum seconds to watch when requirement=seconds"/>
+        <FIELD NAME="showvideoduringquiz" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Show video above questions while student is answering (1=yes, 0=no)"/>
+        <FIELD NAME="showchapterstamps" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Show clickable chapter timestamp link per question (1=yes, 0=no)"/>
+        <FIELD NAME="audiourl" TYPE="char" LENGTH="512" NOTNULL="false" SEQUENCE="false" COMMENT="Audio file URL for audio gate"/>
+        <FIELD NAME="audiorequirement" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="none" SEQUENCE="false" COMMENT="Audio listen requirement: none, seconds, full"/>
+        <FIELD NAME="audiominseconds" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Minimum seconds to listen when requirement=seconds"/>
+        <FIELD NAME="imageurl" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Image URL for image gate — teacher pastes URL or stores base64 data URL from Imagen 4 generation. When set, students must acknowledge the image before quiz starts."/>
+        <FIELD NAME="aftercompletion" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="restart" SEQUENCE="false" COMMENT="What happens after student completes the quiz: restart=allow retake, lock=prevent further attempts"/>
+        <FIELD NAME="sourcecontext" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON-encoded source context from the original generate call (topics, userQuestions, textSources, workplaceContext, education settings) — used by Regenerate Questions to keep regenerated questions grounded in the same source material. Added v1.5.95 (FIX-KC-REGEN-GROUNDING)."/>
+        <FIELD NAME="surveymode" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When 1, the activity runs as a survey (no correct/wrong answers, scale-based responses). Added v1.5.126."/>
+        <FIELD NAME="surveyscale" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Survey response scale key, e.g. likert5agree, likert5sat, yesno. Only used when surveymode=1. Added v1.5.126."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="aiknowledgecheck_questions" COMMENT="Questions for knowledge check activities">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="aiknowledgecheckid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="questionnumber" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="questiontext" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="answer1" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="answer2" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="answer3" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="answer4" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="correctanswer" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="1-4"/>
+        <FIELD NAME="feedback1" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="feedback2" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="feedback3" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="feedback4" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="audiodata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of base64 encoded audio for each answer"/>
+        <FIELD NAME="mappingtopic" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Topic text for question mapping export"/>
+        <FIELD NAME="mappingcriteria" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Performance criteria for question mapping export"/>
+        <FIELD NAME="timestamp_seconds" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Video timestamp in seconds for chapter stamp link (null if not set)"/>
+        <FIELD NAME="imageurl" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Image URL for this question — paste URL or base64 data URL generated by Imagen 4 Ultra. Shown above question text when imageenabled=1."/>
+        <FIELD NAME="imageenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether to display an image above this question (1=yes, 0=no)"/>
+        <FIELD NAME="answer5" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Fifth answer option for 5-point survey scales (e.g. Likert 5-point). Null for standard 4-option MCQ questions. Added v1.5.126."/>
+        <FIELD NAME="questiontype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scale" SEQUENCE="false" COMMENT="Question type: scale (default MCQ/survey scale question) or freetext (open-ended comment box). Added v1.5.127."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="aiknowledgecheckid" TYPE="foreign" FIELDS="aiknowledgecheckid" REFTABLE="aiknowledgecheck" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="aiknowledgecheckid-questionnumber" UNIQUE="true" FIELDS="aiknowledgecheckid, questionnumber"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="aiknowledgecheck_attempts" COMMENT="User attempts for knowledge check">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="aiknowledgecheckid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="currentquestion" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="answers" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON encoded answers"/>
+        <FIELD NAME="correctcount" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="totalcount" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=in progress, 1=completed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timestarted" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timeended" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="aiknowledgecheckid" TYPE="foreign" FIELDS="aiknowledgecheckid" REFTABLE="aiknowledgecheck" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="aiknowledgecheckid_userid" UNIQUE="false" FIELDS="aiknowledgecheckid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="aiknowledgecheck_overrides" COMMENT="Per-user extra attempts overrides">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="aiknowledgecheckid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="extraattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="aiknowledgecheckid_fk" TYPE="foreign" FIELDS="aiknowledgecheckid" REFTABLE="aiknowledgecheck" REFFIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="uniq_override" UNIQUE="true" FIELDS="aiknowledgecheckid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="aiknowledgecheck_quizzes" COMMENT="Generated AI knowledge check quizzes">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="aiknowledgecheckid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="questions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON encoded questions"/>
+        <FIELD NAME="audiodata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Base64 encoded audio"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="aiknowledgecheckid" TYPE="foreign" FIELDS="aiknowledgecheckid" REFTABLE="aiknowledgecheck" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
