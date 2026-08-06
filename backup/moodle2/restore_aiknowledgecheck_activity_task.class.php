@@ -30,7 +30,6 @@ require_once($CFG->dirroot . '/mod/aiknowledgecheck/backup/moodle2/restore_aikno
  * Restore task that provides all the settings and steps to perform one complete restore of the activity.
  */
 class restore_aiknowledgecheck_activity_task extends restore_activity_task {
-
     protected function define_my_settings() {
         // No particular settings for this activity.
     }

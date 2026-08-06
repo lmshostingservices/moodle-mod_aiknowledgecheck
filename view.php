@@ -1056,7 +1056,7 @@ if ($cancreate) {
     </div>
     <?php if ($hasaudio && $audiogated): ?>
     <script>
-    (function() {
+    (function () {
         var audioEl = document.getElementById('kc-audio-player');
         var requirement = '<?php echo $audioreq; ?>';
         var minSeconds = <?php echo $audiominsec; ?>;
@@ -1079,10 +1079,10 @@ if ($cancreate) {
         }
 
         if (audioEl) {
-            audioEl.addEventListener('play', function() {
+            audioEl.addEventListener('play', function () {
                 if (unlocked) return;
                 if (listenTimer) return;
-                listenTimer = setInterval(function() {
+                listenTimer = setInterval(function () {
                     if (unlocked) { clearInterval(listenTimer); return; }
                     listenedSeconds++;
                     if (requirement === 'seconds' && listenedSeconds >= minSeconds) {
@@ -1090,11 +1090,11 @@ if ($cancreate) {
                     }
                 }, 1000);
             });
-            audioEl.addEventListener('pause', function() {
+            audioEl.addEventListener('pause', function () {
                 clearInterval(listenTimer);
                 listenTimer = null;
             });
-            audioEl.addEventListener('ended', function() {
+            audioEl.addEventListener('ended', function () {
                 clearInterval(listenTimer);
                 listenTimer = null;
                 if (requirement === 'full') {
@@ -1134,7 +1134,7 @@ if ($cancreate) {
     ?>
     <script>
     // AI Image Generator — teacher-only inline script (ADD-KC-IMAGEGATE v1.5.115).
-    (function() {
+    (function () {
         var genBtn = document.getElementById('kc-imagegen-btn');
         var promptInput = document.getElementById('kc-imagegen-prompt');
         var statusEl = document.getElementById('kc-imagegen-status');
@@ -1147,7 +1147,7 @@ if ($cancreate) {
         var lastGeneratedUrl = '';
 
         if (genBtn) {
-            genBtn.addEventListener('click', function() {
+            genBtn.addEventListener('click', function () {
                 var prompt = promptInput ? promptInput.value.trim() : '';
                 if (!prompt) {
                     alert('Please describe the image you want to generate.');
@@ -1162,7 +1162,7 @@ if ($cancreate) {
                 xhr.open('POST', '<?php echo $CFG->wwwroot; ?>/mod/aiknowledgecheck/ajax.php');
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr.timeout = 90000;
-                xhr.onload = function() {
+                xhr.onload = function () {
                     genBtn.disabled = false;
                     genBtn.textContent = 'Generate Image';
                     try {
@@ -1180,7 +1180,7 @@ if ($cancreate) {
                         if (statusEl) { statusEl.textContent = '<?php echo addslashes(get_string('imagegate_error', 'mod_aiknowledgecheck')); ?>'; statusEl.style.color = '#dc3545'; }
                     }
                 };
-                xhr.onerror = function() {
+                xhr.onerror = function () {
                     genBtn.disabled = false;
                     genBtn.textContent = 'Generate Image';
                     if (statusEl) { statusEl.textContent = '<?php echo addslashes(get_string('imagegate_error', 'mod_aiknowledgecheck')); ?>'; statusEl.style.color = '#dc3545'; }
@@ -1191,7 +1191,7 @@ if ($cancreate) {
         }
 
         if (saveGateBtn) {
-            saveGateBtn.addEventListener('click', function() {
+            saveGateBtn.addEventListener('click', function () {
                 if (!lastGeneratedUrl) return;
                 saveGateBtn.disabled = true;
                 if (saveStatusEl) { saveStatusEl.textContent = 'Saving...'; saveStatusEl.style.color = '#6c757d'; }
@@ -1199,7 +1199,7 @@ if ($cancreate) {
                 xhr2.open('POST', '<?php echo $CFG->wwwroot; ?>/mod/aiknowledgecheck/ajax.php');
                 xhr2.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr2.timeout = 30000;
-                xhr2.onload = function() {
+                xhr2.onload = function () {
                     saveGateBtn.disabled = false;
                     try {
                         var resp2 = JSON.parse(xhr2.responseText);
@@ -1212,7 +1212,7 @@ if ($cancreate) {
                         if (saveStatusEl) { saveStatusEl.textContent = 'Save failed.'; saveStatusEl.style.color = '#dc3545'; }
                     }
                 };
-                xhr2.onerror = function() {
+                xhr2.onerror = function () {
                     saveGateBtn.disabled = false;
                     if (saveStatusEl) { saveStatusEl.textContent = 'Save failed.'; saveStatusEl.style.color = '#dc3545'; }
                 };
@@ -1222,12 +1222,12 @@ if ($cancreate) {
         }
 
         if (copyBtn) {
-            copyBtn.addEventListener('click', function() {
+            copyBtn.addEventListener('click', function () {
                 if (urlOutput) {
                     urlOutput.select();
                     document.execCommand('copy');
                     copyBtn.textContent = 'Copied!';
-                    setTimeout(function() { copyBtn.textContent = 'Copy URL'; }, 2000);
+                    setTimeout(function () { copyBtn.textContent = 'Copy URL'; }, 2000);
                 }
             });
         }
@@ -1522,7 +1522,7 @@ if ($cancreate) {
         // Gate coordinator: all active gates must unlock before the start section is revealed.
         // FIX-KC-VIDEO-GATE: start section and eta banner are hidden on load (see PHP above).
         // When all locks clear they are shown here. reset() re-hides them for retake.
-        window.kcGate = (function() {
+        window.kcGate = (function () {
             var locks = {};
             var originals = {};
             <?php if ($videogated): ?> locks['video'] = true; originals['video'] = true; <?php endif; ?>
@@ -1550,7 +1550,7 @@ if ($cancreate) {
             }
 
             return {
-                unlock: function(name) {
+                unlock: function (name) {
                     delete locks[name];
                     if (Object.keys(locks).length === 0) {
                         var btns = document.querySelectorAll('.kc-gated-btn');
@@ -1562,7 +1562,7 @@ if ($cancreate) {
                     }
                 },
                 // Re-lock all gates and re-hide start section (used on retake).
-                reset: function() {
+                reset: function () {
                     for (var k in originals) { locks[k] = true; }
                     var s = document.getElementById('kc-start-section');
                     if (s) s.style.display = 'none';
@@ -1596,7 +1596,7 @@ if ($cancreate) {
                     if (window.kcAudioGate) { window.kcAudioGate.resetLock(); }
                     if (window.kcImageGate) { window.kcImageGate.resetLock(); }
                 },
-                hasLocks: function() {
+                hasLocks: function () {
                     return Object.keys(originals).length > 0;
                 }
             };
@@ -1605,7 +1605,7 @@ if ($cancreate) {
         <?php endif; ?>
         <?php if ($hasvideo): ?>
         <script>
-        (function() {
+        (function () {
             var videoId = '<?php echo $videoid; ?>';
             var requirement = '<?php echo $videoreq; ?>';
             var minSeconds = <?php echo $videominsec; ?>;
@@ -1640,7 +1640,7 @@ if ($cancreate) {
 
             function startTracking() {
                 if (watchTimer) return;
-                watchTimer = setInterval(function() {
+                watchTimer = setInterval(function () {
                     if (unlocked) { clearInterval(watchTimer); return; }
                     watchedSeconds++;
                     if (requirement === 'seconds' && watchedSeconds >= minSeconds) {
@@ -1663,7 +1663,7 @@ if ($cancreate) {
                 }
             ?>';
             window.kcVideoGate = {
-                resetLock: function() {
+                resetLock: function () {
                     unlocked = false;
                     watchedSeconds = 0;
                     maxWatchedTime = 0; // FIX-KC-SEEK-BLOCK: reset progress so seek guard starts fresh
@@ -1691,7 +1691,7 @@ if ($cancreate) {
                 // v1.5.60 FIX-SEEK-BLOCK: only block seeking when the requirement is 'full watch'.
                 // When requirement is 'seconds', students may freely seek after the timer unlocks.
                 if (seekBlockTimer || unlocked || requirement !== 'full') return;
-                seekBlockTimer = setInterval(function() {
+                seekBlockTimer = setInterval(function () {
                     if (unlocked || !player || !player.getCurrentTime) return;
                     var current = player.getCurrentTime();
                     if (current > maxWatchedTime + 1.5) {
@@ -1714,17 +1714,17 @@ if ($cancreate) {
                 // enough; the 5-second grace window in the ENDED check covers any timing gap.
             }
 
-            window.onYouTubeIframeAPIReady = function() {
+            window.onYouTubeIframeAPIReady = function () {
                 player = new YT.Player('kc-yt-player', {
                     // NOTE: also stored on window.kcYtPlayer so AMD modules can access it.
                     videoId: videoId,
                     playerVars: { rel: 0, modestbranding: 1 },
                     events: {
-                        onReady: function() {
+                        onReady: function () {
                             // Expose player so AMD modules (knowledgecheck.js) can seek to timestamps.
                             window.kcYtPlayer = player;
                         },
-                        onStateChange: function(e) {
+                        onStateChange: function (e) {
                             if (e.data === YT.PlayerState.PLAYING) {
                                 startTracking();
                                 startSeekBlocking();
@@ -1762,7 +1762,7 @@ if ($cancreate) {
         <?php endif; ?>
         <?php if ($hasaudio && $audiogated): ?>
         <script>
-        (function() {
+        (function () {
             var audioEl = document.getElementById('kc-audio-player');
             var requirement = '<?php echo $audioreq; ?>';
             var minSeconds = <?php echo $audiominsec; ?>;
@@ -1785,10 +1785,10 @@ if ($cancreate) {
             }
 
             if (audioEl) {
-                audioEl.addEventListener('play', function() {
+                audioEl.addEventListener('play', function () {
                     if (unlocked) return;
                     if (listenTimer) return;
-                    listenTimer = setInterval(function() {
+                    listenTimer = setInterval(function () {
                         if (unlocked) { clearInterval(listenTimer); return; }
                         listenedSeconds++;
                         if (requirement === 'seconds' && listenedSeconds >= minSeconds) {
@@ -1797,12 +1797,12 @@ if ($cancreate) {
                     }, 1000);
                 });
 
-                audioEl.addEventListener('pause', function() {
+                audioEl.addEventListener('pause', function () {
                     clearInterval(listenTimer);
                     listenTimer = null;
                 });
 
-                audioEl.addEventListener('ended', function() {
+                audioEl.addEventListener('ended', function () {
                     clearInterval(listenTimer);
                     listenTimer = null;
                     if (requirement === 'full') {
@@ -1820,7 +1820,7 @@ if ($cancreate) {
                 }
             ?>';
             window.kcAudioGate = {
-                resetLock: function() {
+                resetLock: function () {
                     unlocked = false;
                     listenedSeconds = 0;
                     if (listenTimer) { clearInterval(listenTimer); listenTimer = null; }
@@ -1840,7 +1840,7 @@ if ($cancreate) {
         <?php if ($hasimage && $imagegated && !$cancreate): ?>
         <script>
         // ADD-KC-IMAGEGATE v1.5.115 — Image acknowledgment gate.
-        (function() {
+        (function () {
             var unlocked = false;
             function doUnlock() {
                 if (unlocked) return;
@@ -1859,7 +1859,7 @@ if ($cancreate) {
             }
             bindAck();
             window.kcImageGate = {
-                resetLock: function() {
+                resetLock: function () {
                     unlocked = false;
                     var statusEl = document.getElementById('kc-image-status');
                     if (statusEl) {

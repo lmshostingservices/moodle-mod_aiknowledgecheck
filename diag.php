@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * mod_aiknowledgecheck file.
+ *
+ * @package    mod_aiknowledgecheck
+ * @copyright  2026 LMS-Labs
+ * @license    http://www.gnu.org/licenses/gpl-3.0.html GNU GPL v3 or later
+ */
+
 // AI Knowledge Check — Diagnostic Tool v1.5.112
 // Access: /mod/aiknowledgecheck/diag.php?cmid=<cmid>
 // Requires: site admin or moodle/site:config capability.
@@ -702,7 +725,7 @@ $rows_mapper .= diag_info(
 if (file_exists($src_path)) {
     $mapper_src = file_get_contents($src_path);
 
-    // Identify all quizData mapper blocks by finding "return {" objects inside .map(function(q)
+    // Identify all quizData mapper blocks by finding "return {" objects inside .map(function (q)
     // We check for specific known mapper patterns and verify each includes timestamp_seconds.
     $mapper_checks = [
         'Teacher getquestions mapper' => [
@@ -996,7 +1019,7 @@ function kc_word_overlap(string $a, string $b): float {
                          'this','that','these','those','it','its','which','what',
                          'how','when','where','why','who','not','no','all','any',
                          'so','as','about','during','when','than'];
-    $tokenise = function(string $s) use ($stopwords): array {
+    $tokenise = function (string $s) use ($stopwords): array {
         $words = preg_split('/[\s\W]+/', strtolower($s), -1, PREG_SPLIT_NO_EMPTY);
         return array_filter($words, fn($w) => strlen($w) > 2 && !in_array($w, $stopwords, true));
     };

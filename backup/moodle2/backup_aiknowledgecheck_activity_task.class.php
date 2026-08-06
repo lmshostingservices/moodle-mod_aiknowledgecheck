@@ -30,7 +30,6 @@ require_once($CFG->dirroot . '/mod/aiknowledgecheck/backup/moodle2/backup_aiknow
  * Backup task that provides all the settings and steps to perform one complete backup of the activity.
  */
 class backup_aiknowledgecheck_activity_task extends backup_activity_task {
-
     protected function define_my_settings() {
         // No particular settings for this activity.
     }

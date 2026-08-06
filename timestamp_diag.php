@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * mod_aiknowledgecheck file.
+ *
+ * @package    mod_aiknowledgecheck
+ * @copyright  2026 LMS-Labs
+ * @license    http://www.gnu.org/licenses/gpl-3.0.html GNU GPL v3 or later
+ */
+
 // AI Knowledge Check — Timestamp Accuracy Diagnostic v1.0
 // Standalone deep-dive into timestamp alignment only.
 // Access: /mod/aiknowledgecheck/timestamp_diag.php?cmid=<cmid>
@@ -155,7 +178,7 @@ function kcts_parse_transcript(string $text): array {
         $lines = explode("\n", $text);
         $curSecs = -1;
         $curParts = [];
-        $flush = function() use (&$formatA, &$curSecs, &$curParts) {
+        $flush = function () use (&$formatA, &$curSecs, &$curParts) {
             if ($curSecs >= 0) {
                 $formatA[] = ['seconds' => $curSecs, 'text' => trim(implode(' ', $curParts))];
                 $curParts = [];

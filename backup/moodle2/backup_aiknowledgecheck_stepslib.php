@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
  * Define the complete knowledgecheck structure for backup.
  */
 class backup_aiknowledgecheck_activity_structure_step extends backup_activity_structure_step {
-
     protected function define_structure() {
         $userinfo = $this->get_setting_value('userinfo');
 

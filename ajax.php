@@ -274,7 +274,7 @@ switch ($action) {
         if (!is_array($freetextquestions)) {
             $freetextquestions = [];
         }
-        $freetextquestions = array_values(array_filter(array_map('trim', $freetextquestions), function($q) {
+        $freetextquestions = array_values(array_filter(array_map('trim', $freetextquestions), function ($q) {
             return strlen($q) > 0 && strlen($q) <= 500;
         }));
         if (count($freetextquestions) > 20) {
@@ -867,7 +867,7 @@ switch ($action) {
                     ['text' => $q->answer4, 'explanation' => $q->feedback4 ?? ''],
                     // ADD-SURVEY-MODE (v1.5.126): Include 5th option when present (5-point scales).
                     (!empty($q->answer5)) ? ['text' => $q->answer5, 'explanation' => ''] : null,
-                ], function($o) { return $o !== null; })),
+                ], function ($o) { return $o !== null; })),
                 'correctIndex' => (int)$q->correctanswer,
                 'audioData' => $audioData,
                 'mappingTopic' => $q->mappingtopic ?? '',

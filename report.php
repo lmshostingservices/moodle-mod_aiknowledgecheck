@@ -172,7 +172,7 @@ if (!empty($attemptuserids)) {
 }
 
 // Sort picker list.
-usort($picker, function($a, $b) {
+usort($picker, function ($a, $b) {
     $al = core_text::strtolower($a->lastname . ' ' . $a->firstname);
     $bl = core_text::strtolower($b->lastname . ' ' . $b->firstname);
     if ($al === $bl) {
@@ -216,7 +216,7 @@ echo html_writer::end_div();
 
 // User picker JS.
 $js = <<<JS
-(function(){
+(function (){
   var input = document.getElementById('kc-userinput');
   var dataEl = document.getElementById('kc-user-map');
   if (!input || !dataEl) return;
@@ -233,13 +233,13 @@ $js = <<<JS
       if ((map[i].label || '').toLowerCase() === lower) { window.location = map[i].url; return true; }
     }
     // Single partial match.
-    var matches = map.filter(function(m){ return (m.label || '').toLowerCase().indexOf(lower) !== -1; });
+    var matches = map.filter(function (m){ return (m.label || '').toLowerCase().indexOf(lower) !== -1; });
     if (matches.length === 1) { window.location = matches[0].url; return true; }
     return false;
   }
 
-  input.addEventListener('change', function(){ gotoForValue(input.value); });
-  input.addEventListener('keydown', function(e){
+  input.addEventListener('change', function (){ gotoForValue(input.value); });
+  input.addEventListener('keydown', function (e){
     if (e.key === 'Enter') { if (gotoForValue(input.value)) { e.preventDefault(); } }
   });
 })();
@@ -293,7 +293,7 @@ $basemax = isset($knowledgecheck->maxattempts) ? (int)$knowledgecheck->maxattemp
 // Load per-user overrides.
 $extrabyuser = [];
 if (!empty($attempts)) {
-    $userids = array_values(array_unique(array_map(function($a) { return (int)$a->userid; }, $attempts)));
+    $userids = array_values(array_unique(array_map(function ($a) { return (int)$a->userid; }, $attempts)));
     if (!empty($userids)) {
         list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $ovrs = $DB->get_records_select('aiknowledgecheck_overrides',
@@ -529,8 +529,8 @@ if (!empty($knowledgecheck->surveymode)) {
     echo html_writer::tag('div',
         '<strong>' . $totalresponses . '</strong> ' . ($totalresponses === 1 ? 'response' : 'responses'),
         ['class' => 'kc-survey-stat-chip']);
-    $scaleqs = array_filter((array)$surveyqs, function($q) { return $q->questiontype !== 'freetext'; });
-    $ftqs    = array_filter((array)$surveyqs, function($q) { return $q->questiontype === 'freetext'; });
+    $scaleqs = array_filter((array)$surveyqs, function ($q) { return $q->questiontype !== 'freetext'; });
+    $ftqs    = array_filter((array)$surveyqs, function ($q) { return $q->questiontype === 'freetext'; });
     echo html_writer::tag('div',
         '<strong>' . count($scaleqs) . '</strong> scale ' . (count($scaleqs) === 1 ? 'question' : 'questions'),
         ['class' => 'kc-survey-stat-chip']);
@@ -591,7 +591,7 @@ if (!empty($knowledgecheck->surveymode)) {
         }
 
         // ── Free-text questions: collected responses ──────────────────────────
-        $ftqs = array_filter((array)$surveyqs, function($q) { return $q->questiontype === 'freetext'; });
+        $ftqs = array_filter((array)$surveyqs, function ($q) { return $q->questiontype === 'freetext'; });
         if (!empty($ftqs)) {
             echo html_writer::start_div('kc-survey-freetext-section');
             echo '<h3>Open-Ended Responses</h3>';
@@ -672,7 +672,7 @@ if (empty($byuser)) {
 
     // Summary bar: total students + total attempts.
     $totalstudents = count($byuser);
-    $totalattempts = array_sum(array_map(function($u) { return count($u['attempts']); }, $byuser));
+    $totalattempts = array_sum(array_map(function ($u) { return count($u['attempts']); }, $byuser));
     echo html_writer::start_div('kc-report-summary-bar');
     echo html_writer::tag('span', $totalstudents . ' ' . ($totalstudents === 1 ? 'student' : 'students'), ['class' => 'kc-report-summary-chip']);
     echo html_writer::tag('span', $totalattempts . ' total ' . ($totalattempts === 1 ? 'attempt' : 'attempts'), ['class' => 'kc-report-summary-chip']);
