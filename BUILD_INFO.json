@@ -1,9 +1,10 @@
 {
   "component": "mod_aiknowledgecheck",
-  "version": "1.5.128",
-  "numeric_version": "2026072800228",
-  "build_timestamp": "2026-07-28T07:30:00.000Z",
+  "version": "1.5.129",
+  "numeric_version": "2026072800",
+  "build_timestamp": "2026-08-11T00:00:00.000Z",
   "folder": "mod_aiknowledgecheck",
-  "verification": "survey-mode-ui-named-define-fix",
-  "amd_src_md5": "f77ba4b5606d17c538531dfc66891feb"
+  "verification": "10digit-migration-1.5.129",
+  "amd_src_md5": "f77ba4b5606d17c538531dfc66891feb",
+  "build_id": "44977f21ae985711"
 }
