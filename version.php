@@ -445,7 +445,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version   = 2026072800229;
+$plugin->version   = 2026072800;
 $plugin->requires = 2022041900; // Moodle 4.0
 $plugin->supported  = [400, 500];  // Moodle 4.0 to 5.x
 $plugin->maturity = MATURITY_STABLE;
