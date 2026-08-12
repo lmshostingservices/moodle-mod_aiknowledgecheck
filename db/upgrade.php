@@ -15,29 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Upgrade steps for AI Knowledge Check.
+ * Upgrade steps for mod_aiknowledgecheck.
  *
  * @package    mod_aiknowledgecheck
- * @copyright  2025 Essay Grader AI
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 LMS-Labs
+ * @license    http://www.gnu.org/licenses/gpl-3.0.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Upgrade function for mod_aiknowledgecheck.
+ * Execute mod_aiknowledgecheck upgrade from the given old version.
  *
- * @param int $oldversion the version we are upgrading from
- * @return bool always true
+ * @param int $oldversion
+ * @return bool
  */
-function xmldb_aiknowledgecheck_upgrade($oldversion) {
+function xmldb_mod_aiknowledgecheck_upgrade($oldversion) {
     if ($oldversion < 2026072800) {
-        upgrade_mod_savepoint(true, 2026072800, 'aiknowledgecheck');
+        upgrade_plugin_savepoint(true, 2026072800, 'mod', 'aiknowledgecheck');
     }
-
-    if ($oldversion < 2026081200) {
-        upgrade_mod_savepoint(true, 2026081200, 'aiknowledgecheck');
-    }
-
     return true;
 }

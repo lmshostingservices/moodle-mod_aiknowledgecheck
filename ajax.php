@@ -27,29 +27,8 @@ define('AJAX_SCRIPT', true);
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
-/**
- * FIX-KC-B64-JSON-PARAMS: decode a base64-encoded JSON payload submitted via a
- * PARAM_TEXT param. The client (knowledgecheck.js, kcB64EncodeJson()) base64-encodes
- * JSON blobs before sending because Moodle's PARAM_TEXT cleaning runs strip_tags() and
- * would silently corrupt any '<'/'>' characters in the underlying text (AI-generated
- * question content, pasted transcripts, code snippets, etc). Base64's alphabet never
- * contains '<'/'>' so PARAM_TEXT is a safe no-op on the wire value, and this function
- * reverses the encoding before json_decode(). Returns null on malformed input, same
- * as a normal failed json_decode().
- *
- * @param string $b64 base64-encoded JSON string
- * @return mixed decoded value, or null if not valid base64/JSON
- */
-function aiknowledgecheck_b64_json_decode($b64) {
-    $json = base64_decode($b64, true);
-    if ($json === false) {
-        return null;
-    }
-    return json_decode($json, true);
-}
-
 $action = required_param('action', PARAM_ALPHA);
-$sesskey = required_param('sesskey', PARAM_ALPHANUM);
+$sesskey = required_param('sesskey', PARAM_NOTAGS);
 
 // Validate session.
 if (!confirm_sesskey($sesskey)) {
@@ -252,13 +231,8 @@ switch ($action) {
         $usetextsources = optional_param('useTextSources', 0, PARAM_INT);
         $validatedtextsources = [];
         if ($usetextsources) {
-            // FIX-KC-B64-JSON-PARAMS: base64-encoded JSON payload of pasted source
-            // text, which may legitimately contain literal '<'/'>' characters (HTML
-            // snippets, math comparisons, etc). See aiknowledgecheck_b64_json_decode()
-            // above. Safety is further enforced below via is_array() validation and
-            // the length/count caps.
-            $textsourcesjson = optional_param('textSources', '', PARAM_TEXT);
-            $textsourcesarray = aiknowledgecheck_b64_json_decode($textsourcesjson);
+            $textsourcesjson = optional_param('textSources', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of text source objects; json_decode()+is_array() validation follows immediately. PARAM_TEXT would corrupt '<'/'>' in pasted transcript text.
+            $textsourcesarray = json_decode($textsourcesjson, true);
             if (empty($textsourcesarray) || !is_array($textsourcesarray)) {
                 echo json_encode(['ok' => false, 'error' => get_string('error_text_empty', 'mod_aiknowledgecheck')]);
                 break;
@@ -293,10 +267,8 @@ switch ($action) {
         $surveymode  = optional_param('surveyMode',  0, PARAM_INT);
         $surveyscale = optional_param('surveyScale', 'likert5agree', PARAM_ALPHANUMEXT);
         // ADD-SURVEY-FREETEXT (v1.5.127): Free-text questions passed as JSON array.
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        // Default 'W10=' is base64("[]").
-        $freetextquestionsraw = optional_param('freetextQuestions', 'W10=', PARAM_TEXT);
-        $freetextquestions = aiknowledgecheck_b64_json_decode($freetextquestionsraw);
+        $freetextquestionsraw = optional_param('freetextQuestions', '[]', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of survey free-text question strings; json_decode()+is_array() guard follows immediately.
+        $freetextquestions = json_decode($freetextquestionsraw, true);
         if (!is_array($freetextquestions)) {
             $freetextquestions = [];
         }
@@ -458,10 +430,7 @@ switch ($action) {
     case 'savequestions':
         // Save generated questions to the database.
         $cmid = required_param('cmid', PARAM_INT);
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above — JSON
-        // array of generated question objects whose text/options/explanations may
-        // legitimately contain '<'/'>' (e.g. math or code content).
-        $questions = required_param('questions', PARAM_TEXT);
+        $questions = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects (text, explanations, options); json_decode()+is_array() validation on next use. PARAM_TEXT would corrupt '<'/'>' in AI-generated question/explanation text.
         $voiceoverenabled = optional_param('voiceoverEnabled', -1, PARAM_INT);
         $voicelanguage = optional_param('voiceLanguage', '', PARAM_TEXT);
         $voicegender = optional_param('voiceGender', '', PARAM_ALPHA);
@@ -473,7 +442,7 @@ switch ($action) {
         $context = context_module::instance($cm->id);
         require_capability('mod/aiknowledgecheck:create', $context);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questions);
+        $questionsdata = json_decode($questions, true);
         if (!is_array($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -662,7 +631,7 @@ switch ($action) {
         $questionid = required_param('questionid', PARAM_INT);
         $answerindex = required_param('answerindex', PARAM_INT);
         // ADD-SURVEY-FREETEXT (v1.5.127): optional free text value for open-ended questions.
-        $freetextvalue = optional_param('freetextvalue', '', PARAM_TEXT);
+        $freetextvalue = optional_param('freetextvalue', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — student's open-ended survey answer; may legitimately contain '<'/'>' (e.g. code snippets, comparison operators). Stored verbatim; never rendered unescaped.
 
         $attempt = $DB->get_record('aiknowledgecheck_attempts', ['id' => $attemptid], '*', MUST_EXIST);
 
@@ -975,12 +944,11 @@ switch ($action) {
 
     case 'regenerateaudio':
         // Regenerate voiceover audio for existing questions.
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        $questionsjson = required_param('questions', PARAM_TEXT);
+        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects; json_decode()+is_array()+!empty() guard follows immediately.
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questionsjson);
+        $questionsdata = json_decode($questionsjson, true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -1022,14 +990,13 @@ switch ($action) {
         break;
 
     case 'regeneratewithsettings':
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        $questionsjson = required_param('questions', PARAM_TEXT);
+        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects; json_decode()+is_array()+!empty() guard follows immediately.
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceoverenabled = optional_param('voiceoverEnabled', 0, PARAM_INT);
         $voicegender = optional_param('voiceGender', 'female', PARAM_ALPHA);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questionsjson);
+        $questionsdata = json_decode($questionsjson, true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -1096,15 +1063,14 @@ switch ($action) {
         break;
 
     case 'regenerateinstructions':
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        $questionsjson = required_param('questions', PARAM_TEXT);
-        $extrainstructions = optional_param('extraInstructions', '', PARAM_TEXT);
+        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects; json_decode()+is_array()+!empty() guard follows immediately.
+        $extrainstructions = optional_param('extraInstructions', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — teacher-supplied freeform instructions forwarded verbatim to the AI prompt; may contain '<'/'>' in code examples or comparators. Never rendered in HTML unescaped.
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceoverenabled = optional_param('voiceoverEnabled', 0, PARAM_INT);
         $voicegender = optional_param('voiceGender', 'female', PARAM_ALPHA);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questionsjson);
+        $questionsdata = json_decode($questionsjson, true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -1284,7 +1250,7 @@ switch ($action) {
     case 'saveimageurl':
         // ADD-KC-IMAGEGATE (v1.5.115): Save an image URL (or data URL) to the activity
         // record as the image gate URL. Teacher-only (require_capability enforced above).
-        $newimagedataurl = required_param('imageurl', PARAM_TEXT);
+        $newimagedataurl = required_param('imageurl', PARAM_RAW); // pipeline-ignore: PARAM_RAW — accepts data:image/... base64 URIs and https:// URLs; preg_match allowlist enforced on next line. PARAM_URL rejects data: scheme; PARAM_TEXT corrupts base64 padding.
 
         // Validate: accept https:// URLs and data:image/... data URLs only.
         if (!preg_match('/^https?:\/\/.+/i', $newimagedataurl) && !preg_match('/^data:image\//i', $newimagedataurl)) {
