@@ -445,7 +445,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version   = 2026072800;
+// VERSION-FIX (2026-08-12): $plugin->version was reset from the old 13-digit
+// savepoint scheme (e.g. 2026072400226) down to a plain 10-digit Moodle-style
+// version (2026072800), which was numerically LOWER than what was already
+// installed on the live sites (confirmed via DB query: config_plugins.version
+// for mod_aiknowledgecheck = 2026080500 on S02/S03/S07), triggering Moodle's
+// "cannot downgrade" guard on every upgrade attempt. Bumped strictly above the
+// installed value and above today's date-stamp to restore forward progress.
+$plugin->version   = 2026081200;
 $plugin->requires = 2022041900; // Moodle 4.0
 $plugin->supported  = [400, 500];  // Moodle 4.0 to 5.x
 $plugin->maturity = MATURITY_STABLE;
