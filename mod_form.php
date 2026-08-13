@@ -101,7 +101,7 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
 
         // CC Email for notifications.
         $mform->addElement('text', 'ccemail', get_string('ccemail', 'mod_aiknowledgecheck'), ['size' => '64']);
-        $mform->setType('ccemail', PARAM_RAW);
+        $mform->setType('ccemail', PARAM_EMAIL);
         $mform->addHelpButton('ccemail', 'ccemail', 'mod_aiknowledgecheck');
 
         // Grade settings header.

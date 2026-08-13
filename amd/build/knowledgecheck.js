@@ -35,7 +35,22 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     let selectedKcJobRoles  = [];   // Multi-select job roles (chips input)
     let isAddingMore = false;       // "Add More Questions" mode flag
     let existingQuizData = null;    // Preserved questions while adding more
-    
+
+    // FIX-KC-B64-JSON-PARAMS: base64-encode JSON payloads (questions, textSources,
+    // freetextQuestions) before sending to ajax.php. These fields can legitimately
+    // contain '<'/'>' (AI-generated question text, pasted transcripts, code snippets),
+    // and Moodle's PARAM_TEXT cleaning strips anything that looks like an HTML tag.
+    // Base64's alphabet never includes '<'/'>' so the round trip is byte-safe end to
+    // end; ajax.php base64_decode()s then json_decode()s the value. Encodes UTF-8
+    // correctly (btoa() alone only supports Latin1 byte strings).
+    function kcB64EncodeJson(value) {
+        var json = JSON.stringify(value);
+        var utf8BinaryString = encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, function(match, hex) {
+            return String.fromCharCode(parseInt(hex, 16));
+        });
+        return btoa(utf8BinaryString);
+    }
+
     // Initialize Web Audio API for sound effects
     function getAudioContext() {
         if (!audioContext) {
@@ -1152,14 +1167,16 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             surveyMode: config.surveyMode ? 1 : 0,
             surveyScale: config.surveyMode ? ($('#survey-scale').val() || 'likert5agree') : 'likert5agree',
             // ADD-SURVEY-FREETEXT (v1.5.127): Forward free-text questions (one per line).
+            // FIX-KC-B64-JSON-PARAMS: base64-encoded, see kcB64EncodeJson() above.
             freetextQuestions: config.surveyMode
-                ? JSON.stringify(($('#freetext-questions-input').val() || '').split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; }))
-                : '[]'
+                ? kcB64EncodeJson(($('#freetext-questions-input').val() || '').split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; }))
+                : kcB64EncodeJson([])
         };
 
         if (useTextSources) {
             var validSources = textSources.filter(function(s) { return s.text && s.text.trim().length > 0; });
-            data.textSources = JSON.stringify(validSources.map(function(s) {
+            // FIX-KC-B64-JSON-PARAMS: base64-encoded, see kcB64EncodeJson() above.
+            data.textSources = kcB64EncodeJson(validSources.map(function(s) {
                 return { text: s.text.trim().substring(0, 50000), questionCount: s.questionCount };
             }));
             console.log('[KC] Text sources mode - sending through Moodle ajax.php');
@@ -1443,7 +1460,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'savequestions',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: JSON.stringify(questionsForDb),
+                questions: kcB64EncodeJson(questionsForDb),
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
@@ -1494,7 +1511,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'regenerateaudio',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: JSON.stringify(questionsForApi),
+                questions: kcB64EncodeJson(questionsForApi),
                 voiceLanguage: voiceLanguage,
                 voiceId: voiceId
             },
@@ -3959,7 +3976,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'savequestions',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: JSON.stringify(questionsForDb),
+                questions: kcB64EncodeJson(questionsForDb),
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
@@ -4004,7 +4021,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'regenerateaudio',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: JSON.stringify(questionsForApi),
+                questions: kcB64EncodeJson(questionsForApi),
                 voiceLanguage: voiceLanguage,
                 voiceId: voiceId
             },
@@ -4222,7 +4239,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     action: 'regeneratewithsettings',
                     sesskey: config.sesskey,
                     cmid: config.cmid,
-                    questions: JSON.stringify(currentQuestions),
+                    questions: kcB64EncodeJson(currentQuestions),
                     voiceLanguage: newLanguage,
                     voiceoverEnabled: newVoiceoverEnabled ? 1 : 0,
                     voiceGender: newGender,
@@ -4496,7 +4513,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     action: 'regenerateinstructions',
                     sesskey: config.sesskey,
                     cmid: config.cmid,
-                    questions: JSON.stringify(allQuestions),
+                    questions: kcB64EncodeJson(allQuestions),
                     extraInstructions: extraInstructions || '',
                     voiceLanguage: $('#voice-language').val() || 'en-AU',
                     voiceoverEnabled: voiceoverEnabled ? 1 : 0,
@@ -4651,7 +4668,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'regenerateinstructions',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: JSON.stringify(singleQuestion),
+                questions: kcB64EncodeJson(singleQuestion),
                 extraInstructions: extraInstructions,
                 voiceLanguage: $('#voice-language').val() || 'en-AU',
                 voiceoverEnabled: voiceoverEnabled ? 1 : 0,
