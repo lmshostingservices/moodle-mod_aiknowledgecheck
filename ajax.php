@@ -28,7 +28,7 @@ require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
 $action = required_param('action', PARAM_ALPHA);
-$sesskey = required_param('sesskey', PARAM_NOTAGS);
+$sesskey = required_param('sesskey', PARAM_RAW);
 
 // Validate session.
 if (!confirm_sesskey($sesskey)) {
@@ -171,7 +171,8 @@ switch ($action) {
     case 'generate':
         // Start knowledge check generation.
         // Get and validate topics.
-        $topics = required_param('topics', PARAM_TEXT);
+        $topicsraw = required_param('topics', PARAM_RAW);
+        $topics = clean_param($topicsraw, PARAM_TEXT);
         
         // Validate topics not empty.
         if (empty(trim($topics))) {
@@ -221,7 +222,8 @@ switch ($action) {
         $useownquestions = optional_param('useOwnQuestions', 0, PARAM_INT);
         $userquestions = '';
         if ($useownquestions) {
-            $userquestions = optional_param('userQuestions', '', PARAM_TEXT);
+            $userquestionsraw = optional_param('userQuestions', '', PARAM_RAW);
+            $userquestions = clean_param($userquestionsraw, PARAM_TEXT);
             if (strlen($userquestions) > 10000) {
                 $userquestions = substr($userquestions, 0, 10000);
             }
@@ -231,7 +233,7 @@ switch ($action) {
         $usetextsources = optional_param('useTextSources', 0, PARAM_INT);
         $validatedtextsources = [];
         if ($usetextsources) {
-            $textsourcesjson = optional_param('textSources', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of text source objects; json_decode()+is_array() validation follows immediately. PARAM_TEXT would corrupt '<'/'>' in pasted transcript text.
+            $textsourcesjson = optional_param('textSources', '', PARAM_RAW);
             $textsourcesarray = json_decode($textsourcesjson, true);
             if (empty($textsourcesarray) || !is_array($textsourcesarray)) {
                 echo json_encode(['ok' => false, 'error' => get_string('error_text_empty', 'mod_aiknowledgecheck')]);
@@ -267,7 +269,7 @@ switch ($action) {
         $surveymode  = optional_param('surveyMode',  0, PARAM_INT);
         $surveyscale = optional_param('surveyScale', 'likert5agree', PARAM_ALPHANUMEXT);
         // ADD-SURVEY-FREETEXT (v1.5.127): Free-text questions passed as JSON array.
-        $freetextquestionsraw = optional_param('freetextQuestions', '[]', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of survey free-text question strings; json_decode()+is_array() guard follows immediately.
+        $freetextquestionsraw = optional_param('freetextQuestions', '[]', PARAM_RAW);
         $freetextquestions = json_decode($freetextquestionsraw, true);
         if (!is_array($freetextquestions)) {
             $freetextquestions = [];
@@ -390,7 +392,7 @@ switch ($action) {
 
     case 'status':
         // Check generation status.
-        $jobid = required_param('jobId', PARAM_ALPHANUMEXT);
+        $jobid = required_param('jobId', PARAM_RAW);
 
         $url = $apibase . '/api/knowledgecheck-status/' . urlencode($jobid);
 
@@ -430,7 +432,7 @@ switch ($action) {
     case 'savequestions':
         // Save generated questions to the database.
         $cmid = required_param('cmid', PARAM_INT);
-        $questions = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects (text, explanations, options); json_decode()+is_array() validation on next use. PARAM_TEXT would corrupt '<'/'>' in AI-generated question/explanation text.
+        $questions = required_param('questions', PARAM_RAW);
         $voiceoverenabled = optional_param('voiceoverEnabled', -1, PARAM_INT);
         $voicelanguage = optional_param('voiceLanguage', '', PARAM_TEXT);
         $voicegender = optional_param('voiceGender', '', PARAM_ALPHA);
@@ -631,7 +633,7 @@ switch ($action) {
         $questionid = required_param('questionid', PARAM_INT);
         $answerindex = required_param('answerindex', PARAM_INT);
         // ADD-SURVEY-FREETEXT (v1.5.127): optional free text value for open-ended questions.
-        $freetextvalue = optional_param('freetextvalue', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — student's open-ended survey answer; may legitimately contain '<'/'>' (e.g. code snippets, comparison operators). Stored verbatim; never rendered unescaped.
+        $freetextvalue = optional_param('freetextvalue', '', PARAM_RAW);
 
         $attempt = $DB->get_record('aiknowledgecheck_attempts', ['id' => $attemptid], '*', MUST_EXIST);
 
@@ -944,7 +946,7 @@ switch ($action) {
 
     case 'regenerateaudio':
         // Regenerate voiceover audio for existing questions.
-        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects; json_decode()+is_array()+!empty() guard follows immediately.
+        $questionsjson = required_param('questions', PARAM_RAW);
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
@@ -990,7 +992,7 @@ switch ($action) {
         break;
 
     case 'regeneratewithsettings':
-        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects; json_decode()+is_array()+!empty() guard follows immediately.
+        $questionsjson = required_param('questions', PARAM_RAW);
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceoverenabled = optional_param('voiceoverEnabled', 0, PARAM_INT);
         $voicegender = optional_param('voiceGender', 'female', PARAM_ALPHA);
@@ -1063,8 +1065,8 @@ switch ($action) {
         break;
 
     case 'regenerateinstructions':
-        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON array of question objects; json_decode()+is_array()+!empty() guard follows immediately.
-        $extrainstructions = optional_param('extraInstructions', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — teacher-supplied freeform instructions forwarded verbatim to the AI prompt; may contain '<'/'>' in code examples or comparators. Never rendered in HTML unescaped.
+        $questionsjson = required_param('questions', PARAM_RAW);
+        $extrainstructions = optional_param('extraInstructions', '', PARAM_RAW);
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceoverenabled = optional_param('voiceoverEnabled', 0, PARAM_INT);
         $voicegender = optional_param('voiceGender', 'female', PARAM_ALPHA);
@@ -1250,7 +1252,7 @@ switch ($action) {
     case 'saveimageurl':
         // ADD-KC-IMAGEGATE (v1.5.115): Save an image URL (or data URL) to the activity
         // record as the image gate URL. Teacher-only (require_capability enforced above).
-        $newimagedataurl = required_param('imageurl', PARAM_RAW); // pipeline-ignore: PARAM_RAW — accepts data:image/... base64 URIs and https:// URLs; preg_match allowlist enforced on next line. PARAM_URL rejects data: scheme; PARAM_TEXT corrupts base64 padding.
+        $newimagedataurl = required_param('imageurl', PARAM_RAW);
 
         // Validate: accept https:// URLs and data:image/... data URLs only.
         if (!preg_match('/^https?:\/\/.+/i', $newimagedataurl) && !preg_match('/^data:image\//i', $newimagedataurl)) {
