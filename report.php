@@ -96,20 +96,41 @@ if ($iscsvexport && !empty($knowledgecheck->surveymode)) {
     $out = fopen('php://output', 'w');
     // BOM for Excel UTF-8 compatibility.
     fwrite($out, "\xEF\xBB\xBF");
+    // H-2: neutralise CSV formula injection. fputcsv quotes for CSV structure but does NOT
+    // stop a spreadsheet from evaluating a cell that begins with = + - @ (or a leading tab/CR)
+    // as a formula. Student free-text responses are written into these cells, so prefix any
+    // such value with an apostrophe before writing.
+    $csvsafe = function ($v) {
+        $s = (string)$v;
+        if ($s !== '' && in_array($s[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'" . $s;
+        }
+        return $s;
+    };
     foreach ($csvrows as $r) {
-        fputcsv($out, $r);
+        fputcsv($out, array_map($csvsafe, $r));
     }
     fclose($out);
     die();
 }
 
 // If filtering by user, load user (ensure it exists).
+// L-4: only load a user who actually has an attempt in THIS activity. Previously any global
+// userid could be loaded with MUST_EXIST — an existence oracle + cross-course full-name leak
+// for anyone with viewreports here. Validate against this activity's attempts first.
 $user = null;
 if ($userid) {
-    $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0],
-        'id,firstname,lastname,alternatename,firstnamephonetic,lastnamephonetic,middlename,email',
-        MUST_EXIST
-    );
+    $hasattempt = $DB->record_exists('aiknowledgecheck_attempts',
+        ['aiknowledgecheckid' => $knowledgecheck->id, 'userid' => $userid]);
+    if ($hasattempt) {
+        $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0],
+            'id,firstname,lastname,alternatename,firstnamephonetic,lastnamephonetic,middlename,email',
+            MUST_EXIST
+        );
+    } else {
+        // Not a participant of this activity — ignore the filter rather than leaking existence.
+        $userid = 0;
+    }
 }
 
 // Page setup.
@@ -211,7 +232,9 @@ foreach ($useroptions as $opt) {
 }
 echo html_writer::end_tag('datalist');
 echo ' ' . html_writer::link($allurl, get_string('allparticipants'), ['class' => 'btn btn-link p-1']);
-echo html_writer::tag('script', json_encode($useroptions), ['type' => 'application/json', 'id' => 'kc-user-map']);
+// L-5: HEX-escape so a display name containing </script> or quotes can't break out of the
+// inline JSON <script> block (defence-in-depth on top of Moodle's PARAM_NOTAGS on names).
+echo html_writer::tag('script', json_encode($useroptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ['type' => 'application/json', 'id' => 'kc-user-map']);
 echo html_writer::end_div();
 
 // User picker JS.

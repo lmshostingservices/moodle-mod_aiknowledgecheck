@@ -59,6 +59,15 @@ class provider implements
             'privacy:metadata:aiknowledgecheck_attempts'
         );
 
+        $collection->add_database_table(
+            'aiknowledgecheck_overrides',
+            [
+                'userid' => 'privacy:metadata:aiknowledgecheck_overrides:userid',
+                'extraattempts' => 'privacy:metadata:aiknowledgecheck_overrides:extraattempts',
+            ],
+            'privacy:metadata:aiknowledgecheck_overrides'
+        );
+
         $collection->add_external_location_link(
             'essaygraderai',
             [
@@ -79,18 +88,31 @@ class provider implements
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
 
+        // M-3: include contexts where the user has an OVERRIDE but no attempt, otherwise an
+        // override-only user is invisible to export/delete.
         $sql = "SELECT ctx.id
                   FROM {context} ctx
                   JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :contextlevel
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
                   JOIN {aiknowledgecheck} kc ON kc.id = cm.instance
                   JOIN {aiknowledgecheck_attempts} ka ON ka.aiknowledgecheckid = kc.id
-                 WHERE ka.userid = :userid";
+                 WHERE ka.userid = :userid
+                 UNION
+                SELECT ctx2.id
+                  FROM {context} ctx2
+                  JOIN {course_modules} cm2 ON cm2.id = ctx2.instanceid AND ctx2.contextlevel = :contextlevel2
+                  JOIN {modules} m2 ON m2.id = cm2.module AND m2.name = :modname2
+                  JOIN {aiknowledgecheck} kc2 ON kc2.id = cm2.instance
+                  JOIN {aiknowledgecheck_overrides} ko ON ko.aiknowledgecheckid = kc2.id
+                 WHERE ko.userid = :userid2";
 
         $params = [
             'contextlevel' => CONTEXT_MODULE,
             'modname' => 'aiknowledgecheck',
             'userid' => $userid,
+            'contextlevel2' => CONTEXT_MODULE,
+            'modname2' => 'aiknowledgecheck',
+            'userid2' => $userid,
         ];
 
         $contextlist->add_from_sql($sql, $params);
@@ -110,16 +132,26 @@ class provider implements
             return;
         }
 
+        // M-3: include override-only users (userid present in overrides but not attempts).
         $sql = "SELECT ka.userid
                   FROM {aiknowledgecheck_attempts} ka
                   JOIN {aiknowledgecheck} kc ON kc.id = ka.aiknowledgecheckid
                   JOIN {course_modules} cm ON cm.instance = kc.id
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                 WHERE cm.id = :cmid";
+                 WHERE cm.id = :cmid
+                 UNION
+                SELECT ko.userid
+                  FROM {aiknowledgecheck_overrides} ko
+                  JOIN {aiknowledgecheck} kc2 ON kc2.id = ko.aiknowledgecheckid
+                  JOIN {course_modules} cm2 ON cm2.instance = kc2.id
+                  JOIN {modules} m2 ON m2.id = cm2.module AND m2.name = :modname2
+                 WHERE cm2.id = :cmid2";
 
         $params = [
             'modname' => 'aiknowledgecheck',
             'cmid' => $context->instanceid,
+            'modname2' => 'aiknowledgecheck',
+            'cmid2' => $context->instanceid,
         ];
 
         $userlist->add_from_sql('userid', $sql, $params);
@@ -151,10 +183,18 @@ class provider implements
             ]);
 
             foreach ($attempts as $attempt) {
+                // H-4: include the actual answers (selected options AND free-text responses).
+                // This field is declared personal data but was previously omitted from export.
+                $decodedanswers = null;
+                if (!empty($attempt->answers)) {
+                    $decodedanswers = json_decode($attempt->answers, true);
+                }
+
                 $data = (object) [
                     'correctcount' => $attempt->correctcount,
                     'totalcount' => $attempt->totalcount,
                     'status' => $attempt->status,
+                    'answers' => $decodedanswers,
                     'timestarted' => transform::datetime($attempt->timestarted),
                     'timeended' => transform::datetime($attempt->timeended),
                 ];
@@ -162,6 +202,23 @@ class provider implements
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'mod_aiknowledgecheck'), 'attempts'],
                     $data
+                );
+            }
+
+            // M-3: export the user's attempt-limit overrides for this activity.
+            $overrides = $DB->get_records('aiknowledgecheck_overrides', [
+                'aiknowledgecheckid' => $cm->instance,
+                'userid' => $userid,
+            ]);
+            foreach ($overrides as $override) {
+                $odata = (object) [
+                    'extraattempts' => $override->extraattempts,
+                    'timecreated' => !empty($override->timecreated) ? transform::datetime($override->timecreated) : null,
+                    'timemodified' => !empty($override->timemodified) ? transform::datetime($override->timemodified) : null,
+                ];
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'mod_aiknowledgecheck'), 'overrides'],
+                    $odata
                 );
             }
 

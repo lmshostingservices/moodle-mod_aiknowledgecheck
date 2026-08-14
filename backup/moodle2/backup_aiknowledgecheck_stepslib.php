@@ -32,18 +32,24 @@ class backup_aiknowledgecheck_activity_structure_step extends backup_activity_st
         $userinfo = $this->get_setting_value('userinfo');
 
         $knowledgecheck = new backup_nested_element('aiknowledgecheck', ['id'], [
-            'name', 'intro', 'introformat', 'maxattempts', 'questioncount',
-            'passinggrade', 'completionallcorrect', 'completionpassgrade',
-            'ccemail', 'timecreated', 'timemodified',
+            'name', 'intro', 'introformat', 'grade', 'maxattempts', 'questioncount',
+            'passinggrade', 'completionallcorrect', 'completionpassgrade', 'ccemail',
+            'voiceoverenabled', 'voicelanguage', 'voicegender', 'voicestyle',
+            'videourl', 'videorequirement', 'videominseconds', 'showvideoduringquiz',
+            'showchapterstamps', 'audiourl', 'audiorequirement', 'audiominseconds',
+            'imageurl', 'aftercompletion', 'sourcecontext', 'surveymode', 'surveyscale',
+            'timecreated', 'timemodified',
         ]);
 
         $questions = new backup_nested_element('questions');
         $question = new backup_nested_element('question', ['id'], [
             'questionnumber', 'questiontext',
-            'answer1', 'answer2', 'answer3', 'answer4',
+            'answer1', 'answer2', 'answer3', 'answer4', 'answer5',
             'correctanswer',
             'feedback1', 'feedback2', 'feedback3', 'feedback4',
-            'audiodata',
+            'audiodata', 'mappingtopic', 'mappingcriteria', 'timestamp_seconds',
+            'imageurl', 'imageenabled', 'questiontype',
+            'questionvideourl', 'questionvideoenabled', 'questionaudiourl', 'questionaudioenabled',
         ]);
 
         $attempts = new backup_nested_element('attempts');
@@ -78,6 +84,12 @@ class backup_aiknowledgecheck_activity_structure_step extends backup_activity_st
 
         $attempt->annotate_ids('user', 'userid');
         $override->annotate_ids('user', 'userid');
+
+        // Files: the intro editor files and the per-question "image gate" images
+        // (served from the aiknowledgecheck/imagegate filearea) — previously neither
+        // was backed up, so images were lost on backup/restore/duplicate.
+        $knowledgecheck->annotate_files('mod_aiknowledgecheck', 'intro', null);
+        $knowledgecheck->annotate_files('mod_aiknowledgecheck', 'imagegate', null);
 
         return $this->prepare_activity_structure($knowledgecheck);
     }

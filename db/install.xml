@@ -33,7 +33,7 @@
         <FIELD NAME="aftercompletion" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="restart" SEQUENCE="false" COMMENT="What happens after student completes the quiz: restart=allow retake, lock=prevent further attempts"/>
         <FIELD NAME="sourcecontext" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON-encoded source context from the original generate call (topics, userQuestions, textSources, workplaceContext, education settings) — used by Regenerate Questions to keep regenerated questions grounded in the same source material. Added v1.5.95 (FIX-KC-REGEN-GROUNDING)."/>
         <FIELD NAME="surveymode" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When 1, the activity runs as a survey (no correct/wrong answers, scale-based responses). Added v1.5.126."/>
-        <FIELD NAME="surveyscale" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Survey response scale key, e.g. likert5agree, likert5sat, yesno. Only used when surveymode=1. Added v1.5.126."/>
+        <FIELD NAME="surveyscale" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Survey response scale key, e.g. likert5agree, likert5sat, yesno. Only used when surveymode=1. Added v1.5.126. D-2: DEFAULT added to match upgrade.php so fresh and upgraded schemas agree."/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -68,6 +68,10 @@
         <FIELD NAME="imageenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether to display an image above this question (1=yes, 0=no)"/>
         <FIELD NAME="answer5" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Fifth answer option for 5-point survey scales (e.g. Likert 5-point). Null for standard 4-option MCQ questions. Added v1.5.126."/>
         <FIELD NAME="questiontype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scale" SEQUENCE="false" COMMENT="Question type: scale (default MCQ/survey scale question) or freetext (open-ended comment box). Added v1.5.127."/>
+        <FIELD NAME="questionvideourl" TYPE="char" LENGTH="512" NOTNULL="false" SEQUENCE="false" COMMENT="Per-question video URL. Added v1.5.120."/>
+        <FIELD NAME="questionvideoenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether the per-question video is shown (1=yes,0=no). Added v1.5.120."/>
+        <FIELD NAME="questionaudiourl" TYPE="char" LENGTH="512" NOTNULL="false" SEQUENCE="false" COMMENT="Per-question audio URL. Added v1.5.120."/>
+        <FIELD NAME="questionaudioenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether the per-question audio is shown (1=yes,0=no). Added v1.5.120."/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

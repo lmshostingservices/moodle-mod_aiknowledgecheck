@@ -6,7 +6,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
+define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
     'use strict';
 
     let config = {};
@@ -29,28 +29,16 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     // FIX-RACE-FINISH: track in-flight saveanswer calls so finishAttempt waits for them.
     let pendingSaves = 0;
     let pendingFinishAttempt = false;
+    // M4: remember answers whose save failed, so we can retry them before finishing rather
+    // than silently grading a student on answers the server never received.
+    let failedSaves = {}; // keyed by questionId -> {answerIndex, freetextValue}
     let textSources = []; // Array of {text, questionCount}
     let regenerationCount = 0; // Track regeneration count for free/paid logic (first 3 free)
     let selectedKcJobLevels = [];   // Multi-select job levels (pill buttons)
     let selectedKcJobRoles  = [];   // Multi-select job roles (chips input)
     let isAddingMore = false;       // "Add More Questions" mode flag
     let existingQuizData = null;    // Preserved questions while adding more
-
-    // FIX-KC-B64-JSON-PARAMS: base64-encode JSON payloads (questions, textSources,
-    // freetextQuestions) before sending to ajax.php. These fields can legitimately
-    // contain '<'/'>' (AI-generated question text, pasted transcripts, code snippets),
-    // and Moodle's PARAM_TEXT cleaning strips anything that looks like an HTML tag.
-    // Base64's alphabet never includes '<'/'>' so the round trip is byte-safe end to
-    // end; ajax.php base64_decode()s then json_decode()s the value. Encodes UTF-8
-    // correctly (btoa() alone only supports Latin1 byte strings).
-    function kcB64EncodeJson(value) {
-        var json = JSON.stringify(value);
-        var utf8BinaryString = encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, function(match, hex) {
-            return String.fromCharCode(parseInt(hex, 16));
-        });
-        return btoa(utf8BinaryString);
-    }
-
+    
     // Initialize Web Audio API for sound effects
     function getAudioContext() {
         if (!audioContext) {
@@ -114,7 +102,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             var notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
             var delay = 0;
             
-            notes.forEach(function(freq, i) {
+            notes.forEach(function (freq, i) {
                 var oscillator = ctx.createOscillator();
                 var gainNode = ctx.createGain();
                 
@@ -135,8 +123,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             });
             
             // Final chord
-            setTimeout(function() {
-                [523.25, 659.25, 783.99, 1046.50].forEach(function(freq) {
+            setTimeout(function () {
+                [523.25, 659.25, 783.99, 1046.50].forEach(function (freq) {
                     var osc = ctx.createOscillator();
                     var gain = ctx.createGain();
                     osc.connect(gain);
@@ -181,7 +169,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         }
         
         // Remove confetti after animation
-        setTimeout(function() {
+        setTimeout(function () {
             if (container.parentNode) {
                 container.parentNode.removeChild(container);
             }
@@ -210,8 +198,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         var labels = ['A', 'B', 'C', 'D'];
 
         // Determine which optional columns to include.
-        var hasTopics   = quizData.some(function(q) { return q.mappingTopic   && q.mappingTopic.trim();   });
-        var hasCriteria = quizData.some(function(q) { return q.mappingCriteria && q.mappingCriteria.trim(); });
+        var hasTopics   = quizData.some(function (q) { return q.mappingTopic   && q.mappingTopic.trim();   });
+        var hasCriteria = quizData.some(function (q) { return q.mappingCriteria && q.mappingCriteria.trim(); });
 
         // BOM for Excel UTF-8 compatibility.
         var bom = '\uFEFF';
@@ -232,10 +220,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             'Correct Option Text',
             'Explanation'
         ]);
-        csvRows.push(headers.map(function(h) { return '"' + h + '"'; }).join(','));
+        csvRows.push(headers.map(function (h) { return '"' + h + '"'; }).join(','));
 
         // Data rows.
-        quizData.forEach(function(q, index) {
+        quizData.forEach(function (q, index) {
             var correctIdx = q.correctAnswer || 0;
             var correctLabel = labels[correctIdx] || 'A';
             var correctText = (q.options && q.options[correctIdx]) ? q.options[correctIdx] : '';
@@ -532,7 +520,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             handleGenderChange();
         }
         if (config.voiceStyle) {
-            setTimeout(function() { $('#voice-style').val(config.voiceStyle); }, 50);
+            setTimeout(function () { $('#voice-style').val(config.voiceStyle); }, 50);
         }
         
         // Teacher-only initialization (credits, form dropdowns)
@@ -560,19 +548,19 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 cmid: config.cmid
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok && response.questions && response.questions.length > 0) {
                     console.log('[KC] Found existing questions:', response.questions.length);
                     
                     // Transform database format to quiz format
-                    quizData = response.questions.map(function(q) {
+                    quizData = response.questions.map(function (q) {
                         // ADD-SURVEY-FREETEXT (v1.5.127): guard against empty options arrays for freetext questions.
                         var opts = q.options || [];
                         return {
                             id: q.id,
                             question: q.question,
-                            options: opts.map(function(o) { return o.text || ''; }),
-                            explanations: opts.map(function(o) { return o.explanation || ''; }),
+                            options: opts.map(function (o) { return o.text || ''; }),
+                            explanations: opts.map(function (o) { return o.explanation || ''; }),
                             correctAnswer: q.correctIndex,
                             audioData: q.audioData || null,
                             mappingTopic: q.mappingTopic || '',
@@ -593,7 +581,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     
                     // Check if any questions are missing audio (only relevant if voiceover is enabled)
                     var voiceoverOn = $('#voiceover-toggle').is(':checked');
-                    var missingAudio = voiceoverOn && quizData.some(function(q) {
+                    var missingAudio = voiceoverOn && quizData.some(function (q) {
                         return !q.audioData || q.audioData.length === 0;
                     });
                     
@@ -628,7 +616,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     if (!$('#regenerate-audio-btn').length && missingAudio) {
                         var audioBtnHtml = '<button type="button" id="regenerate-audio-btn" class="kc-btn kc-btn-primary" style="margin-left: 10px;">Generate Audio</button>';
                         $('#kc-ready-section .kc-ready-actions').append(audioBtnHtml);
-                        $('#regenerate-audio-btn').on('click', function() {
+                        $('#regenerate-audio-btn').on('click', function () {
                             regenerateAudio();
                         });
                     }
@@ -636,7 +624,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     console.log('[KC] No existing questions found - showing form');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Check existing questions failed:', status, error);
             }
         });
@@ -647,7 +635,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $('#questions-per-topic').on('change', updateStats);
         $('#country-select').on('change', handleCountryChange);
         $('#voice-gender').on('change', handleGenderChange);
-        $('#voiceover-toggle').on('change', function() {
+        $('#voiceover-toggle').on('change', function () {
             var isChecked = $(this).is(':checked');
             if (isChecked) {
                 $('#voice-settings-section').slideDown(200);
@@ -666,10 +654,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $('#edit-settings-btn').on('click', openSettingsModal);
         $('#close-settings-btn').on('click', closeSettingsModal);
         $('#settings-cancel-btn').on('click', closeSettingsModal);
-        $('#ready-regenerate-btn').off('click').on('click', function() { handleRegenerateWithInstructions('ready'); });
-        $('#edit-regenerate-btn').off('click').on('click', function() { handleRegenerateWithInstructions('edit'); });
+        $('#ready-regenerate-btn').off('click').on('click', function () { handleRegenerateWithInstructions('ready'); });
+        $('#edit-regenerate-btn').off('click').on('click', function () { handleRegenerateWithInstructions('edit'); });
         $('#settings-save-btn').on('click', saveSettings);
-        $('#settings-voiceover-toggle').on('change', function() {
+        $('#settings-voiceover-toggle').on('change', function () {
             var isChecked = $(this).is(':checked');
             if (isChecked) {
                 $('#settings-voice-options').slideDown(200);
@@ -678,10 +666,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             }
             updateSettingsWarning();
         });
-        $('#settings-voice-language').on('change', function() {
+        $('#settings-voice-language').on('change', function () {
             updateSettingsWarning();
         });
-        $('#settings-voice-gender').on('change', function() {
+        $('#settings-voice-gender').on('change', function () {
             var gender = $(this).val();
             var $style = $('#settings-voice-style');
             $style.empty();
@@ -697,12 +685,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 $style.append($('<option>').val('Orus').text('Orus (clear, professional)'));
             }
         });
-        $(document).on('keydown', function(e) {
+        $(document).on('keydown', function (e) {
             if (e.key === 'Escape' && $('#kc-settings-overlay').is(':visible') && !$('#settings-save-btn').prop('disabled')) {
                 closeSettingsModal();
             }
         });
-        $('#kc-settings-overlay').on('click', function(e) {
+        $('#kc-settings-overlay').on('click', function (e) {
             if (e.target === this) {
                 closeSettingsModal();
             }
@@ -719,7 +707,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $('#continue-attempt-btn').on('click', handleContinueAttempt);
         
         // User questions toggle.
-        $('#user-questions-toggle').on('change', function() {
+        $('#user-questions-toggle').on('change', function () {
             var isChecked = $(this).is(':checked');
             if (isChecked) {
                 $('#user-questions-fields').slideDown(200);
@@ -740,7 +728,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $('#user-questions-input').on('input', updateStats);
         
         // Paste content toggle.
-        $('#paste-content-toggle').on('change', function() {
+        $('#paste-content-toggle').on('change', function () {
             var isChecked = $(this).is(':checked');
             if (isChecked) {
                 $('#paste-content-fields').slideDown(200);
@@ -763,11 +751,11 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             updateStats();
         });
 
-        $('#add-text-source-btn').on('click', function() {
+        $('#add-text-source-btn').on('click', function () {
             addTextSource();
         });
 
-        $('#text-sources-container').on('click', '.kc-text-source-remove', function(e) {
+        $('#text-sources-container').on('click', '.kc-text-source-remove', function (e) {
             e.preventDefault();
             var idx = parseInt($(this).data('index'), 10);
             textSources.splice(idx, 1);
@@ -775,20 +763,20 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             updateStats();
         });
 
-        $('#text-sources-container').on('change', '.kc-text-source-questions', function() {
+        $('#text-sources-container').on('change', '.kc-text-source-questions', function () {
             var idx = parseInt($(this).data('index'), 10);
             textSources[idx].questionCount = parseInt($(this).val(), 10);
             updateStats();
         });
 
-        $('#text-sources-container').on('input', '.kc-text-source-textarea', function() {
+        $('#text-sources-container').on('input', '.kc-text-source-textarea', function () {
             var idx = parseInt($(this).data('index'), 10);
             textSources[idx].text = $(this).val();
             updateStats();
         });
         
         // Workplace context toggle.
-        $('#workplace-context-toggle').on('change', function() {
+        $('#workplace-context-toggle').on('change', function () {
             var isChecked = $(this).is(':checked');
             if (isChecked) {
                 $('#context-fields').slideDown(200);
@@ -798,18 +786,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
         
         // Industry change  -  update current industry and populate the sector dropdown.
-        $('#industry-select').on('change', function() {
+        $('#industry-select').on('change', function () {
             currentIndustry = $(this).val();
             var $sectorSelect = $('#industry-sector');
             $sectorSelect.empty().append($('<option>').val('').text('Select sector (optional)...'));
-            getIndustrySectors(currentIndustry).forEach(function(s) {
+            getIndustrySectors(currentIndustry).forEach(function (s) {
                 $sectorSelect.append($('<option>').val(s).text(s));
             });
             $sectorSelect.prop('disabled', !currentIndustry);
         });
 
         // Job level pills  -  multi-select toggle.
-        $('#kc-job-level-pills').on('click', '.kc-level-pill', function() {
+        $('#kc-job-level-pills').on('click', '.kc-level-pill', function () {
             var val = $(this).data('value');
             var idx = selectedKcJobLevels.indexOf(val);
             if (idx > -1) {
@@ -823,7 +811,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // Job role chips  -  press Enter or comma to add, max 5.
-        $('#kc-job-role-input').on('keydown', function(e) {
+        $('#kc-job-role-input').on('keydown', function (e) {
             if (e.key === 'Enter' || e.key === ',') {
                 e.preventDefault();
                 var val = $(this).val().trim().replace(/,$/, '');
@@ -836,7 +824,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // Education type change - toggle VET/Academic/General.
-        $('#education-type-select').on('change', function() {
+        $('#education-type-select').on('change', function () {
             var type = $(this).val();
             if (type === 'vet') {
                 $('#vet-level-field').show();
@@ -864,13 +852,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     function renderKcJobRoleChips() {
         var container = document.getElementById('kc-job-role-chips');
         if (!container) return;
-        container.innerHTML = selectedKcJobRoles.map(function(role, idx) {
+        container.innerHTML = selectedKcJobRoles.map(function (role, idx) {
             return '<div class="kc-role-chip">' +
                 '<span>' + $('<span>').text(role).html() + '</span>' +
-                '<button type="button" class="kc-chip-remove" data-idx="' + idx + '" aria-label="Remove ' + $('<span>').text(role).html() + '">\u00d7</button>' +
+                '<button type="button" class="kc-chip-remove" data-idx="' + idx + '" aria-label="Remove ' + escapeAttr(role) + '">\u00d7</button>' +
                 '</div>';
         }).join('');
-        $(container).find('.kc-chip-remove').on('click', function() {
+        $(container).find('.kc-chip-remove').on('click', function () {
             selectedKcJobRoles.splice(parseInt($(this).data('idx'), 10), 1);
             renderKcJobRoleChips();
         });
@@ -911,7 +899,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 cmid: config.cmid
             },
-            success: function(response) {
+            success: function (response) {
                 console.log('[KC] credits response:', response);
                 if (response.ok && response.credits !== undefined) {
                     $('#credits-value').text(response.credits);
@@ -924,7 +912,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     $('#kc-progress-balance').text('--');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.log('[KC] credits AJAX error:', status, error);
                 $('#credits-value').text('--');
                 $('#kc-balance-amount').text('--');
@@ -979,7 +967,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     function fetchIndustries() {
         var $select = $('#industry-select');
         var $sectorSelect = $('#industry-sector');
-        INDUSTRIES.forEach(function(ind) {
+        INDUSTRIES.forEach(function (ind) {
             $select.append($('<option>').val(ind).text(ind));
         });
         currentIndustry = $select.val() || '';
@@ -992,7 +980,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $stateSelect.empty().append($('<option>').val('').text('Select state/region...'));
         
         if (country && countryStates[country]) {
-            countryStates[country].forEach(function(state) {
+            countryStates[country].forEach(function (state) {
                 $stateSelect.append($('<option>').val(state.value).text(state.label));
             });
             $stateSelect.prop('disabled', countryStates[country].length === 0);
@@ -1026,7 +1014,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     '<span class="kc-text-source-label">Text source ' + sourceNum + '</span>' +
                     '<div class="kc-text-source-controls">' +
                         '<select class="kc-select kc-text-source-questions" data-index="' + i + '">' +
-                            (function() {
+                            (function () {
                                 var opts = '';
                                 for (var q = 1; q <= 30; q++) {
                                     opts += '<option value="' + q + '"' + (source.questionCount === q ? ' selected' : '') + '>' + q + ' Qs</option>';
@@ -1067,11 +1055,11 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 }
             }
         } else if (useOwnQuestions) {
-            var userQuestions = $('#user-questions-input').val().trim().split('\n').filter(function(q) { return q.trim(); });
+            var userQuestions = $('#user-questions-input').val().trim().split('\n').filter(function (q) { return q.trim(); });
             totalQuestions = userQuestions.length;
             topicsCount = totalQuestions;
         } else {
-            var topics = $('#topics-input').val().trim().split('\n').filter(function(t) { return t.trim(); });
+            var topics = $('#topics-input').val().trim().split('\n').filter(function (t) { return t.trim(); });
             var questionsPerTopic = parseInt($('#questions-per-topic').val(), 10);
             totalQuestions = topics.length * questionsPerTopic;
             topicsCount = topics.length;
@@ -1104,7 +1092,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         var userQuestions = '';
         
         if (useTextSources) {
-            var validSources = textSources.filter(function(s) { return s.text && s.text.trim().length > 0; });
+            var validSources = textSources.filter(function (s) { return s.text && s.text.trim().length > 0; });
             if (validSources.length === 0) {
                 alert('Please add at least one text source with content.');
                 return;
@@ -1167,21 +1155,19 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             surveyMode: config.surveyMode ? 1 : 0,
             surveyScale: config.surveyMode ? ($('#survey-scale').val() || 'likert5agree') : 'likert5agree',
             // ADD-SURVEY-FREETEXT (v1.5.127): Forward free-text questions (one per line).
-            // FIX-KC-B64-JSON-PARAMS: base64-encoded, see kcB64EncodeJson() above.
             freetextQuestions: config.surveyMode
-                ? kcB64EncodeJson(($('#freetext-questions-input').val() || '').split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; }))
-                : kcB64EncodeJson([])
+                ? JSON.stringify(($('#freetext-questions-input').val() || '').split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; }))
+                : '[]'
         };
 
         if (useTextSources) {
-            var validSources = textSources.filter(function(s) { return s.text && s.text.trim().length > 0; });
-            // FIX-KC-B64-JSON-PARAMS: base64-encoded, see kcB64EncodeJson() above.
-            data.textSources = kcB64EncodeJson(validSources.map(function(s) {
+            var validSources = textSources.filter(function (s) { return s.text && s.text.trim().length > 0; });
+            data.textSources = JSON.stringify(validSources.map(function (s) {
                 return { text: s.text.trim().substring(0, 50000), questionCount: s.questionCount };
             }));
             console.log('[KC] Text sources mode - sending through Moodle ajax.php');
             console.log('[KC] Text sources:', validSources.length);
-            validSources.forEach(function(s, i) {
+            validSources.forEach(function (s, i) {
                 console.log('[KC] Source ' + (i+1) + ': ' + s.text.length + ' chars, questions: ' + s.questionCount);
             });
         } else {
@@ -1269,7 +1255,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 cmid: config.cmid,
                 jobId: currentJobId
             },
-            success: function(response) {
+            success: function (response) {
                 statusPollFailures = 0;
                 if (response.ok) {
                     $('#progress-fill').css('width', response.progress + '%');
@@ -1303,10 +1289,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
 
                         // Tag each new question with its topic and criteria from the form
                         // so they are persisted to DB and appear in the Excel mapping.
-                        var topicLines    = $('#topics-input').val().trim().split('\n').filter(function(l) { return l.trim(); });
+                        var topicLines    = $('#topics-input').val().trim().split('\n').filter(function (l) { return l.trim(); });
                         var criteriaLines = $('#criteria-input').val().trim().split('\n');
                         var qpt = parseInt($('#questions-per-topic').val(), 10) || 1;
-                        newQuestions.forEach(function(q, idx) {
+                        newQuestions.forEach(function (q, idx) {
                             var topicIdx = Math.floor(idx / qpt);
                             if (!q.mappingTopic)    { q.mappingTopic    = (topicLines[topicIdx]    || '').trim(); }
                             if (!q.mappingCriteria) { q.mappingCriteria = (criteriaLines[topicIdx]  || '').trim(); }
@@ -1341,7 +1327,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     }
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 statusPollFailures++;
                 console.error('Status check failed (attempt ' + statusPollFailures + '/' + MAX_POLL_FAILURES + '):', status, error);
                 if (statusPollFailures >= MAX_POLL_FAILURES) {
@@ -1420,7 +1406,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     // so they know to retry rather than thinking "Quiz Ready!" means questions are live.
     function saveQuestionsToDatabase() {
         // Transform quizData to match database schema
-        var questionsForDb = quizData.map(function(q) {
+        var questionsForDb = quizData.map(function (q) {
             // Debug: log audio data being saved
             if (q.audioData) {
                 console.log('[KC] Saving question with audio data:', Object.keys(q.audioData).length, 'tracks');
@@ -1460,13 +1446,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'savequestions',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: kcB64EncodeJson(questionsForDb),
+                questions: JSON.stringify(questionsForDb),
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
                 voiceStyle: $('#voice-style').val() || ''
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     console.log('[KC] Questions saved to database:', response.saved);
                 } else {
@@ -1474,7 +1460,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     alert('Warning: Questions could not be saved to Moodle. Students will not be able to see this quiz until the save succeeds.\n\nReason: ' + (response.error || 'Unknown error') + '\n\nPlease refresh the page and try generating again, or contact your administrator.');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Save questions request failed:', status, error);
                 alert('Warning: The connection to Moodle was lost while saving questions. Students will not be able to see this quiz.\n\nPlease refresh the page and regenerate your questions, or check your network connection.');
             }
@@ -1493,7 +1479,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $('#regenerate-audio-btn').prop('disabled', true).text('Generating Audio...');
         
         // Prepare questions data for the API
-        var questionsForApi = quizData.map(function(q) {
+        var questionsForApi = quizData.map(function (q) {
             return {
                 id: q.id,
                 question: q.question,
@@ -1511,12 +1497,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'regenerateaudio',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: kcB64EncodeJson(questionsForApi),
+                questions: JSON.stringify(questionsForApi),
                 voiceLanguage: voiceLanguage,
                 voiceId: voiceId
             },
             timeout: 120000,
-            success: function(response) {
+            success: function (response) {
                 if (response.ok && response.questions) {
                     console.log('[KC] Audio regenerated successfully for', response.questions.length, 'questions');
                     
@@ -1541,7 +1527,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     $('#regenerate-audio-btn').prop('disabled', false).text('Generate Audio');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Audio regeneration request failed:', status, error);
                 alert('Failed to generate audio. Please try again.');
                 $('#regenerate-audio-btn').prop('disabled', false).text('Generate Audio');
@@ -1568,7 +1554,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 cmid: config.cmid
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     currentAttemptId = response.attemptid;
                     console.log('[KC] Attempt started:', currentAttemptId);
@@ -1578,7 +1564,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     $('#start-attempt-btn').prop('disabled', false).text('Start Quiz');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Start attempt failed:', status, error);
                 alert('Failed to start quiz. Please try again.');
                 $('#start-attempt-btn').prop('disabled', false).text('Start Quiz');
@@ -1604,7 +1590,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 cmid: config.cmid
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     currentAttemptId = response.attemptid;
                     console.log('[KC] Continue attempt ID confirmed:', currentAttemptId, 'resumed:', response.resumed);
@@ -1637,7 +1623,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     $('#continue-attempt-btn').prop('disabled', false).text('Continue Attempt');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Continue attempt AJAX failed:', status, error);
                 alert('Failed to continue attempt. Please try again.');
                 $('#continue-attempt-btn').prop('disabled', false).text('Continue Attempt');
@@ -1673,12 +1659,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 cmid: config.cmid
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok && response.questions && response.questions.length > 0) {
                     console.log('[KC] Loaded questions:', response.questions.length);
                     
                     // Transform database format to quiz format with shuffled answers
-                    quizData = response.questions.map(function(q) {
+                    quizData = response.questions.map(function (q) {
                         // Debug: log audio data availability
                         if (q.audioData) {
                             console.log('[KC] Question', q.id, 'has audio data for', Object.keys(q.audioData).length, 'answers');
@@ -1716,8 +1702,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         var shuffledExplanations = [];
                         var shuffledAudioData = q.audioData ? [] : null;
                         var shuffledToOriginal = []; // Maps shuffled index -> original index
-                        var newCorrectIndex = 0;
-                        
+                        // SECURITY (C2): students receive correctIndex === null. Keep correctAnswer
+                        // null in that case so checkAnswer resolves it from the server at check time
+                        // (rather than defaulting to 0 and revealing/marking the wrong option).
+                        var answerWithheld = (q.correctIndex === null || q.correctIndex === undefined);
+                        var newCorrectIndex = answerWithheld ? null : 0;
+
                         for (var i = 0; i < 4; i++) {
                             var origIndex = shuffledIndices[i];
                             shuffledOptions.push(q.options[origIndex].text);
@@ -1728,14 +1718,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                             } else if (shuffledAudioData) {
                                 shuffledAudioData.push(null);
                             }
-                            // Track where the correct answer ended up
-                            if (origIndex === q.correctIndex) {
+                            // Track where the correct answer ended up (only when it was provided).
+                            if (!answerWithheld && origIndex === q.correctIndex) {
                                 newCorrectIndex = i;
                             }
                         }
-                        
-                        console.log('[KC] Question', q.id, '- original correct:', q.correctIndex, '-> shuffled correct:', newCorrectIndex, 'mapping:', shuffledToOriginal);
-                        
+
                         return {
                             id: q.id,
                             question: q.question,
@@ -1767,7 +1755,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     location.reload();
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Load questions failed:', status, error);
                 alert('Failed to load questions. Please try again.');
                 location.reload();
@@ -1788,7 +1776,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             quizAnswerLog = [];
             var computedScore = 0;
             if (resumeAnswers) {
-                (quizData || []).forEach(function(q, idx) {
+                (quizData || []).forEach(function (q, idx) {
                     var savedAns = q.id ? resumeAnswers[String(q.id)] : null;
                     var isCorrect = savedAns ? !!savedAns.iscorrect : null;
                     if (isCorrect) { computedScore++; }
@@ -1856,7 +1844,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             quizAnswerLog = [];
             currentAttemptNum = 1;
             var computedScore = 0;
-            (quizData || []).slice(0, currentQuestionIndex).forEach(function(q, idx) {
+            (quizData || []).slice(0, currentQuestionIndex).forEach(function (q, idx) {
                 if (!q.id) {
                     // v1.5.13 FIX-DOWNLOAD-MISSING: questions without an ID were silently
                     // dropped from the log. Now include them as placeholders so the download
@@ -1925,7 +1913,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             // Fix: create question-only placeholders for all pre-resume questions.
             quizAnswerLog = [];
             currentAttemptNum = 1;
-            (quizData || []).slice(0, currentQuestionIndex).forEach(function(q, idx) {
+            (quizData || []).slice(0, currentQuestionIndex).forEach(function (q, idx) {
                 quizAnswerLog.push({
                     questionNum:  idx + 1,
                     question:     q.question,
@@ -1970,9 +1958,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         showQuestion();
     }
     
-    function saveAnswerToDatabase(questionId, answerIndex, freetextValue) {
+    function saveAnswerToDatabase(questionId, answerIndex, freetextValue, onResult) {
         if (!currentAttemptId) {
             console.log('[KC] No attempt ID, skipping answer save');
+            if (typeof onResult === 'function') { onResult(null); }
             return;
         }
 
@@ -1998,17 +1987,23 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             method: 'POST',
             dataType: 'json',
             data: saveData,
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     console.log('[KC] Answer saved successfully');
+                    if (failedSaves[questionId]) { delete failedSaves[questionId]; }
                 } else {
                     console.error('[KC] Failed to save answer:', response.error);
+                    failedSaves[questionId] = { answerIndex: answerIndex, freetextValue: freetextValue };
                 }
+                if (typeof onResult === 'function') { onResult(response); }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Save answer request failed:', status, error);
+                // M4: record the failed save so finishAttempt can retry it.
+                failedSaves[questionId] = { answerIndex: answerIndex, freetextValue: freetextValue };
+                if (typeof onResult === 'function') { onResult(null); }
             },
-            complete: function() {
+            complete: function () {
                 pendingSaves--;
                 if (pendingSaves === 0 && pendingFinishAttempt) {
                     pendingFinishAttempt = false;
@@ -2019,7 +2014,66 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
     }
 
+    /**
+     * SECURITY (C2): students are not sent the correct answer up-front. When a student checks an
+     * answer, persist it and read the authoritative correct index + explanations back from the
+     * server, then patch this question object (mapping the server's original-order values back
+     * into the client's shuffled order) so the normal reveal logic can run unchanged.
+     *
+     * @param {Object} q the question object (shuffled) being answered.
+     * @param {number} originalIndex the selected answer mapped back to original option order.
+     * @param {Function} cb invoked once q has been patched (or left as-is on failure).
+     */
+    function resolveCorrectAnswer(q, originalIndex, cb) {
+        saveAnswerToDatabase(q.id, originalIndex, undefined, function (resp) {
+            q._answerSaved = true; // don't double-save on the re-run
+            if (resp && typeof resp.correctanswer === 'number') {
+                if (q.shuffledToOriginal && q.shuffledToOriginal.length) {
+                    var origToShuf = {};
+                    for (var i = 0; i < q.shuffledToOriginal.length; i++) {
+                        origToShuf[q.shuffledToOriginal[i]] = i;
+                    }
+                    q.correctAnswer = (origToShuf[resp.correctanswer] !== undefined)
+                        ? origToShuf[resp.correctanswer] : resp.correctanswer;
+                    if (Array.isArray(resp.explanations)) {
+                        var shufExp = [];
+                        for (var j = 0; j < q.shuffledToOriginal.length; j++) {
+                            shufExp.push(resp.explanations[q.shuffledToOriginal[j]] || '');
+                        }
+                        q.explanations = shufExp;
+                    }
+                } else {
+                    q.correctAnswer = resp.correctanswer;
+                    if (Array.isArray(resp.explanations)) { q.explanations = resp.explanations; }
+                }
+            } else {
+                // Graceful fallback: server gave nothing usable. Keep the quiz functional —
+                // treat as "no highlight" rather than throwing. Scoring stays server-side.
+                if (q.correctAnswer === null || q.correctAnswer === undefined) { q.correctAnswer = -1; }
+                if (!q.explanations) { q.explanations = []; }
+            }
+            if (typeof cb === 'function') { cb(); }
+        });
+    }
+
+    /**
+     * M4: best-effort resend of any answers whose save previously failed, so the server has
+     * the full answer set before it grades. Each resend increments pendingSaves, so the
+     * defer-until-saved logic in finishAttempt naturally waits for them.
+     */
+    function retryFailedSaves() {
+        var ids = Object.keys(failedSaves);
+        if (!ids.length) { return; }
+        console.log('[KC] Retrying', ids.length, 'failed answer save(s) before finishing');
+        ids.forEach(function (qid) {
+            var info = failedSaves[qid];
+            saveAnswerToDatabase(parseInt(qid, 10), info.answerIndex, info.freetextValue);
+        });
+    }
+
     function finishAttempt() {
+        // M4: resend any previously-failed answer saves first (best effort, one pass).
+        retryFailedSaves();
         // FIX-RACE-FINISH: if any saveanswer calls are still in-flight, defer the finish
         // until they all complete so the server sees the full answers JSON.
         if (pendingSaves > 0) {
@@ -2031,6 +2085,27 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     }
 
     function doFinishAttempt() {
+        // M-4: don't finish SILENTLY when answers are still unsaved. finishAttempt() runs one
+        // retry pass first (retryFailedSaves); if any save STILL failed, tell the student so a
+        // lost answer isn't a silent surprise on their score. Grading counts an unsaved answer
+        // as unanswered (i.e. wrong), so this only ever under-scores — but the learner deserves
+        // to know and can reconnect + Retake.
+        var unsavedCount = Object.keys(failedSaves).length;
+        if (unsavedCount > 0) {
+            console.error('[KC] Finishing with ' + unsavedCount + ' unsaved answer(s)');
+            try {
+                require(['core/notification'], function (Notification) {
+                    Notification.alert(
+                        'Some answers were not saved',
+                        unsavedCount + ' of your answers could not be saved (you may have lost connection). ' +
+                        'They will not be counted. If possible, reconnect and use "Retake" to answer them again.'
+                    );
+                });
+            } catch (e) {
+                console.warn('[KC] core/notification unavailable for the unsaved-answers warning');
+            }
+        }
+
         if (!currentAttemptId) {
             console.log('[KC] No attempt ID, skipping finish');
             // Retake buttons were left disabled  -  enable them now so the student can act.
@@ -2056,7 +2131,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 attemptid: attemptBeingFinished
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     console.log('[KC] Attempt finished successfully:', response);
                     // Clear saved progress for this attempt from localStorage.
@@ -2083,7 +2158,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 $('#retake-quiz-btn').prop('disabled', false);
                 $('#retry-wrong-btn').prop('disabled', false);
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Finish attempt request failed:', status, error);
                 $('#retake-quiz-btn').prop('disabled', false);
                 $('#retry-wrong-btn').prop('disabled', false);
@@ -2109,7 +2184,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             '<path d="M1 4v6h6"></path>' +
             '<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>' +
             '</svg>';
-        document.querySelectorAll('.kc-attempts-badge').forEach(function(el) {
+        document.querySelectorAll('.kc-attempts-badge').forEach(function (el) {
             el.innerHTML = svgHtml + ' ' + label;
         });
     }
@@ -2207,7 +2282,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 var stampBtn = $('<button id="kc-chapter-stamp" class="kc-chapter-stamp-btn" type="button" data-testid="button-chapter-stamp">' +
                     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
                     ' Jump to ' + kcStampTimeStr + '</button>');
-                stampBtn.on('click', function() {
+                stampBtn.on('click', function () {
                     var kcPlayer = window.kcYtPlayer;
                     if (kcPlayer && kcPlayer.seekTo) {
                         kcPlayer.seekTo(stampSecs, true);
@@ -2246,7 +2321,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         
         var optionsHtml = '';
         var letters = ['A', 'B', 'C', 'D', 'E'];
-        q.options.forEach(function(option, index) {
+        q.options.forEach(function (option, index) {
             var optionText = (option || '').replace(/\.\s*$/, '').trim();
             // v1.5.52 FIX-OPTION-CAPITALISE: ensure first letter is always uppercase
             // regardless of how the AI or editor stored the option text.
@@ -2269,7 +2344,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         if (needsQMediaGate) {
             $('#options-container').css({'visibility': 'hidden', 'pointer-events': 'none'});
             $('#check-answer-btn').hide();
-            $('#kc-q-media-ack-btn').on('click', function() {
+            $('#kc-q-media-ack-btn').on('click', function () {
                 acknowledgedQuestions[currentQuestionIndex] = true;
                 $('#kc-q-media-gate').replaceWith(
                     '<div style="text-align: center; margin-top: 6px; font-size: 12px; color: #28a745;">' +
@@ -2282,7 +2357,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         }
 
         // Bind option click
-        $('.kc-option').on('click', function() {
+        $('.kc-option').on('click', function () {
             if ($(this).hasClass('disabled')) return;
             
             $('.kc-option').removeClass('selected');
@@ -2307,7 +2382,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     function preloadCurrentQuestionAudio(qi) {
         var q = quizData[qi];
         if (!q || !q.audioData || !Array.isArray(q.audioData)) return;
-        q.audioData.forEach(function(b64, ai) {
+        q.audioData.forEach(function (b64, ai) {
             var cacheKey = qi + '_' + ai;
             if (!b64 || audioPreloadCache[cacheKey]) return; // already cached
             try {
@@ -2367,6 +2442,21 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         }
 
         var q = quizData[currentQuestionIndex];
+
+        // SECURITY (C2): for students the correct answer was withheld at load time. Resolve it
+        // from the server (authoritative), patch this question, then re-run to reveal as normal.
+        if (q.correctAnswer === null || q.correctAnswer === undefined) {
+            if (q._resolvingAnswer) { return; }
+            q._resolvingAnswer = true;
+            $('#check-answer-btn').prop('disabled', true);
+            var origIdxResolve = q.shuffledToOriginal ? q.shuffledToOriginal[selectedAnswer] : selectedAnswer;
+            resolveCorrectAnswer(q, origIdxResolve, function () {
+                q._resolvingAnswer = false;
+                checkAnswer();
+            });
+            return;
+        }
+
         var isCorrect = selectedAnswer === q.correctAnswer;
 
         // Record per-question result for the results download.
@@ -2387,10 +2477,11 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
         
         // Save answer to database (for student attempts)
-        // CRITICAL: Send the ORIGINAL index, not the shuffled one, so the database can correctly compare
-        if (q.id) {
+        // CRITICAL: Send the ORIGINAL index, not the shuffled one, so the database can correctly compare.
+        // (When the answer was resolved from the server just above, q._answerSaved is set so we don't
+        // save it a second time here.)
+        if (q.id && !q._answerSaved) {
             var originalIndex = q.shuffledToOriginal ? q.shuffledToOriginal[selectedAnswer] : selectedAnswer;
-            console.log('[KC] Saving answer - shuffled:', selectedAnswer, '-> original:', originalIndex);
             saveAnswerToDatabase(q.id, originalIndex);
         }
         
@@ -2407,7 +2498,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         $('.kc-option').addClass('disabled');
         
         // Show correct/incorrect
-        $('.kc-option').each(function() {
+        $('.kc-option').each(function () {
             var index = parseInt($(this).data('index'), 10);
             if (index === q.correctAnswer) {
                 $(this).addClass('correct');
@@ -2492,24 +2583,24 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             cachedAud.onerror = null;
             audioElement = cachedAud;
 
-            audioElement.onended = function() {
+            audioElement.onended = function () {
                 if (gateNextButton) {
                     $('#next-question-btn').prop('disabled', false);
                 }
             };
-            audioElement.onerror = function() {
+            audioElement.onerror = function () {
                 if (gateNextButton) {
                     $('#next-question-btn').prop('disabled', false);
                 }
             };
             if (gateNextButton) {
-                setTimeout(function() {
+                setTimeout(function () {
                     if ($('#next-question-btn').prop('disabled')) {
                         $('#next-question-btn').prop('disabled', false);
                     }
                 }, 90000);
             }
-            audioElement.play().catch(function() {
+            audioElement.play().catch(function () {
                 if (gateNextButton) {
                     $('#next-question-btn').prop('disabled', false);
                 }
@@ -2530,14 +2621,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             
             audioElement = new Audio(audioUrl);
             
-            audioElement.onended = function() {
+            audioElement.onended = function () {
                 URL.revokeObjectURL(audioUrl);
                 if (gateNextButton) {
                     $('#next-question-btn').prop('disabled', false);
                 }
             };
             
-            audioElement.onerror = function() {
+            audioElement.onerror = function () {
                 URL.revokeObjectURL(audioUrl);
                 if (gateNextButton) {
                     $('#next-question-btn').prop('disabled', false);
@@ -2546,14 +2637,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             
             // Safety timeout: 90 seconds max wait if audio events never fire
             if (gateNextButton) {
-                setTimeout(function() {
+                setTimeout(function () {
                     if ($('#next-question-btn').prop('disabled')) {
                         $('#next-question-btn').prop('disabled', false);
                     }
                 }, 90000);
             }
             
-            audioElement.play().catch(function() {
+            audioElement.play().catch(function () {
                 URL.revokeObjectURL(audioUrl);
                 if (gateNextButton) {
                     $('#next-question-btn').prop('disabled', false);
@@ -2637,7 +2728,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     '</div>' +
                 '</div>';
             $('#kc-results-container').html(surveyHtml).show();
-            setTimeout(function() {
+            setTimeout(function () {
                 $('#retake-quiz-btn').prop('disabled', false);
             }, 800);
             return;
@@ -2865,7 +2956,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         updateAttemptsBadge();
         
         // Animate the score ring and percentage counter after render
-        setTimeout(function() {
+        setTimeout(function () {
             var ringFill = document.querySelector('.kc-score-ring-fill');
             var percentEl = document.querySelector('.kc-score-percent');
             if (ringFill) {
@@ -2891,18 +2982,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             }
         }, 50);
         
-        setTimeout(function() {
+        setTimeout(function () {
             var titleEl = document.querySelector('.kc-results-title');
             var msgEl = document.querySelector('.kc-results-message');
             if (titleEl) {
                 titleEl.style.transition = 'opacity 0.8s ease';
                 titleEl.style.opacity = '0';
-                setTimeout(function() { titleEl.style.display = 'none'; }, 800);
+                setTimeout(function () { titleEl.style.display = 'none'; }, 800);
             }
             if (msgEl) {
                 msgEl.style.transition = 'opacity 0.8s ease';
                 msgEl.style.opacity = '0';
-                setTimeout(function() { msgEl.style.display = 'none'; }, 800);
+                setTimeout(function () { msgEl.style.display = 'none'; }, 800);
             }
         }, 3000);
 
@@ -2933,9 +3024,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // Each attempt gets a styled header. Single-attempt quizzes render with no header (backward-compat).
         function buildQuestionCard(a) {
             var optionsHtml = '';
-            a.options.forEach(function(opt, i) {
+            a.options.forEach(function (opt, i) {
                 optionsHtml += '<div style="padding:3px 0;font-size:13px;">' +
-                    '<strong>' + labels[i] + '.</strong> ' + opt +
+                    '<strong>' + labels[i] + '.</strong> ' + escapeHtml(opt) +
                 '</div>';
             });
             // v1.5.13 FIX-PLACEHOLDER-DISPLAY: handle entries where answer was not recorded.
@@ -2948,10 +3039,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     : '<span style="color:#dc2626;font-weight:700;">Your answer: ' + selectedLetter + ' (INCORRECT)</span>');
             var borderColor = a.isCorrect === null ? '#9ca3af' : (a.isCorrect ? '#16a34a' : '#dc2626');
             return '<div style="border:1px solid ' + borderColor + ';border-radius:6px;padding:14px 16px;margin-bottom:16px;page-break-inside:avoid;">' +
-                '<p style="margin:0 0 10px;font-weight:600;font-size:14px;">Q' + a.questionNum + '. ' + a.question + '</p>' +
+                '<p style="margin:0 0 10px;font-weight:600;font-size:14px;">Q' + a.questionNum + '. ' + escapeHtml(a.question) + '</p>' +
                 '<div style="margin-bottom:10px;">' + optionsHtml + '</div>' +
                 '<p style="margin:0 0 6px;">' + answerLine + '</p>' +
-                (a.explanation ? '<p style="margin:0;font-size:12px;color:#555;padding-top:4px;border-top:1px solid #e5e7eb;"><em>Explanation: ' + a.explanation + '</em></p>' : '') +
+                (a.explanation ? '<p style="margin:0;font-size:12px;color:#555;padding-top:4px;border-top:1px solid #e5e7eb;"><em>Explanation: ' + escapeHtml(a.explanation) + '</em></p>' : '') +
             '</div>';
         }
 
@@ -2959,28 +3050,29 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // v1.5.22: Always show "Attempt N" heading  -  even for single-attempt quizzes. Sub-label removed.
         var attemptGroups = {};
         var attemptNums = [];
-        quizAnswerLog.forEach(function(a) {
+        quizAnswerLog.forEach(function (a) {
             var num = a.attemptNum || 1;
             if (!attemptGroups[num]) { attemptGroups[num] = []; attemptNums.push(num); }
             attemptGroups[num].push(a);
         });
-        attemptNums.sort(function(x, y) { return x - y; });
+        attemptNums.sort(function (x, y) { return x - y; });
 
         var questionsHtml = '';
-        attemptNums.forEach(function(attemptNum) {
-            var entries = attemptGroups[attemptNum].slice().sort(function(x, y) { return x.questionNum - y.questionNum; });
-            var allIncorrect = entries.length > 0 && entries.every(function(a) { return a.isCorrect === false; });
+        attemptNums.forEach(function (attemptNum) {
+            var entries = attemptGroups[attemptNum].slice().sort(function (x, y) { return x.questionNum - y.questionNum; });
+            var allIncorrect = entries.length > 0 && entries.every(function (a) { return a.isCorrect === false; });
             questionsHtml += '<div style="margin:' + (attemptNum === 1 ? '0' : '28px') + ' 0 14px;page-break-before:' + (attemptNum === 1 ? 'auto' : 'avoid') + ';">' +
                 '<h2 style="margin:0 0 14px;font-size:16px;color:#1d4ed8;border-bottom:2px solid #dbeafe;padding-bottom:6px;">Attempt ' + attemptNum + '</h2>' +
                 (allIncorrect ? '<p style="margin:0 0 12px;font-size:12px;color:#dc2626;font-style:italic;">No correct answers in this attempt.</p>' : '') +
             '</div>';
-            entries.forEach(function(a) {
+            entries.forEach(function (a) {
                 questionsHtml += buildQuestionCard(a);
             });
         });
 
+        var safeTitle = escapeHtml(quizTitle);
         var html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
-            '<title>' + quizTitle + '  -  Results</title>' +
+            '<title>' + safeTitle + '  -  Results</title>' +
             '<style>' +
                 'body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:24px;color:#111;font-size:13px;}' +
                 'h1{font-size:20px;margin:0 0 4px;}' +
@@ -2993,7 +3085,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 '@media print{body{padding:16px;} button{display:none;}}' +
             '</style>' +
             '</head><body>' +
-            '<h1>' + quizTitle + '  -  Results</h1>' +
+            '<h1>' + safeTitle + '  -  Results</h1>' +
             '<p class="subtitle">Date completed: ' + dateStr + '</p>' +
             '<div class="summary">' +
                 '<div class="summary-item"><div class="summary-value pct-val">' + percentage + '%</div><div class="summary-label">Score</div></div>' +
@@ -3012,7 +3104,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         win.document.write(html);
         win.document.close();
         win.focus();
-        setTimeout(function() { win.print(); }, 400);
+        setTimeout(function () { win.print(); }, 400);
     }
 
     /**
@@ -3041,16 +3133,16 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // v1.5.22: Always show "ATTEMPT N" heading  -  even for single-attempt quizzes. Sub-label removed.
         var attemptGroupsTxt = {};
         var attemptNumsTxt = [];
-        quizAnswerLog.forEach(function(a) {
+        quizAnswerLog.forEach(function (a) {
             var num = a.attemptNum || 1;
             if (!attemptGroupsTxt[num]) { attemptGroupsTxt[num] = []; attemptNumsTxt.push(num); }
             attemptGroupsTxt[num].push(a);
         });
-        attemptNumsTxt.sort(function(x, y) { return x - y; });
+        attemptNumsTxt.sort(function (x, y) { return x - y; });
 
-        attemptNumsTxt.forEach(function(attemptNum) {
-            var entries = attemptGroupsTxt[attemptNum].slice().sort(function(x, y) { return x.questionNum - y.questionNum; });
-            var allIncorrectTxt = entries.length > 0 && entries.every(function(a) { return a.isCorrect === false; });
+        attemptNumsTxt.forEach(function (attemptNum) {
+            var entries = attemptGroupsTxt[attemptNum].slice().sort(function (x, y) { return x.questionNum - y.questionNum; });
+            var allIncorrectTxt = entries.length > 0 && entries.every(function (a) { return a.isCorrect === false; });
 
             lines.push('ATTEMPT ' + attemptNum);
             lines.push('----------------------------------------------------------------');
@@ -3059,9 +3151,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             }
             lines.push('');
 
-            entries.forEach(function(a) {
+            entries.forEach(function (a) {
                 lines.push('Q' + a.questionNum + '. ' + a.question);
-                a.options.forEach(function(opt, i) {
+                a.options.forEach(function (opt, i) {
                     lines.push(labels[i] + '. ' + opt);
                 });
                 // v1.5.13 FIX-PLACEHOLDER-DISPLAY: handle not-recorded placeholder entries.
@@ -3129,7 +3221,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // attempt 2). Fix: find the LATEST answer per question, then use only that to decide
         // correct/wrong status.
         var latestByQNum = {};
-        quizAnswerLog.forEach(function(entry) {
+        quizAnswerLog.forEach(function (entry) {
             var qn = entry.questionNum;
             if (!latestByQNum[qn] || (entry.attemptNum || 1) >= (latestByQNum[qn].attemptNum || 1)) {
                 latestByQNum[qn] = entry;
@@ -3170,10 +3262,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 sesskey: config.sesskey,
                 cmid: config.cmid
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     currentAttemptId = response.attemptid;
-                    preSaveCorrectAnswers(function() {
+                    preSaveCorrectAnswers(function () {
                         startQuizWrongOnly();
                     });
                 } else {
@@ -3181,7 +3273,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     retryWrongOnly = false;
                 }
             },
-            error: function() {
+            error: function () {
                 alert('Failed to start quiz. Please try again.');
                 retryWrongOnly = false;
             }
@@ -3190,7 +3282,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
 
     function preSaveCorrectAnswers(callback) {
         var correctQs = [];
-        quizData.forEach(function(q, idx) {
+        quizData.forEach(function (q, idx) {
             if (wrongQuestionIndices.indexOf(idx) === -1 && q.id) {
                 correctQs.push(q);
             }
@@ -3227,7 +3319,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     questionid: q.id,
                     answerindex: origIdx
                 },
-                complete: function() {
+                complete: function () {
                     saveNext(i + 1);
                 }
             });
@@ -3252,7 +3344,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // Step 1: carry-forward one correct entry per already-correct question,
         // preserving the attemptNum of the LATEST correct answer in the snapshot
         // (iterate in reverse so the first match found is the most recent one).
-        quizData.forEach(function(q, idx) {
+        quizData.forEach(function (q, idx) {
             if (wrongQuestionIndices.indexOf(idx) === -1) {
                 var prevEntry = null;
                 for (var pi = previousLog.length - 1; pi >= 0; pi--) {
@@ -3279,7 +3371,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // ones where the student answered wrong. Without this, the entry for attempt N
         // where a question was answered incorrectly was silently discarded on the next
         // rebuild, leaving a gap (e.g. "Attempt 3 is missing") in the exported file.
-        previousLog.forEach(function(prevEntry) {
+        previousLog.forEach(function (prevEntry) {
             if (!prevEntry.isCorrect) {
                 quizAnswerLog.push(prevEntry);
             }
@@ -3352,7 +3444,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
 
         var optionsHtml = '';
         var letters = ['A', 'B', 'C', 'D', 'E'];
-        q.options.forEach(function(option, index) {
+        q.options.forEach(function (option, index) {
             var optionText = (option || '').replace(/\.\s*$/, '').trim();
             // v1.5.52 FIX-OPTION-CAPITALISE: ensure first letter is always uppercase.
             if (optionText.length > 0) {
@@ -3374,7 +3466,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         if (needsWQMediaGate) {
             $('#options-container').css({'visibility': 'hidden', 'pointer-events': 'none'});
             $('#check-answer-btn').hide();
-            $('#kc-q-media-ack-btn').on('click', function() {
+            $('#kc-q-media-ack-btn').on('click', function () {
                 acknowledgedQuestions[realIdx] = true;
                 $('#kc-q-media-gate').replaceWith(
                     '<div style="text-align: center; margin-top: 6px; font-size: 12px; color: #28a745;">' +
@@ -3386,7 +3478,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             });
         }
 
-        $('.kc-option').on('click', function() {
+        $('.kc-option').on('click', function () {
             if ($(this).hasClass('disabled')) return;
             $('.kc-option').removeClass('selected');
             $(this).addClass('selected');
@@ -3400,6 +3492,20 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
 
         var realIdx = wrongQuestionIndices[currentQuestionIndex];
         var q = quizData[realIdx];
+
+        // SECURITY (C2): resolve the withheld correct answer from the server, then re-run (retry mode).
+        if (q.correctAnswer === null || q.correctAnswer === undefined) {
+            if (q._resolvingAnswer) { return; }
+            q._resolvingAnswer = true;
+            $('#check-answer-btn').prop('disabled', true);
+            var origIdxResolveWO = q.shuffledToOriginal ? q.shuffledToOriginal[selectedAnswer] : selectedAnswer;
+            resolveCorrectAnswer(q, origIdxResolveWO, function () {
+                q._resolvingAnswer = false;
+                checkAnswerWrongOnly();
+            });
+            return;
+        }
+
         var isCorrect = selectedAnswer === q.correctAnswer;
 
         quizAnswerLog.push({
@@ -3415,7 +3521,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 : (q.explanations[selectedAnswer] || q.explanations[q.correctAnswer] || '')) : ''
         });
 
-        if (q.id) {
+        if (q.id && !q._answerSaved) {
             var originalIndex = q.shuffledToOriginal ? q.shuffledToOriginal[selectedAnswer] : selectedAnswer;
             saveAnswerToDatabase(q.id, originalIndex);
         }
@@ -3428,7 +3534,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         }
 
         $('.kc-option').addClass('disabled');
-        $('.kc-option').each(function() {
+        $('.kc-option').each(function () {
             var index = parseInt($(this).data('index'), 10);
             if (index === q.correctAnswer) {
                 $(this).addClass('correct');
@@ -3530,7 +3636,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         var container = $('#edit-questions-container');
         container.empty();
         
-        quizData.forEach(function(q, idx) {
+        quizData.forEach(function (q, idx) {
             var correctAnswer = q.correctAnswer !== undefined ? q.correctAnswer : 0;
             
             var html = '<div class="kc-edit-question" data-question-index="' + idx + '">' +
@@ -3631,7 +3737,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         
         // Bind events
         // ADD-KC-IMAGEGATE: toggle image fields visibility when checkbox changes.
-        container.find('.kc-edit-image-enabled').on('change', function() {
+        container.find('.kc-edit-image-enabled').on('change', function () {
             var $fields = $(this).closest('.kc-edit-imagegate').find('.kc-edit-image-fields');
             if ($(this).is(':checked')) {
                 $fields.show();
@@ -3641,7 +3747,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // ADD-KC-IMAGEGATE: bind per-question image generation buttons.
-        container.find('.kc-question-imagegen-btn').on('click', function() {
+        container.find('.kc-question-imagegen-btn').on('click', function () {
             var qIdx = parseInt($(this).data('index'));
             var $btn = $(this);
             var $urlInput = $(this).closest('.kc-edit-image-fields').find('.kc-edit-image-url');
@@ -3662,7 +3768,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     prompt: promptText
                 },
                 timeout: 90000,
-                success: function(resp) {
+                success: function (resp) {
                     $btn.prop('disabled', false).text('Generate (5 credits)');
                     if (resp.ok && resp.imageDataUrl) {
                         $urlInput.val(resp.imageDataUrl);
@@ -3673,7 +3779,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         $statusDiv.text(resp.error || 'Generation failed').css('color', '#dc3545');
                     }
                 },
-                error: function() {
+                error: function () {
                     $btn.prop('disabled', false).text('Generate (5 credits)');
                     $statusDiv.text('Request failed. Please try again.').css('color', '#dc3545');
                 }
@@ -3681,7 +3787,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // ADD-KC-IMAGEGATE: live-preview image URL when pasted/changed.
-        container.find('.kc-edit-image-url').on('change', function() {
+        container.find('.kc-edit-image-url').on('change', function () {
             var url = $(this).val().trim();
             var $previewDiv = $(this).closest('.kc-edit-image-fields').find('.kc-edit-image-preview');
             var $previewImg = $previewDiv.find('.kc-edit-image-preview-img');
@@ -3694,7 +3800,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // ADD-KC-MEDIAPER-Q (v1.5.120): Video checkbox — show/hide URL field and thumbnail.
-        container.find('.kc-edit-video-enabled').on('change', function() {
+        container.find('.kc-edit-video-enabled').on('change', function () {
             var $fields = $(this).closest('.kc-edit-videomedia').find('.kc-edit-video-fields');
             if ($(this).is(':checked')) {
                 $fields.show();
@@ -3704,7 +3810,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // ADD-KC-MEDIAPER-Q (v1.5.120): Video URL change — update YouTube thumbnail preview.
-        container.find('.kc-edit-video-url').on('change', function() {
+        container.find('.kc-edit-video-url').on('change', function () {
             var url    = $(this).val().trim();
             var $prev  = $(this).closest('.kc-edit-video-fields').find('.kc-edit-video-preview');
             var $thumb = $prev.find('img');
@@ -3719,7 +3825,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // ADD-KC-MEDIAPER-Q (v1.5.120): Audio checkbox — show/hide URL field and player.
-        container.find('.kc-edit-audio-enabled').on('change', function() {
+        container.find('.kc-edit-audio-enabled').on('change', function () {
             var $fields = $(this).closest('.kc-edit-audiomedia').find('.kc-edit-audio-fields');
             if ($(this).is(':checked')) {
                 $fields.show();
@@ -3729,7 +3835,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         });
 
         // ADD-KC-MEDIAPER-Q (v1.5.120): Audio URL change — refresh HTML5 player source.
-        container.find('.kc-edit-audio-url').on('change', function() {
+        container.find('.kc-edit-audio-url').on('change', function () {
             var url    = $(this).val().trim();
             var $player = $(this).closest('.kc-edit-audio-fields').find('.kc-edit-audio-player');
             var $audio  = $player.find('audio');
@@ -3744,14 +3850,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             }
         });
 
-        $('.kc-edit-option input[type="radio"]').on('change', function() {
+        $('.kc-edit-option input[type="radio"]').on('change', function () {
             var $option = $(this).closest('.kc-edit-option');
             var $question = $(this).closest('.kc-edit-question');
             $question.find('.kc-edit-option').removeClass('kc-edit-option-correct');
             $option.addClass('kc-edit-option-correct');
         });
         
-        $('.kc-btn-delete-question').on('click', function() {
+        $('.kc-btn-delete-question').on('click', function () {
             var idx = parseInt($(this).data('index'));
             if (quizData.length <= 1) {
                 alert('Cannot delete the last question. You must have at least one question.');
@@ -3790,7 +3896,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         var editedQuestions = [];
         var hasErrors = false;
         
-        $('#edit-questions-container .kc-edit-question').each(function() {
+        $('#edit-questions-container .kc-edit-question').each(function () {
             var $q = $(this);
             var idx = parseInt($q.data('question-index'));
             
@@ -3807,7 +3913,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             
             var hasCorrectSelected = false;
             
-            $q.find('.kc-edit-option').each(function(optIdx) {
+            $q.find('.kc-edit-option').each(function (optIdx) {
                 var optionText = $(this).find('.kc-edit-option-text').val().trim();
                 var explanationText = $(this).find('.kc-edit-explanation-text').val().trim();
                 
@@ -3903,7 +4009,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         );
         
         // Save to database with proper async handling
-        saveEditedQuestions(function(success) {
+        saveEditedQuestions(function (success) {
             if (success) {
                 var voiceoverOn = $('#voiceover-toggle').is(':checked');
                 // Only regenerate audio when question content actually changed.
@@ -3914,7 +4020,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         '<svg class="kc-spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> Generating voiceover...'
                     );
                     
-                    regenerateAudioWithCallback(function(audioSuccess) {
+                    regenerateAudioWithCallback(function (audioSuccess) {
                         $('#save-edits-btn').prop('disabled', false).html(
                             '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Changes'
                         );
@@ -3949,7 +4055,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     
     // Save edited questions with callback for proper async handling
     function saveEditedQuestions(callback) {
-        var questionsForDb = quizData.map(function(q) {
+        var questionsForDb = quizData.map(function (q) {
             return {
                 question: q.question,
                 options: [
@@ -3976,13 +4082,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'savequestions',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: kcB64EncodeJson(questionsForDb),
+                questions: JSON.stringify(questionsForDb),
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
                 voiceStyle: $('#voice-style').val() || ''
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.ok) {
                     console.log('[KC] Questions saved:', response.saved);
                     callback(true);
@@ -3991,7 +4097,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     callback(false);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Save request failed:', status, error);
                 callback(false);
             }
@@ -4003,7 +4109,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         var voiceLanguage = $('#voice-language').val() || 'en-AU';
         var voiceId = $('#voice-style').val() || 'Aoede';
         
-        var questionsForApi = quizData.map(function(q) {
+        var questionsForApi = quizData.map(function (q) {
             return {
                 id: q.id,
                 question: q.question,
@@ -4021,12 +4127,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'regenerateaudio',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: kcB64EncodeJson(questionsForApi),
+                questions: JSON.stringify(questionsForApi),
                 voiceLanguage: voiceLanguage,
                 voiceId: voiceId
             },
             timeout: 120000,
-            success: function(response) {
+            success: function (response) {
                 if (response.ok && response.questions) {
                     console.log('[KC] Audio regenerated for', response.questions.length, 'questions');
                     
@@ -4038,7 +4144,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     }
                     
                     // Save updated audio to database with proper async handling
-                    saveEditedQuestions(function(saveSuccess) {
+                    saveEditedQuestions(function (saveSuccess) {
                         if (saveSuccess) {
                             console.log('[KC] Audio data saved to database');
                             callback(true);
@@ -4052,7 +4158,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     callback(false);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Audio regeneration request failed:', status, error);
                 callback(false);
             }
@@ -4123,7 +4229,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         }
         $('#voice-gender').val(newGender);
         handleGenderChange();
-        setTimeout(function() {
+        setTimeout(function () {
             $('#voice-style').val(newStyle);
         }, 50);
 
@@ -4154,10 +4260,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 voiceGender: newGender,
                 voiceStyle: newStyle
             },
-            success: function() {
+            success: function () {
                 console.log('[KC] Voice settings saved to database');
             },
-            error: function() {
+            error: function () {
                 console.error('[KC] Failed to save voice settings to database');
             }
         });
@@ -4170,11 +4276,11 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 quizData[i].audioData = null;
             }
             buildEditForms();
-            saveEditedQuestions(function(saveSuccess) {
+            saveEditedQuestions(function (saveSuccess) {
                 enableSettingsButtons(origInfo, editInfoEl);
                 if (saveSuccess) {
                     editInfoEl.text('Voiceover disabled and audio removed.');
-                    setTimeout(function() { editInfoEl.text(origInfo); }, 3000);
+                    setTimeout(function () { editInfoEl.text(origInfo); }, 3000);
                 } else {
                     alert('Failed to save. Please click Save Changes.');
                 }
@@ -4187,13 +4293,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             );
 
             var currentQuestions = [];
-            $('#edit-questions-container .kc-edit-question').each(function() {
+            $('#edit-questions-container .kc-edit-question').each(function () {
                 var $q = $(this);
                 var questionText = $q.find('.kc-edit-question-text').val().trim();
                 var options = [];
                 var explanations = [];
                 var correctAnswer = 0;
-                $q.find('.kc-edit-option').each(function(optIdx) {
+                $q.find('.kc-edit-option').each(function (optIdx) {
                     options.push($(this).find('.kc-edit-option-text').val().trim());
                     explanations.push($(this).find('.kc-edit-explanation-text').val().trim());
                     if ($(this).find('input[type="radio"]').is(':checked')) {
@@ -4216,7 +4322,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
             });
 
             if (currentQuestions.length === 0) {
-                currentQuestions = quizData.map(function(q) {
+                currentQuestions = quizData.map(function (q) {
                     return {
                         type: q.type || 'mcq',
                         question: q.question,
@@ -4239,14 +4345,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     action: 'regeneratewithsettings',
                     sesskey: config.sesskey,
                     cmid: config.cmid,
-                    questions: kcB64EncodeJson(currentQuestions),
+                    questions: JSON.stringify(currentQuestions),
                     voiceLanguage: newLanguage,
                     voiceoverEnabled: newVoiceoverEnabled ? 1 : 0,
                     voiceGender: newGender,
                     voiceId: newStyle
                 },
                 timeout: 180000,
-                success: function(response) {
+                success: function (response) {
                     function applySettingsQuestions(questions) {
                         // FIX-KC-REGEN-STORE (v1.5.81): unpack {text,explanation} API format
                         // to KC's flat internal format (same fix as regenerateinstructions).
@@ -4254,7 +4360,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         // to the original quizData[i].timestamp_seconds if the server omits the
                         // field — mirrors the double-fallback in the regenerateinstructions mapper.
                         var preRegenQuizData = quizData.slice();
-                        quizData = questions.map(function(q, i) {
+                        quizData = questions.map(function (q, i) {
                             var opts = Array.isArray(q.options) ? q.options : [];
                             var isObjOpts = opts.length > 0 && typeof opts[0] === 'object' && opts[0] !== null;
                             // FIX-KC-REGEN-TIMESTAMP-NULL (v1.5.109): Use != null so an explicit
@@ -4266,8 +4372,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                             return {
                                 type: q.type || 'mcq',
                                 question: q.question,
-                                options: isObjOpts ? opts.map(function(o) { return o.text || ''; }) : opts,
-                                explanations: isObjOpts ? opts.map(function(o) { return o.explanation || ''; }) : (q.explanations || []),
+                                options: isObjOpts ? opts.map(function (o) { return o.text || ''; }) : opts,
+                                explanations: isObjOpts ? opts.map(function (o) { return o.explanation || ''; }) : (q.explanations || []),
                                 correctAnswer: q.correctIndex !== undefined ? q.correctIndex : (q.correctAnswer || 0),
                                 audioData: newVoiceoverEnabled ? (q.audioData || null) : null,
                                 mappingTopic: q.mappingTopic || '',
@@ -4287,18 +4393,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                             };
                         });
                         buildEditForms();
-                        saveEditedQuestions(function(saveSuccess) {
+                        saveEditedQuestions(function (saveSuccess) {
                             enableSettingsButtons(origInfo, editInfoEl);
                             if (saveSuccess) {
                                 editInfoEl.text('Questions regenerated and saved with new settings!');
-                                setTimeout(function() { editInfoEl.text(origInfo); }, 3000);
+                                setTimeout(function () { editInfoEl.text(origInfo); }, 3000);
                             } else {
                                 alert('Questions regenerated but failed to save. Please click Save Changes.');
                             }
                         });
                     }
                     if (response.ok && response.jobId) {
-                        pollRegenJob(response.jobId, null, '', function(completed) {
+                        pollRegenJob(response.jobId, null, '', function (completed) {
                             var qs = completed.questions || [];
                             if (qs.length === 0) {
                                 enableSettingsButtons(origInfo, editInfoEl);
@@ -4306,7 +4412,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                                 return;
                             }
                             applySettingsQuestions(qs);
-                        }, function(errMsg) {
+                        }, function (errMsg) {
                             enableSettingsButtons(origInfo, editInfoEl);
                             alert('Regeneration failed: ' + errMsg);
                         });
@@ -4319,7 +4425,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         alert('Regeneration failed: ' + (response.error || 'Unknown error'));
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('[KC] Settings regeneration request failed:', status, error);
                     enableSettingsButtons(origInfo, editInfoEl);
                     alert('Request failed. Please try again.');
@@ -4331,14 +4437,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 '<svg class="kc-spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10"/></svg>' +
                 'Generating voiceover audio...'
             );
-            regenerateAudioWithCallback(function(audioSuccess) {
+            regenerateAudioWithCallback(function (audioSuccess) {
                 enableSettingsButtons(origInfo, editInfoEl);
                 if (audioSuccess) {
                     editInfoEl.text('Voiceover audio generated successfully!');
                 } else {
                     editInfoEl.text('Voiceover generation failed. You can try again later.');
                 }
-                setTimeout(function() { editInfoEl.text(origInfo); }, 3000);
+                setTimeout(function () { editInfoEl.text(origInfo); }, 3000);
             });
         } else {
             // Only voice style/gender changed (same language, voiceover still on): regenerate audio only
@@ -4347,20 +4453,20 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     '<svg class="kc-spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10"/></svg>' +
                     'Updating voiceover with new voice...'
                 );
-                regenerateAudioWithCallback(function(audioSuccess) {
+                regenerateAudioWithCallback(function (audioSuccess) {
                     enableSettingsButtons(origInfo, editInfoEl);
                     if (audioSuccess) {
                         editInfoEl.text('Voice settings updated!');
                     } else {
                         editInfoEl.text('Audio update failed. You can try again later.');
                     }
-                    setTimeout(function() { editInfoEl.text(origInfo); }, 3000);
+                    setTimeout(function () { editInfoEl.text(origInfo); }, 3000);
                 });
             } else {
                 // Nothing changed that needs processing
                 enableSettingsButtons(origInfo, editInfoEl);
                 editInfoEl.text('Settings saved.');
-                setTimeout(function() { editInfoEl.text(origInfo); }, 3000);
+                setTimeout(function () { editInfoEl.text(origInfo); }, 3000);
             }
         }
     }
@@ -4394,7 +4500,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
     function pollRegenJob(jobId, $progressBtn, spinnerSvg, onComplete, onError) {
         var polls = 0;
         var MAX_POLLS = 90; // 90 × 2s = 3 minutes max
-        var regenPollInterval = setInterval(function() {
+        var regenPollInterval = setInterval(function () {
             polls++;
             if (polls > MAX_POLLS) {
                 clearInterval(regenPollInterval);
@@ -4412,7 +4518,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     jobId: jobId
                 },
                 timeout: 15000,
-                success: function(response) {
+                success: function (response) {
                     if (!response.ok) {
                         clearInterval(regenPollInterval);
                         onError(response.error || 'Regeneration failed');
@@ -4430,7 +4536,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     }
                     // 'processing' — keep polling
                 },
-                error: function() {
+                error: function () {
                     // Ignore individual poll failures — keep the interval running
                 }
             });
@@ -4487,7 +4593,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
         // FIX-KC-REGEN-TIMESTAMP (v1.5.92): Include timestamp_seconds in the payload so the
         // server can preserve it in the response. Without this the server always receives
         // undefined and the preservation branch never runs, dropping Jump-to links after regen.
-        var allQuestions = quizData.map(function(q0) {
+        var allQuestions = quizData.map(function (q0) {
             return {
                 type: q0.type || 'mcq',
                 question: q0.question,
@@ -4513,7 +4619,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     action: 'regenerateinstructions',
                     sesskey: config.sesskey,
                     cmid: config.cmid,
-                    questions: kcB64EncodeJson(allQuestions),
+                    questions: JSON.stringify(allQuestions),
                     extraInstructions: extraInstructions || '',
                     voiceLanguage: $('#voice-language').val() || 'en-AU',
                     voiceoverEnabled: voiceoverEnabled ? 1 : 0,
@@ -4521,7 +4627,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     voiceId: $('#voice-style').val() || 'Aoede'
                 },
                 timeout: 180000, // 3 min: server runs Gemini + optional TTS in one shot
-                success: function(response) {
+                success: function (response) {
                     function applyBatchQuestions(questions) {
                         var newQuizData = quizData.slice();
                         for (var i = 0; i < questions.length && i < newQuizData.length; i++) {
@@ -4541,8 +4647,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                             newQuizData[i] = {
                                 type: rq.type || 'mcq',
                                 question: rq.question,
-                                options: rqIsObj ? rqOpts.map(function(o) { return o.text || ''; }) : rqOpts,
-                                explanations: rqIsObj ? rqOpts.map(function(o) { return o.explanation || ''; }) : (rq.explanations || []),
+                                options: rqIsObj ? rqOpts.map(function (o) { return o.text || ''; }) : rqOpts,
+                                explanations: rqIsObj ? rqOpts.map(function (o) { return o.explanation || ''; }) : (rq.explanations || []),
                                 correctAnswer: rq.correctIndex !== undefined ? rq.correctIndex : (rq.correctAnswer || 0),
                                 audioData: voiceoverEnabled ? (rq.audioData || null) : null,
                                 mappingTopic: rq.mappingTopic || '',
@@ -4577,7 +4683,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         alert(msg);
                     }
                     if (response.ok && response.jobId) {
-                        pollRegenJob(response.jobId, $btn, spinnerSvg, function(completed) {
+                        pollRegenJob(response.jobId, $btn, spinnerSvg, function (completed) {
                             var qs = completed.questions || [];
                             if (qs.length === 0) {
                                 restoreBtn();
@@ -4585,7 +4691,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                                 return;
                             }
                             applyBatchQuestions(qs);
-                        }, function(errMsg) {
+                        }, function (errMsg) {
                             restoreBtn();
                             alert('Regeneration failed: ' + errMsg + '\n\nPlease try again.');
                         });
@@ -4596,18 +4702,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                         console.warn('[KC] Regen batch error (retriesLeft=' + retriesLeft + '):', errorMsg);
                         if (retriesLeft > 0) {
                             $btn.html(spinnerSvg + 'Retrying\u2026');
-                            setTimeout(function() { doBatchRequest(retriesLeft - 1); }, 2000);
+                            setTimeout(function () { doBatchRequest(retriesLeft - 1); }, 2000);
                         } else {
                             restoreBtn();
                             alert('Regeneration failed: ' + errorMsg + '\n\nPlease try again.');
                         }
                     }
                 },
-                error: function(xhr, status, err) {
+                error: function (xhr, status, err) {
                     console.warn('[KC] Regen batch request failed (retriesLeft=' + retriesLeft + '):', status, err);
                     if (retriesLeft > 0) {
                         $btn.html(spinnerSvg + 'Retrying\u2026');
-                        setTimeout(function() { doBatchRequest(retriesLeft - 1); }, 2000);
+                        setTimeout(function () { doBatchRequest(retriesLeft - 1); }, 2000);
                     } else {
                         restoreBtn();
                         alert('Regeneration failed (connection error). Please try again.');
@@ -4668,7 +4774,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 action: 'regenerateinstructions',
                 sesskey: config.sesskey,
                 cmid: config.cmid,
-                questions: kcB64EncodeJson(singleQuestion),
+                questions: JSON.stringify(singleQuestion),
                 extraInstructions: extraInstructions,
                 voiceLanguage: $('#voice-language').val() || 'en-AU',
                 voiceoverEnabled: voiceoverEnabled ? 1 : 0,
@@ -4676,7 +4782,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                 voiceId: $('#voice-style').val() || 'Aoede'
             },
             timeout: 120000,
-            success: function(response) {
+            success: function (response) {
                 function applySingleQuestion(rq) {
                     // FIX-KC-SINGLEREGEN-STORE (v1.5.82): Unpack API response from
                     // {text,explanation} object format to KC's flat internal format.
@@ -4696,8 +4802,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     quizData[idx] = {
                         type: rq.type || 'mcq',
                         question: rq.question,
-                        options: rqIsObj ? rqOpts.map(function(o) { return o.text || ''; }) : rqOpts,
-                        explanations: rqIsObj ? rqOpts.map(function(o) { return o.explanation || ''; }) : (rq.explanations || []),
+                        options: rqIsObj ? rqOpts.map(function (o) { return o.text || ''; }) : rqOpts,
+                        explanations: rqIsObj ? rqOpts.map(function (o) { return o.explanation || ''; }) : (rq.explanations || []),
                         correctAnswer: rq.correctIndex !== undefined ? rq.correctIndex : (rq.correctAnswer || 0),
                         audioData: voiceoverEnabled ? (rq.audioData || null) : null,
                         mappingTopic: rq.mappingTopic || '',
@@ -4723,7 +4829,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     // buildEditForms() recreates the DOM so $btn is stale — no need to re-enable
                 }
                 if (response.ok && response.jobId) {
-                    pollRegenJob(response.jobId, null, '', function(completed) {
+                    pollRegenJob(response.jobId, null, '', function (completed) {
                         var qs = completed.questions || [];
                         if (qs.length === 0) {
                             alert('Regeneration completed but returned 0 questions. Please try again.');
@@ -4731,7 +4837,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                             return;
                         }
                         applySingleQuestion(qs[0]);
-                    }, function(errMsg) {
+                    }, function (errMsg) {
                         alert('Regeneration failed: ' + errMsg);
                         $btn.prop('disabled', false).html(origHtml);
                     });
@@ -4743,7 +4849,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function($) {
                     $btn.prop('disabled', false).html(origHtml);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('[KC] Single-question regeneration request failed:', status, error);
                 alert('Request failed. Please try again.');
                 $btn.prop('disabled', false).html(origHtml);

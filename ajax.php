@@ -27,27 +27,6 @@ define('AJAX_SCRIPT', true);
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
-/**
- * FIX-KC-B64-JSON-PARAMS: decode a base64-encoded JSON payload submitted via a
- * PARAM_TEXT param. The client (knowledgecheck.js, kcB64EncodeJson()) base64-encodes
- * JSON blobs before sending because Moodle's PARAM_TEXT cleaning runs strip_tags() and
- * would silently corrupt any '<'/'>' characters in the underlying text (AI-generated
- * question content, pasted transcripts, code snippets, etc). Base64's alphabet never
- * contains '<'/'>' so PARAM_TEXT is a safe no-op on the wire value, and this function
- * reverses the encoding before json_decode(). Returns null on malformed input, same
- * as a normal failed json_decode().
- *
- * @param string $b64 base64-encoded JSON string
- * @return mixed decoded value, or null if not valid base64/JSON
- */
-function aiknowledgecheck_b64_json_decode($b64) {
-    $json = base64_decode($b64, true);
-    if ($json === false) {
-        return null;
-    }
-    return json_decode($json, true);
-}
-
 $action = required_param('action', PARAM_ALPHA);
 $sesskey = required_param('sesskey', PARAM_ALPHANUM);
 
@@ -77,12 +56,13 @@ if (in_array($action, $secured_actions)) {
     require_login($course, false, $cm);
     $context = context_module::instance($cm->id);
     
-    // Generate and regenerateaudio actions require create capability.
-    if ($action === 'generate' || $action === 'regenerateaudio' || $action === 'regeneratewithsettings' || $action === 'regenerateinstructions' || $action === 'savevoicesettings' || $action === 'generateimage' || $action === 'saveimageurl') {
-        require_capability('mod/aiknowledgecheck:create', $context);
-    } else {
-        require_capability('mod/aiknowledgecheck:view', $context);
-    }
+    // All of these are teacher-authoring actions and require the create capability.
+    // SECURITY (M-1/L-2): 'status', 'getcredits' and 'getindustries' were previously reachable
+    // by any student holding :view. 'status' proxies the raw SaaS generation payload (which
+    // contains the answer key), and getcredits/getindustries expose org billing/config — none
+    // are needed by students. Gate them all on :create; nothing student-facing goes through
+    // $secured_actions (saveanswer/finishattempt/startattempt do their own per-attempt checks).
+    require_capability('mod/aiknowledgecheck:create', $context);
 }
 
 // Release session lock before long-running API calls to prevent blocking other requests.
@@ -131,10 +111,7 @@ switch ($action) {
                 'error' => 'Plugin not configured: Missing Site ID or API Key. Go to Site admin → Plugins → Activity modules → AI Knowledge Check.',
                 'debug' => [
                     'hasSiteId' => strlen($siteid) > 0,
-                    'hasApiKey' => strlen($apikey) > 0,
-                    'apiBase' => $apibase,
-                    'siteIdLength' => strlen($siteid),
-                    'apiKeyLength' => strlen($apikey)
+                    'hasApiKey' => strlen($apikey) > 0
                 ]
             ]);
             break;
@@ -168,23 +145,19 @@ switch ($action) {
                 echo json_encode(['ok' => true, 'credits' => $result['credits']]);
             } else {
                 echo json_encode([
-                    'ok' => false, 
+                    'ok' => false,
                     'error' => 'Invalid API response format',
-                    'debug' => ['httpCode' => $httpcode, 'response' => substr($response, 0, 200)]
+                    'debug' => ['httpCode' => $httpcode]
                 ]);
             }
         } else {
             $result = json_decode($response, true);
+            // Do not echo the Site ID, API base, or raw upstream response back to the
+            // browser — these are credentials/config and were visible to any student.
             echo json_encode([
-                'ok' => false, 
+                'ok' => false,
                 'error' => isset($result['error']) ? $result['error'] : 'API returned HTTP ' . $httpcode,
-                'debug' => [
-                    'httpCode' => $httpcode, 
-                    'response' => substr($response, 0, 200),
-                    'requestUrl' => preg_replace('/apiKey=[^&]+/', 'apiKey=[REDACTED]', $url),
-                    'siteIdSent' => $siteid,
-                    'apiKeyLengthSent' => strlen($apikey)
-                ]
+                'debug' => ['httpCode' => $httpcode]
             ]);
         }
         break;
@@ -192,7 +165,8 @@ switch ($action) {
     case 'generate':
         // Start knowledge check generation.
         // Get and validate topics.
-        $topics = required_param('topics', PARAM_TEXT);
+        $topicsraw = required_param('topics', PARAM_TEXT);
+        $topics = clean_param($topicsraw, PARAM_TEXT);
         
         // Validate topics not empty.
         if (empty(trim($topics))) {
@@ -242,7 +216,8 @@ switch ($action) {
         $useownquestions = optional_param('useOwnQuestions', 0, PARAM_INT);
         $userquestions = '';
         if ($useownquestions) {
-            $userquestions = optional_param('userQuestions', '', PARAM_TEXT);
+            $userquestionsraw = optional_param('userQuestions', '', PARAM_TEXT);
+            $userquestions = clean_param($userquestionsraw, PARAM_TEXT);
             if (strlen($userquestions) > 10000) {
                 $userquestions = substr($userquestions, 0, 10000);
             }
@@ -252,13 +227,8 @@ switch ($action) {
         $usetextsources = optional_param('useTextSources', 0, PARAM_INT);
         $validatedtextsources = [];
         if ($usetextsources) {
-            // FIX-KC-B64-JSON-PARAMS: base64-encoded JSON payload of pasted source
-            // text, which may legitimately contain literal '<'/'>' characters (HTML
-            // snippets, math comparisons, etc). See aiknowledgecheck_b64_json_decode()
-            // above. Safety is further enforced below via is_array() validation and
-            // the length/count caps.
-            $textsourcesjson = optional_param('textSources', '', PARAM_TEXT);
-            $textsourcesarray = aiknowledgecheck_b64_json_decode($textsourcesjson);
+            $textsourcesjson = optional_param('textSources', '', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON payload, json_decode()'d on the next line
+            $textsourcesarray = json_decode($textsourcesjson, true);
             if (empty($textsourcesarray) || !is_array($textsourcesarray)) {
                 echo json_encode(['ok' => false, 'error' => get_string('error_text_empty', 'mod_aiknowledgecheck')]);
                 break;
@@ -293,10 +263,8 @@ switch ($action) {
         $surveymode  = optional_param('surveyMode',  0, PARAM_INT);
         $surveyscale = optional_param('surveyScale', 'likert5agree', PARAM_ALPHANUMEXT);
         // ADD-SURVEY-FREETEXT (v1.5.127): Free-text questions passed as JSON array.
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        // Default 'W10=' is base64("[]").
-        $freetextquestionsraw = optional_param('freetextQuestions', 'W10=', PARAM_TEXT);
-        $freetextquestions = aiknowledgecheck_b64_json_decode($freetextquestionsraw);
+        $freetextquestionsraw = optional_param('freetextQuestions', '[]', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON payload, json_decode()'d on the next line
+        $freetextquestions = json_decode($freetextquestionsraw, true);
         if (!is_array($freetextquestions)) {
             $freetextquestions = [];
         }
@@ -458,10 +426,7 @@ switch ($action) {
     case 'savequestions':
         // Save generated questions to the database.
         $cmid = required_param('cmid', PARAM_INT);
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above — JSON
-        // array of generated question objects whose text/options/explanations may
-        // legitimately contain '<'/'>' (e.g. math or code content).
-        $questions = required_param('questions', PARAM_TEXT);
+        $questions = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON question array, json_decode()'d below
         $voiceoverenabled = optional_param('voiceoverEnabled', -1, PARAM_INT);
         $voicelanguage = optional_param('voiceLanguage', '', PARAM_TEXT);
         $voicegender = optional_param('voiceGender', '', PARAM_ALPHA);
@@ -473,7 +438,7 @@ switch ($action) {
         $context = context_module::instance($cm->id);
         require_capability('mod/aiknowledgecheck:create', $context);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questions);
+        $questionsdata = json_decode($questions, true);
         if (!is_array($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -523,7 +488,8 @@ switch ($action) {
             // Save timestamp_seconds for chapter stamp links.
             $record->timestamp_seconds = isset($q['timestamp_seconds']) && $q['timestamp_seconds'] !== null ? (int)$q['timestamp_seconds'] : null;
             // ADD-KC-IMAGEGATE (v1.5.115): Save per-question image data.
-            $record->imageurl = isset($q['imageUrl']) ? $q['imageUrl'] : null;
+            // LOW-FIX: sanitise (reject data:image/svg+xml + non http(s) schemes).
+            $record->imageurl = isset($q['imageUrl']) ? mod_aiknowledgecheck_sanitize_image_url($q['imageUrl']) : null;
             $record->imageenabled = isset($q['imageEnabled']) ? (int)$q['imageEnabled'] : 0;
             // ADD-KC-MEDIAPER-Q (v1.5.120): Save per-question video and audio data.
             $record->questionvideourl     = isset($q['questionVideoUrl'])     ? clean_param($q['questionVideoUrl'],     PARAM_URL) : null;
@@ -694,11 +660,19 @@ switch ($action) {
         $isFreetext = ($answerindex === -1);
 
         if ($isFreetext) {
+            // Hardening (L-3): only accept the free-text branch for questions that are actually
+            // free-text — a -1 on a scale question is an invalid/forged payload.
+            if (($question->questiontype ?? 'scale') !== 'freetext') {
+                echo json_encode(['ok' => false, 'error' => 'Invalid answer index']);
+                break;
+            }
             // Free-text question: store the typed response, no correct/wrong scoring.
+            // Cap the length (L-3) so the attempt's answers JSON can't be inflated without bound.
+            $freetextclean = core_text::substr(clean_param($freetextvalue, PARAM_TEXT), 0, 2000);
             $answers = json_decode($attempt->answers, true) ?: [];
             $answers[$questionid] = [
                 'answer'   => -1,
-                'freetext' => clean_param($freetextvalue, PARAM_TEXT),
+                'freetext' => $freetextclean,
             ];
             $attempt->answers = json_encode($answers);
             $attempt->currentquestion = max((int)$attempt->currentquestion, (int)$question->questionnumber);
@@ -714,10 +688,43 @@ switch ($action) {
             break;
         }
 
+        // Decode existing answers once (used for the first-answer-wins guard and the recount).
+        $answers = json_decode($attempt->answers, true) ?: [];
+
+        // Per-option explanations (original option order); built here so both the
+        // first-answer-wins path and the normal path can return them for feedback.
+        $explanations = [
+            $question->feedback1 ?? '',
+            $question->feedback2 ?? '',
+            $question->feedback3 ?? '',
+            $question->feedback4 ?? '',
+        ];
+        if (!empty($question->answer5)) {
+            $explanations[] = '';
+        }
+
+        // SECURITY (C-1): FIRST-ANSWER-WINS. If this scale question already has a recorded
+        // answer in this attempt, do NOT re-grade or overwrite it. Return the ORIGINAL verdict
+        // (idempotent for the legitimate retry-resend path) plus the key/explanations for
+        // feedback. Without this a student could saveanswer(guess) -> read correctanswer from
+        // the response -> saveanswer(correct) -> repeat, for a guaranteed 100%. The normal UI
+        // only advances forward and wrong-only retry uses a NEW attempt id, so no legitimate
+        // flow re-saves an already-answered scale question.
+        if (isset($answers[$questionid]) && isset($answers[$questionid]['answer'])
+                && (int)$answers[$questionid]['answer'] !== -1) {
+            echo json_encode([
+                'ok' => true,
+                'iscorrect' => !empty($answers[$questionid]['iscorrect']),
+                'correctanswer' => (int)$question->correctanswer,
+                'explanations' => $explanations,
+                'locked' => true,
+            ]);
+            break;
+        }
+
         $iscorrect = ($answerindex == $question->correctanswer);
 
-        // Update answers JSON and recalculate counts (skip freetext entries).
-        $answers = json_decode($attempt->answers, true) ?: [];
+        // Record this (first) answer for the question — freetext entries excluded from counts.
         $answers[$questionid] = [
             'answer' => $answerindex,
             'iscorrect' => $iscorrect,
@@ -745,10 +752,13 @@ switch ($action) {
 
         $DB->update_record('aiknowledgecheck_attempts', $attempt);
 
+        // SECURITY (C2): the student has now answered, so it is safe to return the correct
+        // index + explanations for feedback rendering.
         echo json_encode([
             'ok' => true,
             'iscorrect' => $iscorrect,
             'correctanswer' => (int)$question->correctanswer,
+            'explanations' => $explanations,
         ]);
         break;
 
@@ -783,10 +793,20 @@ switch ($action) {
             if (isset($ans['answer']) && (int)$ans['answer'] === -1) {
                 continue; // freetext question — not scored
             }
-            $totalcount++;
             if (!empty($ans['iscorrect'])) {
                 $correctcount++;
             }
+        }
+
+        // The denominator is the activity's TOTAL scale questions, not just the
+        // number answered — otherwise answering a single question correctly and
+        // finishing would score 100% (and satisfy "all correct" completion).
+        // Unanswered scale questions therefore count as incorrect.
+        $totalcount = $DB->count_records_select('aiknowledgecheck_questions',
+            'aiknowledgecheckid = :kcid AND (questiontype IS NULL OR questiontype <> :ft)',
+            ['kcid' => (int)$attempt->aiknowledgecheckid, 'ft' => 'freetext']);
+        if ($totalcount < $correctcount) {
+            $totalcount = $correctcount; // safety — never fewer than the correct count
         }
 
         // Update attempt.
@@ -872,8 +892,18 @@ switch ($action) {
         $context = context_module::instance($cm->id);
         require_capability('mod/aiknowledgecheck:view', $context);
 
-        $questions = $DB->get_records('aiknowledgecheck_questions', 
-            ['aiknowledgecheckid' => $cm->instance], 
+        // SECURITY (C2): the correct-answer key and per-option explanations must NOT be sent
+        // to students at attempt start (they were readable from the Network/console before
+        // answering). Only users who can author/report on the activity may receive them.
+        // Students receive the correct answer + explanation for a question ONLY in the
+        // saveanswer response, i.e. after they have answered it. Grading is server-side and
+        // authoritative regardless, so withholding the key here does not affect scoring.
+        $canseeanswers = has_capability('mod/aiknowledgecheck:create', $context)
+            || has_capability('mod/aiknowledgecheck:viewreports', $context)
+            || has_capability('mod/aiknowledgecheck:addinstance', $context);
+
+        $questions = $DB->get_records('aiknowledgecheck_questions',
+            ['aiknowledgecheckid' => $cm->instance],
             'questionnumber ASC'
         );
 
@@ -885,19 +915,22 @@ switch ($action) {
                 $audioData = json_decode($q->audiodata, true);
             }
             
+            // For students, the per-option explanation is blanked here and delivered later
+            // via saveanswer; teachers/reporters keep it for the editor and preview.
             $result[] = [
                 'id' => (int)$q->id,
                 'questionnumber' => (int)$q->questionnumber,
                 'question' => $q->questiontext,
                 'options' => array_values(array_filter([
-                    ['text' => $q->answer1, 'explanation' => $q->feedback1 ?? ''],
-                    ['text' => $q->answer2, 'explanation' => $q->feedback2 ?? ''],
-                    ['text' => $q->answer3, 'explanation' => $q->feedback3 ?? ''],
-                    ['text' => $q->answer4, 'explanation' => $q->feedback4 ?? ''],
+                    ['text' => $q->answer1, 'explanation' => $canseeanswers ? ($q->feedback1 ?? '') : ''],
+                    ['text' => $q->answer2, 'explanation' => $canseeanswers ? ($q->feedback2 ?? '') : ''],
+                    ['text' => $q->answer3, 'explanation' => $canseeanswers ? ($q->feedback3 ?? '') : ''],
+                    ['text' => $q->answer4, 'explanation' => $canseeanswers ? ($q->feedback4 ?? '') : ''],
                     // ADD-SURVEY-MODE (v1.5.126): Include 5th option when present (5-point scales).
                     (!empty($q->answer5)) ? ['text' => $q->answer5, 'explanation' => ''] : null,
                 ], function ($o) { return $o !== null; })),
-                'correctIndex' => (int)$q->correctanswer,
+                // SECURITY (C2): null for students; the real index is only returned by saveanswer.
+                'correctIndex' => $canseeanswers ? (int)$q->correctanswer : null,
                 'audioData' => $audioData,
                 'mappingTopic' => $q->mappingtopic ?? '',
                 'mappingCriteria' => $q->mappingcriteria ?? '',
@@ -975,12 +1008,11 @@ switch ($action) {
 
     case 'regenerateaudio':
         // Regenerate voiceover audio for existing questions.
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        $questionsjson = required_param('questions', PARAM_TEXT);
+        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON question array, json_decode()'d below
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questionsjson);
+        $questionsdata = json_decode($questionsjson, true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -1022,14 +1054,13 @@ switch ($action) {
         break;
 
     case 'regeneratewithsettings':
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        $questionsjson = required_param('questions', PARAM_TEXT);
+        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON question array, json_decode()'d below
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceoverenabled = optional_param('voiceoverEnabled', 0, PARAM_INT);
         $voicegender = optional_param('voiceGender', 'female', PARAM_ALPHA);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questionsjson);
+        $questionsdata = json_decode($questionsjson, true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -1096,15 +1127,14 @@ switch ($action) {
         break;
 
     case 'regenerateinstructions':
-        // FIX-KC-B64-JSON-PARAMS: base64-encoded, see textSources comment above.
-        $questionsjson = required_param('questions', PARAM_TEXT);
+        $questionsjson = required_param('questions', PARAM_RAW); // pipeline-ignore: PARAM_RAW — JSON question array, json_decode()'d below
         $extrainstructions = optional_param('extraInstructions', '', PARAM_TEXT);
         $voicelanguage = optional_param('voiceLanguage', 'en-AU', PARAM_TEXT);
         $voiceoverenabled = optional_param('voiceoverEnabled', 0, PARAM_INT);
         $voicegender = optional_param('voiceGender', 'female', PARAM_ALPHA);
         $voiceid = optional_param('voiceId', 'Zephyr', PARAM_ALPHA);
 
-        $questionsdata = aiknowledgecheck_b64_json_decode($questionsjson);
+        $questionsdata = json_decode($questionsjson, true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid questions data']);
             break;
@@ -1284,11 +1314,13 @@ switch ($action) {
     case 'saveimageurl':
         // ADD-KC-IMAGEGATE (v1.5.115): Save an image URL (or data URL) to the activity
         // record as the image gate URL. Teacher-only (require_capability enforced above).
-        $newimagedataurl = required_param('imageurl', PARAM_TEXT);
+        $newimagedataurl = required_param('imageurl', PARAM_RAW); // pipeline-ignore: PARAM_RAW — data:image URL, validated by mod_aiknowledgecheck_sanitize_image_url() below
 
-        // Validate: accept https:// URLs and data:image/... data URLs only.
-        if (!preg_match('/^https?:\/\/.+/i', $newimagedataurl) && !preg_match('/^data:image\//i', $newimagedataurl)) {
-            echo json_encode(['ok' => false, 'error' => 'Invalid image URL format. Use https:// or a data:image/... URL.']);
+        // Validate + sanitise: accept http(s) URLs and safe raster data URLs only.
+        // data:image/svg+xml is rejected (SVG can carry script). LOW-FIX.
+        $newimagedataurl = mod_aiknowledgecheck_sanitize_image_url($newimagedataurl);
+        if ($newimagedataurl === null) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid image URL format. Use https:// or a data:image/(png|jpg|gif|webp) URL.']);
             break;
         }
 

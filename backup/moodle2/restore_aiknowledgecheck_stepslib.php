@@ -143,5 +143,7 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
 
     protected function after_execute() {
         $this->add_related_files('mod_aiknowledgecheck', 'intro', null);
+        // Restore the per-question image-gate images backed up above.
+        $this->add_related_files('mod_aiknowledgecheck', 'imagegate', null);
     }
 }

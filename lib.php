@@ -104,6 +104,15 @@ function aiknowledgecheck_add_instance($data, ?object $mform = null) {
         $data->imageurl = '';
     }
 
+    // D-2: surveyscale is NOT NULL; default it so an insert that omits it (e.g. non-survey
+    // activities where the form field is absent) never fails.
+    if (!isset($data->surveymode)) {
+        $data->surveymode = 0;
+    }
+    if (!isset($data->surveyscale)) {
+        $data->surveyscale = 'likert5agree';
+    }
+
     $data->id = $DB->insert_record('aiknowledgecheck', $data);
 
     // Save image gate file from draft area to permanent filearea.
@@ -233,8 +242,12 @@ function aiknowledgecheck_delete_instance($id) {
         return false;
     }
 
-    // Delete associated records.
-    $DB->delete_records('aiknowledgecheck_quizzes', ['aiknowledgecheckid' => $id]);
+    // Delete associated records. aiknowledgecheck_quizzes is vestigial and may not
+    // exist on sites upgraded from before it was declared — guard the delete so
+    // activity/course deletion never throws a dml_exception.
+    if ($DB->get_manager()->table_exists('aiknowledgecheck_quizzes')) {
+        $DB->delete_records('aiknowledgecheck_quizzes', ['aiknowledgecheckid' => $id]);
+    }
     $DB->delete_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $id]);
     $DB->delete_records('aiknowledgecheck_attempts', ['aiknowledgecheckid' => $id]);
     $DB->delete_records('aiknowledgecheck_overrides', ['aiknowledgecheckid' => $id]);
@@ -280,10 +293,14 @@ function aiknowledgecheck_grade_item_update($knowledgecheck, $grades = null) {
         $passgrade = (float)$knowledgecheck->passinggrade;
     }
 
+    // H-1: survey activities are NOT graded (there is no right/wrong). Expose them as a
+    // non-graded item so no meaningless 0–100 score is pushed to the gradebook.
+    $issurvey = !empty($knowledgecheck->surveymode);
+
     $params = [
         'itemname' => $knowledgecheck->name,
         'idnumber' => isset($knowledgecheck->cmidnumber) ? $knowledgecheck->cmidnumber : null,
-        'gradetype' => GRADE_TYPE_VALUE,
+        'gradetype' => $issurvey ? GRADE_TYPE_NONE : GRADE_TYPE_VALUE,
         'grademax' => $grademax,
         'grademin' => 0,
         'gradepass' => $passgrade,
@@ -328,6 +345,12 @@ function aiknowledgecheck_update_grades($knowledgecheck, $userid = 0, $nullifnon
 
     // First, ensure grade item exists.
     aiknowledgecheck_grade_item_update($knowledgecheck);
+
+    // H-1: surveys carry no numeric grade — the item is created as non-graded above; stop here
+    // so no percentage is computed or pushed for survey activities.
+    if (!empty($knowledgecheck->surveymode)) {
+        return;
+    }
 
     // Get the best completed attempt for each user (highest percentage).
     $params = ['aiknowledgecheckid' => $knowledgecheck->id, 'status' => 1];
@@ -748,4 +771,29 @@ function mod_aiknowledgecheck_get_completion_active_rule_descriptions($cm) {
     }
 
     return $descriptions;
+}
+
+/**
+ * Sanitise a stored image URL for a knowledge-check question or activity.
+ *
+ * Images may be supplied either as a normal http(s) URL or as a base64 data URL
+ * (AI-generated images are stored inline). We allow only safe RASTER data URLs —
+ * data:image/svg+xml is rejected because SVG can carry script — and otherwise
+ * require a well-formed http(s) URL. Anything else becomes null.
+ *
+ * @param mixed $url the candidate URL.
+ * @return string|null the sanitised URL, or null if it is not acceptable.
+ */
+function mod_aiknowledgecheck_sanitize_image_url($url) {
+    if (!is_string($url) || trim($url) === '') {
+        return null;
+    }
+    $trimmed = trim($url);
+    // Allow inline raster data URLs only (png/jpeg/gif/webp) — never SVG.
+    if (preg_match('#^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=\s]+$#i', $trimmed)) {
+        return $trimmed;
+    }
+    // Otherwise it must be a normal http(s) URL.
+    $clean = clean_param($trimmed, PARAM_URL);
+    return ($clean !== '') ? $clean : null;
 }

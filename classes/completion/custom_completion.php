@@ -48,6 +48,16 @@ class custom_completion extends activity_custom_completion {
                 $kid = (int)$this->cm->instance;
                 $userid = (int)$this->userid;
 
+                // H-1: a survey has no right/wrong answers, so "all correct" is meaningless and
+                // could never be met legitimately. Treat the rule as satisfied once the learner
+                // has submitted any completed attempt.
+                $issurvey = (int)$DB->get_field('aiknowledgecheck', 'surveymode', ['id' => $kid]);
+                if ($issurvey) {
+                    $done = $DB->record_exists('aiknowledgecheck_attempts',
+                        ['aiknowledgecheckid' => $kid, 'userid' => $userid, 'status' => 1]);
+                    return $done ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+                }
+
                 // Check if ANY completed attempt has all correct.
                 $attempt = $DB->get_record_sql(
                     "SELECT *
