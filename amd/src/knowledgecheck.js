@@ -1406,6 +1406,39 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
     // so they know to retry rather than thinking "Quiz Ready!" means questions are live.
     function saveQuestionsToDatabase() {
         // Transform quizData to match database schema
+        // FIX-KC-SURVEY-SAVE (v1.5.138): three faults lived in this one mapping.
+        //
+        // 1. It read q.options[n] as a STRING. Freshly generated questions arrive straight from
+        //    the generation service through the 'status' passthrough, which emits options as
+        //    {text, explanation} OBJECTS -- the same shape this file sends back in the
+        //    regenerate payload, described there as "the API's expected input format". So
+        //    { text: q.options[0] } nested an object inside .text, PHP received an array where
+        //    it expected a string, and the insert died inside mysqli with
+        //    "real_escape_string(): Argument #1 ($string) must be of type string, array given".
+        //
+        // 2. It hardcoded exactly four options. A five-point survey scale silently lost its
+        //    fifth, and a freetext question -- which has none -- gained four empty ones.
+        //
+        // 3. It never sent questionType at all, so the server fell back to 'scale' and every
+        //    freetext question was stored as a scale question.
+        //
+        // normaliseOption() accepts either shape, so generated, reloaded and hand-edited
+        // questions all save the same way.
+        function normaliseOption(opt, fallbackExplanation) {
+            if (opt === null || opt === undefined) {
+                return null;
+            }
+            if (typeof opt === 'object') {
+                return {
+                    text: typeof opt.text === 'string' ? opt.text : String(opt.text || ''),
+                    explanation: typeof opt.explanation === 'string'
+                        ? opt.explanation
+                        : (fallbackExplanation || '')
+                };
+            }
+            return { text: String(opt), explanation: fallbackExplanation || '' };
+        }
+
         var questionsForDb = quizData.map(function (q) {
             // Debug: log audio data being saved
             if (q.audioData) {
@@ -1413,16 +1446,25 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             } else {
                 console.log('[KC] Saving question without audio data');
             }
-            
+
+            var isFreetext = q.questionType === 'freetext';
+            var rawOptions = (!isFreetext && Array.isArray(q.options)) ? q.options : [];
+            var options = [];
+            for (var oi = 0; oi < rawOptions.length; oi++) {
+                var normalised = normaliseOption(
+                    rawOptions[oi],
+                    (q.explanations && q.explanations[oi]) ? q.explanations[oi] : ''
+                );
+                if (normalised !== null) {
+                    options.push(normalised);
+                }
+            }
+
             return {
-                question: q.question,
-                options: [
-                    { text: q.options[0], explanation: q.explanations ? q.explanations[0] : '' },
-                    { text: q.options[1], explanation: q.explanations ? q.explanations[1] : '' },
-                    { text: q.options[2], explanation: q.explanations ? q.explanations[2] : '' },
-                    { text: q.options[3], explanation: q.explanations ? q.explanations[3] : '' }
-                ],
-                correctIndex: q.correctAnswer,
+                question: typeof q.question === 'string' ? q.question : String(q.question || ''),
+                options: options,
+                questionType: isFreetext ? 'freetext' : 'scale',
+                correctIndex: (typeof q.correctAnswer === 'number') ? q.correctAnswer : 0,
                 audioData: q.audioData || null,
                 mappingTopic: q.mappingTopic || '',
                 mappingCriteria: q.mappingCriteria || '',

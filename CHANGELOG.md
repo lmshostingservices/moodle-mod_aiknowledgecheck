@@ -2,6 +2,56 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.138] - 2026-08-26
+
+### Fixed - survey mode could not save its questions
+
+- **"Questions could not be saved to Moodle — mysqli::real_escape_string(): Argument #1
+  ($string) must be of type string, array given."** `saveQuestionsToDatabase()` read
+  `q.options[n]` as a string and wrapped it as `{ text: q.options[n] }`. Freshly generated
+  questions arrive straight from the generation service through the `status` passthrough, which
+  emits options as `{text, explanation}` **objects** — the same shape this file sends back in
+  its own regenerate payload. So `.text` held an object, PHP received an array where it expected
+  a string, and the insert died inside mysqli.
+
+  Worse than the error: `delete_records()` runs *before* the insert loop, so by the time the
+  teacher saw the alert their existing questions were already gone.
+
+- **A five-point survey scale lost its fifth option.** The same mapping hardcoded exactly four
+  options, so `answer5` — added in 1.5.126 precisely for 5-point scales — was never populated
+  from a fresh generation.
+
+- **Freetext questions were stored as scale questions.** The payload never sent `questionType`
+  at all, so the server's `?? 'scale'` fallback applied to every question, and a freetext
+  question also arrived carrying four empty options.
+
+  The mapping now normalises an option written either way, emits the true number of options
+  (none for freetext), and sends `questionType`.
+
+- **Short survey scales showed blank options in the player.** `getquestions` filtered only the
+  explicit null in the `answer5` slot, so `answer1`–`answer4` always came back as four options
+  even when the scale is shorter — a two- or three-point survey rendered empty radio choices.
+  `report.php` has always compacted with `if (!empty($sq->$f))`, so the player and the report
+  disagreed about the same question. Trailing blanks are now trimmed by
+  `mod_aiknowledgecheck_trim_options()` and the two agree.
+
+  Trailing blanks only. `correctanswer` and every stored student answer are positional indexes
+  into this list, so compacting around a gap in the middle would silently repoint them at a
+  different option. A blank in the middle means a broken question and stays visible.
+
+- **The PHP save path no longer lets a non-scalar reach the database.** Every text field is
+  coerced to a string and options are accepted as a plain string or a `{text, explanation}`
+  object, so a malformed payload produces an empty field rather than a fatal mysqli TypeError
+  after the delete has already run.
+
+Verified with two harnesses: the PHP record-builder against the real generated payload and five
+hostile shapes, and the shipped `amd/src` mapping extracted and run against generated, reloaded
+and hostile question sets. The pre-fix code fails exactly three assertions — the array, the lost
+fifth option and the wrong question type — and the post-fix code passes all of them.
+
+AMD bundle rebuilt; `amd/build/knowledgecheck.js` matches `amd/src`, and the minified bundle
+carries the fix.
+
 ## [1.5.137] - 2026-08-26
 
 ### Fixed - non-editing teachers could not reach the attempts report

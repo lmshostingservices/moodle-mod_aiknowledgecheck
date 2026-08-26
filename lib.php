@@ -923,3 +923,48 @@ function mod_aiknowledgecheck_version_banner() {
 function mod_aiknowledgecheck_before_standard_top_of_body_html() {
     return mod_aiknowledgecheck_version_banner();
 }
+
+/**
+ * Trim trailing empty options from a question's option list.
+ *
+ * FIX-KC-SHORT-SCALE (v1.5.138). Questions are stored in five fixed columns, answer1 to
+ * answer5, so a scale with fewer points leaves the tail empty. get_records() cannot know how
+ * many of them are real, and the old filter in ajax.php removed only the explicit null in the
+ * answer5 slot — so every scale came back with at least four options and a two- or three-point
+ * survey rendered blank radio choices. report.php has always compacted with
+ * `if (!empty($sq->$f))`, so the player and the report disagreed about the same question.
+ *
+ * Only TRAILING blanks are removed. correctanswer and every stored student answer are
+ * positional indexes into this list, so compacting around a gap in the middle would silently
+ * repoint them at a different option. A blank in the middle means a broken question and stays
+ * visible, where someone will notice it.
+ *
+ * A freetext question has no options at all and returns an empty list.
+ *
+ * @param array $options ordered option rows, each ['text' => string, 'explanation' => string],
+ *                       or null for a slot that was never populated.
+ * @param string $questiontype 'scale' or 'freetext'.
+ * @return array zero or more option rows, reindexed from 0 with original order preserved.
+ */
+function mod_aiknowledgecheck_trim_options(array $options, string $questiontype = 'scale'): array {
+    if ($questiontype === 'freetext') {
+        return [];
+    }
+
+    $rows = [];
+    foreach ($options as $option) {
+        if ($option === null) {
+            continue;
+        }
+        $rows[] = [
+            'text' => is_scalar($option['text'] ?? null) ? (string)$option['text'] : '',
+            'explanation' => is_scalar($option['explanation'] ?? null) ? (string)$option['explanation'] : '',
+        ];
+    }
+
+    while (!empty($rows) && trim(end($rows)['text']) === '') {
+        array_pop($rows);
+    }
+
+    return array_values($rows);
+}

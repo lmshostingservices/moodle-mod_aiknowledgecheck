@@ -455,46 +455,75 @@ switch ($action) {
         // Clear existing questions.
         $DB->delete_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $cm->instance]);
 
+        // FIX-KC-SURVEY-SAVE (v1.5.138): never hand a non-scalar to the DB layer.
+        //
+        // A malformed payload used to travel all the way into mysqli and die with
+        // "real_escape_string(): Argument #1 ($string) must be of type string, array given".
+        // The teacher saw an unexplained "Questions could not be saved" alert, and by then the
+        // delete_records() above had ALREADY removed their existing questions -- so a bad
+        // payload cost them the whole question set and told them nothing useful.
+        //
+        // These two helpers coerce every text field to a string and accept an option written
+        // either as a plain string or as a {text, explanation} object, which is the shape the
+        // generation service returns.
+        $kcstring = function ($value) {
+            if (is_array($value) || is_object($value)) {
+                return '';
+            }
+            return is_scalar($value) ? (string)$value : '';
+        };
+        $kcoption = function ($q, $index, $key) use ($kcstring) {
+            if (!isset($q['options'][$index])) {
+                return '';
+            }
+            $opt = $q['options'][$index];
+            if (is_array($opt)) {
+                return $kcstring($opt[$key] ?? '');
+            }
+            // A bare string is the option text and carries no explanation.
+            return $key === 'text' ? $kcstring($opt) : '';
+        };
+
         // Insert new questions.
         $questionnumber = 1;
         foreach ($questionsdata as $q) {
             $record = new stdClass();
             $record->aiknowledgecheckid = $cm->instance;
             $record->questionnumber = $questionnumber++;
-            $record->questiontext = $q['question'] ?? '';
-            $record->answer1 = $q['options'][0]['text'] ?? '';
-            $record->answer2 = $q['options'][1]['text'] ?? '';
-            $record->answer3 = $q['options'][2]['text'] ?? '';
-            $record->answer4 = $q['options'][3]['text'] ?? '';
+            $record->questiontext = $kcstring($q['question'] ?? '');
+            $record->answer1 = $kcoption($q, 0, 'text');
+            $record->answer2 = $kcoption($q, 1, 'text');
+            $record->answer3 = $kcoption($q, 2, 'text');
+            $record->answer4 = $kcoption($q, 3, 'text');
             // ADD-SURVEY-MODE (v1.5.126): 5th option for 5-point survey scales.
-            $record->answer5 = isset($q['options'][4]) ? ($q['options'][4]['text'] ?? null) : null;
+            $record->answer5 = isset($q['options'][4]) ? $kcoption($q, 4, 'text') : null;
             // ADD-SURVEY-FREETEXT (v1.5.127): save question type (scale or freetext).
-            $record->questiontype = isset($q['questionType']) ? clean_param($q['questionType'], PARAM_ALPHA) : 'scale';
+            $record->questiontype = isset($q['questionType']) ? clean_param($kcstring($q['questionType']), PARAM_ALPHA) : 'scale';
             if (!in_array($record->questiontype, ['scale', 'freetext'])) {
                 $record->questiontype = 'scale';
             }
-            $record->correctanswer = $q['correctIndex'] ?? 0;
-            $record->feedback1 = $q['options'][0]['explanation'] ?? '';
-            $record->feedback2 = $q['options'][1]['explanation'] ?? '';
-            $record->feedback3 = $q['options'][2]['explanation'] ?? '';
-            $record->feedback4 = $q['options'][3]['explanation'] ?? '';
+            $record->correctanswer = (int)$kcstring($q['correctIndex'] ?? 0);
+            $record->feedback1 = $kcoption($q, 0, 'explanation');
+            $record->feedback2 = $kcoption($q, 1, 'explanation');
+            $record->feedback3 = $kcoption($q, 2, 'explanation');
+            $record->feedback4 = $kcoption($q, 3, 'explanation');
             // Save audio data if available (JSON array of base64 audio for each answer).
             if (!empty($q['audioData'])) {
                 $record->audiodata = json_encode($q['audioData']);
             }
             // Save topic/criteria mapping metadata for Excel export.
-            $record->mappingtopic    = isset($q['mappingTopic'])    ? clean_param($q['mappingTopic'],    PARAM_TEXT) : null;
-            $record->mappingcriteria = isset($q['mappingCriteria']) ? clean_param($q['mappingCriteria'], PARAM_TEXT) : null;
+            $record->mappingtopic    = isset($q['mappingTopic'])    ? clean_param($kcstring($q['mappingTopic']),    PARAM_TEXT) : null;
+            $record->mappingcriteria = isset($q['mappingCriteria']) ? clean_param($kcstring($q['mappingCriteria']), PARAM_TEXT) : null;
             // Save timestamp_seconds for chapter stamp links.
             $record->timestamp_seconds = isset($q['timestamp_seconds']) && $q['timestamp_seconds'] !== null ? (int)$q['timestamp_seconds'] : null;
             // ADD-KC-IMAGEGATE (v1.5.115): Save per-question image data.
             // LOW-FIX: sanitise (reject data:image/svg+xml + non http(s) schemes).
-            $record->imageurl = isset($q['imageUrl']) ? mod_aiknowledgecheck_sanitize_image_url($q['imageUrl']) : null;
+            $record->imageurl = isset($q['imageUrl']) ? mod_aiknowledgecheck_sanitize_image_url($kcstring($q['imageUrl'])) : null;
             $record->imageenabled = isset($q['imageEnabled']) ? (int)$q['imageEnabled'] : 0;
             // ADD-KC-MEDIAPER-Q (v1.5.120): Save per-question video and audio data.
-            $record->questionvideourl     = isset($q['questionVideoUrl'])     ? clean_param($q['questionVideoUrl'],     PARAM_URL) : null;
+            $record->questionvideourl     = isset($q['questionVideoUrl'])     ? clean_param($kcstring($q['questionVideoUrl']),     PARAM_URL) : null;
             $record->questionvideoenabled = isset($q['questionVideoEnabled']) ? (int)$q['questionVideoEnabled']                   : 0;
-            $record->questionaudiourl     = isset($q['questionAudioUrl'])     ? clean_param($q['questionAudioUrl'],     PARAM_URL) : null;
+            $record->questionaudiourl     = isset($q['questionAudioUrl'])     ? clean_param($kcstring($q['questionAudioUrl']),     PARAM_URL) : null;
             $record->questionaudioenabled = isset($q['questionAudioEnabled']) ? (int)$q['questionAudioEnabled']                   : 0;
             $DB->insert_record('aiknowledgecheck_questions', $record);
         }
@@ -970,14 +999,27 @@ switch ($action) {
                 'id' => (int)$q->id,
                 'questionnumber' => (int)$q->questionnumber,
                 'question' => $q->questiontext,
-                'options' => array_values(array_filter([
+                // FIX-KC-SHORT-SCALE (v1.5.138): trim TRAILING empty options.
+                //
+                // The filter here only dropped the explicit null in the answer5 slot, so
+                // answer1..4 always came back as four options even when the scale is shorter.
+                // A two- or three-point survey scale therefore rendered blank radio choices in
+                // the player, while report.php -- which builds its labels with
+                // `if (!empty($sq->$f))` -- showed only the real ones. Player and report now
+                // agree on the option count.
+                //
+                // TRAILING only, never a hole in the middle: correctanswer and every stored
+                // answer are positional indexes, so compacting around a gap would silently
+                // repoint them at the wrong option. A blank in the middle is a broken question
+                // and is left visible rather than quietly reindexed.
+                'options' => mod_aiknowledgecheck_trim_options([
                     ['text' => $q->answer1, 'explanation' => $canseeanswers ? ($q->feedback1 ?? '') : ''],
                     ['text' => $q->answer2, 'explanation' => $canseeanswers ? ($q->feedback2 ?? '') : ''],
                     ['text' => $q->answer3, 'explanation' => $canseeanswers ? ($q->feedback3 ?? '') : ''],
                     ['text' => $q->answer4, 'explanation' => $canseeanswers ? ($q->feedback4 ?? '') : ''],
                     // ADD-SURVEY-MODE (v1.5.126): Include 5th option when present (5-point scales).
                     (!empty($q->answer5)) ? ['text' => $q->answer5, 'explanation' => ''] : null,
-                ], function ($o) { return $o !== null; })),
+                ], ($q->questiontype ?? 'scale')),
                 // SECURITY (C2): null for students; the real index is only returned by saveanswer.
                 'correctIndex' => $canseeanswers ? (int)$q->correctanswer : null,
                 'audioData' => $audioData,
