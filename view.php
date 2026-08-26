@@ -56,6 +56,21 @@ require_capability('mod/aiknowledgecheck:view', $context);
 $cancreate = has_capability('mod/aiknowledgecheck:create', $context);
 $canviewreports = has_capability('mod/aiknowledgecheck:viewreports', $context);
 
+// FIX-KC-NONEDITING-TEACHER (v1.5.137): "can this person author" and "is this person course
+// staff" are different questions and only the first is mod/aiknowledgecheck:create, whose
+// archetypes are editingteacher and manager.
+//
+// :viewreports already lists 'teacher' -- the capability was defined correctly. The page then
+// asked :create for everything, so a non-editing teacher fell into the student branch: the
+// Attempts report link was nested INSIDE the authoring branch and never rendered for them,
+// and every media gate below tested !$cancreate, locking a marker behind the learner's
+// acknowledge-the-video gate on an activity they are there to mark.
+//
+// report.php itself requires only :viewreports, so the page always would have served them --
+// there was simply no link to it.
+$canoverride = has_capability('mod/aiknowledgecheck:manageoverrides', $context);
+$isstaff = $cancreate || $canviewreports;
+
 // Explicitly include aiconfig lib.php if available
 $aiconfiglib = $CFG->dirroot . '/local/aiconfig/lib.php';
 if (file_exists($aiconfiglib)) {
@@ -173,20 +188,36 @@ $anygated  = $videogated || $audiogated || $imagegated;
 // page the variable was never set, causing "Undefined variable $takegated" PHP
 // warnings on the Start Quiz / Continue Attempt buttons at the bottom of the
 // student view. Initialise here so it is always defined before any HTML output.
-$takegated = $anygated && !$cancreate;
+$takegated = $anygated && !$isstaff;
+
+// FIX-KC-NONEDITING-TEACHER (v1.5.137): the staff navigation is rendered for anyone holding
+// :viewreports, whether or not they can author. It used to sit inside the if ($cancreate)
+// branch below, so the one capability a non-editing teacher does hold led to nothing.
+//
+// The "More attempts" link is gated separately on :manageoverrides, because moreattempts.php
+// requires it -- offering that link to someone the page will reject is worse than not
+// offering it.
+if ($canviewreports) {
+    echo html_writer::start_div('kc-teacher-nav mb-3');
+    $reporturl = new moodle_url('/mod/aiknowledgecheck/report.php', ['id' => $cm->id]);
+    echo html_writer::link(
+        $reporturl,
+        get_string('attemptsreport', 'mod_aiknowledgecheck'),
+        ['class' => 'btn btn-secondary mr-2']
+    );
+    if ($canoverride) {
+        $moreattemptsurl = new moodle_url('/mod/aiknowledgecheck/moreattempts.php', ['id' => $cm->id]);
+        echo html_writer::link(
+            $moreattemptsurl,
+            get_string('moreattempts', 'mod_aiknowledgecheck'),
+            ['class' => 'btn btn-secondary']
+        );
+    }
+    echo html_writer::end_div();
+}
 
 // Show different views based on capability.
 if ($cancreate) {
-    // Teacher/creator view - show navigation links.
-    echo html_writer::start_div('kc-teacher-nav mb-3');
-    if ($canviewreports) {
-        $reporturl = new moodle_url('/mod/aiknowledgecheck/report.php', ['id' => $cm->id]);
-        echo html_writer::link($reporturl, get_string('attemptsreport', 'mod_aiknowledgecheck'), ['class' => 'btn btn-secondary mr-2']);
-        
-        $moreattemptsurl = new moodle_url('/mod/aiknowledgecheck/moreattempts.php', ['id' => $cm->id]);
-        echo html_writer::link($moreattemptsurl, get_string('moreattempts', 'mod_aiknowledgecheck'), ['class' => 'btn btn-secondary']);
-    }
-    echo html_writer::end_div();
 
     ?>
     <div id="kc-app" class="kc-container">
@@ -774,7 +805,7 @@ if ($cancreate) {
                 // gated. Previously $anygated applied unconditionally even for
                 // teachers viewing their own activity, blocking teacher access
                 // to their own quiz review flow.
-                $takegated = $anygated && !$cancreate;
+                $takegated = $anygated && !$isstaff;
                 ?>
                 <button id="take-quiz-btn" class="kc-btn kc-btn-primary<?php echo $takegated ? ' kc-gated-btn' : ''; ?>"<?php echo $takegated ? ' disabled' : ''; ?>>
                     <?php echo get_string('review_questions_btn', 'mod_aiknowledgecheck'); ?>
@@ -1377,7 +1408,7 @@ if ($cancreate) {
                         <?php echo get_string('imagegate_viewimage', 'mod_aiknowledgecheck'); ?>
                     </h4>
                     <img src="<?php echo s($imageurl_gate); ?>" alt="Activity image" style="max-width: 100%; border-radius: 8px; display: block; margin: 0 auto 12px; max-height: 500px; object-fit: contain;">
-                    <?php if ($imagegated && !$cancreate): ?>
+                    <?php if ($imagegated && !$isstaff): ?>
                     <div id="kc-image-status" style="margin-top: 8px; padding: 10px 14px; border-radius: 6px; background: #fff3cd; border: 1px solid #ffeaa7; font-size: 14px; text-align: center;">
                         <button id="kc-image-acknowledge-btn" class="kc-btn kc-btn-secondary" type="button">
                             <?php echo get_string('imagegate_acknowledge', 'mod_aiknowledgecheck'); ?>
@@ -1525,9 +1556,15 @@ if ($cancreate) {
         window.kcGate = (function () {
             var locks = {};
             var originals = {};
-            <?php if ($videogated): ?> locks['video'] = true; originals['video'] = true; <?php endif; ?>
-            <?php if ($audiogated): ?> locks['audio'] = true; originals['audio'] = true; <?php endif; ?>
-            <?php if ($imagegated && !$cancreate): ?> locks['image'] = true; originals['image'] = true; <?php endif; ?>
+            <?php // FIX-KC-NONEDITING-TEACHER (v1.5.137): course staff are exempt from all three
+            // media locks, not just the image one. The image gate already carried an exemption
+            // and video and audio never did, so a non-editing teacher who reaches this branch
+            // would have been freed from one gate and still held by the other two. The status
+            // banners and the watcher scripts are untouched; with no lock registered there is
+            // simply nothing for them to hold. ?>
+            <?php if ($videogated && !$isstaff): ?> locks['video'] = true; originals['video'] = true; <?php endif; ?>
+            <?php if ($audiogated && !$isstaff): ?> locks['audio'] = true; originals['audio'] = true; <?php endif; ?>
+            <?php if ($imagegated && !$isstaff): ?> locks['image'] = true; originals['image'] = true; <?php endif; ?>
 
             function showStart() {
                 var s = document.getElementById('kc-start-section');
@@ -1837,7 +1874,7 @@ if ($cancreate) {
         })();
         </script>
         <?php endif; ?>
-        <?php if ($hasimage && $imagegated && !$cancreate): ?>
+        <?php if ($hasimage && $imagegated && !$isstaff): ?>
         <script>
         // ADD-KC-IMAGEGATE v1.5.115 — Image acknowledgment gate.
         (function () {

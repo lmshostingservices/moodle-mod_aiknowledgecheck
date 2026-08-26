@@ -797,3 +797,129 @@ function mod_aiknowledgecheck_sanitize_image_url($url) {
     $clean = clean_param($trimmed, PARAM_URL);
     return ($clean !== '') ? $clean : null;
 }
+
+/**
+ * Detect a stored legacy version that is higher than the files declare.
+ *
+ * @return array|false Stored/declared/target values, or false when healthy.
+ */
+function mod_aiknowledgecheck_version_is_stranded() {
+    global $CFG;
+
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    $cached = false;
+
+    $stored = get_config('mod_aiknowledgecheck', 'version');
+    if ($stored === false || $stored === null || $stored === '') {
+        return $cached;
+    }
+
+    $plugin = new stdClass();
+    $versionfile = $CFG->dirroot . '/mod/aiknowledgecheck/version.php';
+    if (!is_readable($versionfile)) {
+        return $cached;
+    }
+    include($versionfile);
+    if (empty($plugin->version)) {
+        return $cached;
+    }
+
+    $declared = (int) $plugin->version;
+    $isstranded = (strlen((string) $stored) > strlen((string) $declared))
+        || ((string) $stored !== (string) $declared && (float) $stored > (float) $declared);
+    if (!$isstranded) {
+        return $cached;
+    }
+
+    $cached = [
+        'stored' => (string) $stored,
+        'declared' => $declared,
+        'target' => $declared - 1,
+    ];
+    return $cached;
+}
+
+/**
+ * Lower a stranded recorded version so Moodle's normal upgrade can run.
+ *
+ * The caller must require moodle/site:config and a valid sesskey.
+ *
+ * @return array Repair result.
+ */
+function mod_aiknowledgecheck_repair_stranded_version() {
+    $state = mod_aiknowledgecheck_version_is_stranded();
+    if ($state === false) {
+        return [
+            'ok' => false,
+            'from' => '',
+            'to' => 0,
+            'message' => get_string('versionrepair_notneeded', 'mod_aiknowledgecheck'),
+        ];
+    }
+
+    add_to_config_log(
+        'version',
+        $state['stored'],
+        (string) $state['target'],
+        'mod_aiknowledgecheck'
+    );
+    set_config('version', $state['target'], 'mod_aiknowledgecheck');
+    purge_all_caches();
+
+    return [
+        'ok' => true,
+        'from' => $state['stored'],
+        'to' => $state['target'],
+        'message' => get_string(
+            'versionrepair_done',
+            'mod_aiknowledgecheck',
+            (object) ['from' => $state['stored'], 'to' => $state['target']]
+        ),
+    ];
+}
+
+/**
+ * Render an administrator-only warning for a stranded version record.
+ *
+ * @return string HTML banner, or an empty string when healthy.
+ */
+function mod_aiknowledgecheck_version_banner() {
+    static $rendered = false;
+    if ($rendered) {
+        return '';
+    }
+    if (!is_siteadmin()) {
+        return '';
+    }
+    $state = mod_aiknowledgecheck_version_is_stranded();
+    if ($state === false) {
+        return '';
+    }
+
+    $url = new moodle_url('/mod/aiknowledgecheck/version_repair.php', ['sesskey' => sesskey()]);
+    $html = '<div style="margin:12px;padding:14px 16px;border:2px solid #dc2626;border-radius:8px;'
+        . 'background:#fef2f2;color:#7f1d1d;font-size:14px;line-height:1.6;">';
+    $html .= '<strong style="font-size:15px;">AI Knowledge Check cannot be updated on this site</strong><br>';
+    $html .= 'Moodle has recorded version <code>' . s($state['stored']) . '</code>, which is higher than '
+        . 'the <code>' . $state['declared'] . '</code> declared by the installed files. This is a legacy '
+        . 'numbering fault, not a newer release.';
+    $html .= '<div style="margin-top:10px;"><a href="' . s($url->out(false))
+        . '" style="display:inline-block;padding:8px 16px;background:#dc2626;color:#fff;border-radius:6px;'
+        . 'text-decoration:none;font-weight:600;">Fix this now</a>';
+    $html .= '<span style="margin-left:12px;font-size:13px;">This only repairs the plugin version record '
+        . 'so the normal schema upgrade can run; no student data is changed.</span></div></div>';
+    $rendered = true;
+    return $html;
+}
+
+/**
+ * Legacy output callback for Moodle versions before the hook API.
+ *
+ * @return string HTML banner, or an empty string when healthy.
+ */
+function mod_aiknowledgecheck_before_standard_top_of_body_html() {
+    return mod_aiknowledgecheck_version_banner();
+}

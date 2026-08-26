@@ -1517,5 +1517,78 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072898, 'aiknowledgecheck');
     }
 
+    if ($oldversion < 2026082400) {
+        // SURVEY-SCHEMA-RECONCILIATION (v1.5.135).
+        //
+        // Survey Mode originally shipped in savepoints 2026072896/97 after a
+        // 13-digit-to-10-digit version rebase. Some sites already had a stored
+        // 10-digit version numerically above those rebased savepoints, so Moodle
+        // skipped them even though the columns had never been created. Reconcile
+        // the complete Survey Mode schema in one new, higher savepoint. Every
+        // operation is guarded so this is safe on healthy and partially upgraded
+        // sites alike.
+        $dbman = $DB->get_manager();
+
+        $table = new xmldb_table('aiknowledgecheck');
+        $field = new xmldb_field(
+            'surveymode',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'sourcecontext'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'surveyscale',
+            XMLDB_TYPE_CHAR,
+            '50',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '',
+            'surveymode'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $qtable = new xmldb_table('aiknowledgecheck_questions');
+        $qfield = new xmldb_field(
+            'answer5',
+            XMLDB_TYPE_TEXT,
+            null,
+            null,
+            null,
+            null,
+            null,
+            'imageenabled'
+        );
+        if (!$dbman->field_exists($qtable, $qfield)) {
+            $dbman->add_field($qtable, $qfield);
+        }
+
+        $qfield = new xmldb_field(
+            'questiontype',
+            XMLDB_TYPE_CHAR,
+            '20',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'scale',
+            'answer5'
+        );
+        if (!$dbman->field_exists($qtable, $qfield)) {
+            $dbman->add_field($qtable, $qfield);
+        }
+
+        upgrade_mod_savepoint(true, 2026082400, 'aiknowledgecheck');
+    }
+
     return true;
 }

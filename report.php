@@ -42,7 +42,7 @@ if ($iscsvexport && !empty($knowledgecheck->surveymode)) {
     // Load questions.
     $csvquestions = $DB->get_records('aiknowledgecheck_questions',
         ['aiknowledgecheckid' => $knowledgecheck->id], 'id ASC',
-        'id, question, answer1, answer2, answer3, answer4, answer5, questiontype');
+        'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype');
 
     // Load all completed attempts with user details.
     $csvsql = "SELECT a.id AS attemptid, a.userid, a.answers, a.timestarted, a.timeended,
@@ -437,7 +437,7 @@ if (!empty($knowledgecheck->surveymode)) {
     // Load questions and collect responses from all completed attempts.
     $surveyqs = $DB->get_records('aiknowledgecheck_questions',
         ['aiknowledgecheckid' => $knowledgecheck->id], 'id ASC',
-        'id, question, answer1, answer2, answer3, answer4, answer5, questiontype');
+        'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype');
 
     $surveysql = "SELECT a.id AS attemptid, a.userid, a.answers, a.timestarted, a.timeended, a.status,
                          u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,

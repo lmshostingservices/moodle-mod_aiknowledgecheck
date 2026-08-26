@@ -529,6 +529,11 @@ $string['survey_report_no_responses'] = 'No survey responses yet.';
 $string['survey_report_question']     = 'Question';
 $string['survey_report_student']      = 'Student';
 $string['survey_report_submitted']    = 'Submitted';
+$string['versionrepair_title'] = 'Repair AI Knowledge Check version';
+$string['versionrepair_notneeded'] = 'The AI Knowledge Check version record does not need repair.';
+$string['versionrepair_done'] = 'The recorded AI Knowledge Check version was repaired from {$a->from} to {$a->to}.';
+$string['versionrepair_next'] = 'Continue to Site administration → Notifications so Moodle can run the normal upgrade and reconcile the Survey Mode database schema.';
+$string['versionrepair_gotonotifications'] = 'Continue to Notifications';
 
 // Events.
 $string['eventcoursemoduleviewed'] = 'Course module viewed';

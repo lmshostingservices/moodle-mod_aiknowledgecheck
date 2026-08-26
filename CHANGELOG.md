@@ -2,6 +2,52 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.137] - 2026-08-26
+
+### Fixed - non-editing teachers could not reach the attempts report
+
+- **The Attempts report link was nested inside the authoring branch of `view.php`.** The page
+  chose between a teacher view and a student view on `mod/aiknowledgecheck:create`, whose
+  archetypes are `editingteacher` and `manager`. A non-editing teacher fails that, landed in the
+  student branch, and the report button — rendered only inside the branch they never entered —
+  did not exist for them.
+
+  `mod/aiknowledgecheck:viewreports` already lists `teacher`, and `report.php` requires only
+  that capability, so the report page would have served them the whole time. There was simply no
+  link to it. The capability was defined correctly; the page asked the wrong question.
+
+  The staff navigation is now rendered for anyone holding `:viewreports`, outside the authoring
+  branch. The "More attempts" link is gated separately on `mod/aiknowledgecheck:manageoverrides`,
+  which is what `moreattempts.php` requires — offering a link to a page that will reject you is
+  worse than not offering it.
+
+- **Media gates held course staff on the learner's acknowledge screen.** `$takegated` and the
+  image gate both tested `!$cancreate`, so a non-editing teacher had to sit through the video,
+  audio or image gate before reaching an activity they are there to mark. Both now test
+  `$cancreate || $canviewreports`.
+
+  The video and audio locks carried no staff exemption at all, while the image lock did — so
+  fixing only the image gate would have freed a marker from one gate and left them held by the
+  other two. All three now exempt course staff. The gate banners and the watcher scripts are
+  untouched; with no lock registered there is nothing for them to hold.
+
+`mod/aiknowledgecheck:create` is unchanged as the authoring gate: it still decides whether the
+builder, the credits badge and the generation controls are rendered. Only the staff-versus-learner
+question moved.
+
+## [1.5.136] - 2026-08-26
+
+### Changed
+- Release-plumbing version bump only, with no functional changes from 1.5.135. This release uses a new version because the immutable `v1.5.135` Git tag already existed.
+
+## [1.5.135] - 2026-08-24
+
+### Fixed
+- Survey scale questions now preserve their authored option order (including all five choices), then use a direct **Next** / **Submit Survey** flow after selection. They never show **Check Answer**, correct/incorrect styling, grading feedback, answer keys, or answer audio; the server stores Survey Mode responses without calculating a correctness verdict.
+- Fixed the Survey Attempts Report and CSV query to select the real `questiontext` database column (aliased as `question`) instead of the nonexistent `question` column.
+- Added a guarded, idempotent reconciliation migration for all Survey Mode columns: `surveymode`, `surveyscale`, `answer5`, and `questiontype`. This repairs sites whose rebased savepoints were skipped despite a newer stored plugin version.
+- Added the stranded-version repair path for sites whose legacy 13-digit recorded version is higher than the plugin's 10-digit version.
+
 ## [1.5.57] - 2026-04-09
 
 ### Added

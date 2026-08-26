@@ -691,6 +691,55 @@ switch ($action) {
         // Decode existing answers once (used for the first-answer-wins guard and the recount).
         $answers = json_decode($attempt->answers, true) ?: [];
 
+        // Survey scale response: store the selected option without evaluating or
+        // returning correctness, the answer key, or feedback. Survey Mode is an
+        // ungraded response flow end-to-end, not merely a quiz with hidden feedback.
+        if (!empty($knowledgecheck->surveymode)) {
+            $optionfield = 'answer' . ($answerindex + 1);
+            if (empty($question->$optionfield)) {
+                echo json_encode(['ok' => false, 'error' => 'Invalid answer index']);
+                break;
+            }
+
+            // Preserve first-answer-wins/idempotent retry behavior without exposing
+            // any quiz verdict or answer key.
+            if (isset($answers[$questionid]) && isset($answers[$questionid]['answer'])
+                    && (int)$answers[$questionid]['answer'] !== -1) {
+                echo json_encode([
+                    'ok' => true,
+                    'iscorrect' => null,
+                    'correctanswer' => null,
+                    'locked' => true,
+                ]);
+                break;
+            }
+
+            $answers[$questionid] = ['answer' => $answerindex];
+            $totalcount = 0;
+            foreach ($answers as $ans) {
+                if (isset($ans['answer']) && (int)$ans['answer'] !== -1) {
+                    $totalcount++;
+                }
+            }
+
+            $attempt->answers = json_encode($answers);
+            $attempt->currentquestion = max(
+                (int)$attempt->currentquestion,
+                (int)$question->questionnumber
+            );
+            $attempt->correctcount = 0;
+            $attempt->totalcount = $totalcount;
+            $attempt->timemodified = time();
+            $DB->update_record('aiknowledgecheck_attempts', $attempt);
+
+            echo json_encode([
+                'ok' => true,
+                'iscorrect' => null,
+                'correctanswer' => null,
+            ]);
+            break;
+        }
+
         // Per-option explanations (original option order); built here so both the
         // first-answer-wins path and the normal path can return them for feedback.
         $explanations = [

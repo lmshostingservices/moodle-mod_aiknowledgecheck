@@ -1694,8 +1694,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                             };
                         }
                         
-                        // Get shuffled indices for answer randomization
-                        var shuffledIndices = getShuffledIndices(4);
+                        // Quiz answers are shuffled. Survey scales retain their authored order
+                        // (for example Strongly Agree through Strongly Disagree), and may have
+                        // two, three, four, or five options.
+                        var optionCount = Array.isArray(q.options) ? q.options.length : 0;
+                        var shuffledIndices = [];
+                        if (config.surveyMode) {
+                            for (var optionIndex = 0; optionIndex < optionCount; optionIndex++) {
+                                shuffledIndices.push(optionIndex);
+                            }
+                        } else {
+                            shuffledIndices = getShuffledIndices(optionCount);
+                        }
                         
                         // Build shuffled arrays and mapping from shuffled position to original
                         var shuffledOptions = [];
@@ -1708,7 +1718,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                         var answerWithheld = (q.correctIndex === null || q.correctIndex === undefined);
                         var newCorrectIndex = answerWithheld ? null : 0;
 
-                        for (var i = 0; i < 4; i++) {
+                        for (var i = 0; i < optionCount; i++) {
                             var origIndex = shuffledIndices[i];
                             shuffledOptions.push(q.options[origIndex].text);
                             shuffledExplanations.push(q.options[origIndex].explanation);
@@ -2336,14 +2346,26 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         
         $('#options-container').html(optionsHtml);
         $('#feedback-container').hide();
-        $('#check-answer-btn').show().prop('disabled', true);
-        $('#next-question-btn').hide();
+        if (config.surveyMode) {
+            // Survey scale questions have no correct answer, so they must never expose
+            // the quiz-only "Check Answer" step. Selection enables the direct
+            // Next/Submit Survey action, matching free-text survey questions.
+            $('#check-answer-btn').hide();
+            $('#next-question-btn')
+                .text(currentQuestionIndex < quizData.length - 1 ? 'Next' : 'Submit Survey')
+                .show()
+                .prop('disabled', true);
+        } else {
+            $('#check-answer-btn').show().prop('disabled', true);
+            $('#next-question-btn').hide();
+        }
         selectedAnswer = null;
 
         // ADD-KC-MEDIAPER-Q (v1.5.120): Lock options + check button until all media acknowledged.
         if (needsQMediaGate) {
             $('#options-container').css({'visibility': 'hidden', 'pointer-events': 'none'});
             $('#check-answer-btn').hide();
+            $('#next-question-btn').hide();
             $('#kc-q-media-ack-btn').on('click', function () {
                 acknowledgedQuestions[currentQuestionIndex] = true;
                 $('#kc-q-media-gate').replaceWith(
@@ -2352,7 +2374,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     'Content reviewed</div>'
                 );
                 $('#options-container').css({'visibility': 'visible', 'pointer-events': ''});
-                $('#check-answer-btn').show().prop('disabled', true);
+                if (config.surveyMode) {
+                    $('#next-question-btn')
+                        .text(currentQuestionIndex < quizData.length - 1 ? 'Next' : 'Submit Survey')
+                        .show()
+                        .prop('disabled', true);
+                } else {
+                    $('#check-answer-btn').show().prop('disabled', true);
+                }
             });
         }
 
@@ -2363,14 +2392,20 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             $('.kc-option').removeClass('selected');
             $(this).addClass('selected');
             selectedAnswer = parseInt($(this).data('index'), 10);
-            $('#check-answer-btn').prop('disabled', false);
+            if (config.surveyMode) {
+                $('#next-question-btn').prop('disabled', false);
+            } else {
+                $('#check-answer-btn').prop('disabled', false);
+            }
         });
 
         // Pre-buffer audio for this question and the next one so voiceover
         // plays with zero delay when the student clicks "Check Answer".
-        preloadCurrentQuestionAudio(currentQuestionIndex);
-        if (currentQuestionIndex + 1 < quizData.length) {
-            preloadCurrentQuestionAudio(currentQuestionIndex + 1);
+        if (!config.surveyMode) {
+            preloadCurrentQuestionAudio(currentQuestionIndex);
+            if (currentQuestionIndex + 1 < quizData.length) {
+                preloadCurrentQuestionAudio(currentQuestionIndex + 1);
+            }
         }
     }
 
@@ -2412,32 +2447,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         if (selectedAnswer === -1) return;
         if (selectedAnswer === null) return;
 
-        // ADD-SURVEY-MODE (v1.5.126): In survey mode, record the selected response
-        // without correct/wrong scoring and advance directly to the next question.
+        // Survey questions advance through nextQuestion(); this handler is quiz-only.
         if (config.surveyMode) {
-            var sq = quizData[currentQuestionIndex];
-            quizAnswerLog.push({
-                questionNum:   currentQuestionIndex + 1,
-                question:      sq.question,
-                options:       sq.options ? sq.options.slice() : [],
-                correctIndex:  sq.correctAnswer,
-                selectedIndex: selectedAnswer,
-                isCorrect:     null,
-                attemptNum:    currentAttemptNum,
-                explanation:   ''
-            });
-            if (sq.id) {
-                // correctanswer=0 for survey questions; treat every response as index 0 for DB
-                saveAnswerToDatabase(sq.id, selectedAnswer);
-            }
-            $('.kc-option').addClass('disabled');
-            $('#check-answer-btn').hide();
-            $('#feedback-container').hide();
-            if (currentQuestionIndex < quizData.length - 1) {
-                $('#next-question-btn').text('Next').show().prop('disabled', false);
-            } else {
-                $('#next-question-btn').text('Submit Survey').show().prop('disabled', false);
-            }
             return;
         }
 
@@ -2664,24 +2675,50 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         }
         stopAudio();
 
-        // ADD-SURVEY-FREETEXT (v1.5.127): If the current question is freetext, save its
-        // answer before advancing. Freetext questions bypass checkAnswer entirely — the
-        // student clicks "Next" directly, so we capture and save here.
+        // Survey questions bypass checkAnswer entirely. Save scale and free-text
+        // responses here when the student clicks Next/Submit Survey, without any
+        // correct/incorrect grading or feedback phase.
         var cq = quizData[currentQuestionIndex];
-        if (cq && cq.questionType === 'freetext' && cq.id) {
-            var ftVal = $('#kc-freetext-answer').val() || '';
-            saveAnswerToDatabase(cq.id, -1, ftVal);
-            quizAnswerLog.push({
-                questionNum:   currentQuestionIndex + 1,
-                question:      cq.question,
-                options:       [],
-                correctIndex:  0,
-                selectedIndex: -1,
-                freetextValue: ftVal,
-                isCorrect:     null,
-                attemptNum:    currentAttemptNum,
-                explanation:   ''
-            });
+        if (config.surveyMode && cq) {
+            if (cq.questionType === 'freetext') {
+                var ftVal = $('#kc-freetext-answer').val() || '';
+                if (cq.id) {
+                    saveAnswerToDatabase(cq.id, -1, ftVal);
+                }
+                quizAnswerLog.push({
+                    questionNum:   currentQuestionIndex + 1,
+                    question:      cq.question,
+                    options:       [],
+                    correctIndex:  null,
+                    selectedIndex: -1,
+                    freetextValue: ftVal,
+                    isCorrect:     null,
+                    attemptNum:    currentAttemptNum,
+                    explanation:   ''
+                });
+            } else {
+                if (selectedAnswer === null) {
+                    return;
+                }
+                $('#next-question-btn').prop('disabled', true);
+                $('.kc-option').addClass('disabled');
+                if (cq.id) {
+                    var originalSurveyIndex = cq.shuffledToOriginal
+                        ? cq.shuffledToOriginal[selectedAnswer]
+                        : selectedAnswer;
+                    saveAnswerToDatabase(cq.id, originalSurveyIndex);
+                }
+                quizAnswerLog.push({
+                    questionNum:   currentQuestionIndex + 1,
+                    question:      cq.question,
+                    options:       cq.options ? cq.options.slice() : [],
+                    correctIndex:  null,
+                    selectedIndex: selectedAnswer,
+                    isCorrect:     null,
+                    attemptNum:    currentAttemptNum,
+                    explanation:   ''
+                });
+            }
         }
         
         if (currentQuestionIndex < quizData.length - 1) {
