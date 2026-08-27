@@ -24,8 +24,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026082603;
+$plugin->version = 2026082700;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.5.138';
+$plugin->release = '1.5.139'; // EDITOR SURVEY FIXES (v1.5.139): FIX-KC-EDIT-SURVEY - the teacher Edit Questions screen was built for 4-option quizzes and never updated for survey mode. It rendered only 4 options (hiding the 5th point of 5-point scales) and rendered free-text questions as multiple choice, which also made them unsaveable. Both save paths hardcoded options[0..3] and omitted questionType, so ajax.php nulled answer5 and defaulted questiontype to 'scale' - deleting the 5th scale option and converting free-text questions to blank multiple choice on every save. Editor now renders the question's real option count (2-5 in survey mode, min 4 in quiz mode), renders free-text as free-text, hides correct-answer radios and explanations in survey mode, and both save paths carry all options plus questionType. Question CSV export gains an Option E column. No DB schema changes. AMD rebuilt.

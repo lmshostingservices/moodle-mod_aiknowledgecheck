@@ -2,6 +2,24 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.139] - 2026-08-27
+
+### Fixed
+- **FIX-KC-EDIT-SURVEY — teacher Edit Questions screen destroyed survey data on save** (`amd/src/knowledgecheck.js`): the editor was written for 4-option quizzes and was never updated when survey mode added a 5th scale option (v1.5.126) and free-text questions (v1.5.127). Four defects, two of them destructive:
+  - The option render loop was hardcoded to 4 (`optionLabels = ['A','B','C','D']`), so the 5th point of a 5-point scale (e.g. "Strongly Disagree") was never displayed, and 2- and 3-point scales were padded with blank option boxes.
+  - Free-text questions were rendered as multiple choice with four empty option boxes. Because empty options fail validation, this also made the whole activity impossible to save ("Question N, Option A cannot be empty").
+  - **Data loss:** both save paths hardcoded `options[0..3]`, and `ajax.php` sets `answer5 = null` when `options[4]` is absent — so saving from the editor permanently deleted the 5th scale option.
+  - **Data loss:** neither save path sent `questionType`, and `ajax.php` defaults `questiontype` to `'scale'` when the field is absent — so saving converted every free-text question into a blank multiple-choice question. Since saving one question saves them all, editing any question corrupted every free-text question in the activity.
+
+  The editor now renders the question's real option count (2–5 in survey mode; a minimum of 4 retained in quiz mode), renders free-text questions as free-text with no option fields, and skips option and correct-answer validation for them. Both save paths send every option the question has plus its `questionType`. Survey mode also hides the correct-answer radios, the "(select the correct answer)" hint and the per-option explanation boxes, none of which apply without a correct answer.
+- **Question CSV export** gained an `Option E` column; 5-point scales previously exported only four options.
+
+### Changed
+- **VERSION BUMP**: `version.php` → `2026082700` (release `1.5.139`). No DB schema changes, no new upgrade savepoints. AMD artifacts rebuilt. Builds on v1.5.138, whose payload-coercion and survey-save fixes are retained unchanged.
+
+### Note for existing surveys
+Any survey saved from the Edit Questions screen on 1.5.126–1.5.138 may already have lost its 5th scale option and had its free-text questions converted to scale questions. This release stops further damage but cannot recover data already overwritten — check affected activities and repair them manually. Quiz-mode activities are unaffected.
+
 ## [1.5.138] - 2026-08-26
 
 ### Fixed - survey mode could not save its questions

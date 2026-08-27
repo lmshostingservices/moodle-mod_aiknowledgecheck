@@ -178,7 +178,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
 
     /**
      * Download a CSV question-mapping file for Excel.
-     * Columns: [Criteria,] [Topic,] Question Number, Question Text, Option A-D, Correct Answer, Correct Option Text, Explanation.
+     * Columns: [Criteria,] [Topic,] Question Number, Question Text, Option A-E, Correct Answer, Correct Option Text, Explanation.
      * Topic and Criteria columns are included only when at least one question has that data.
      */
     // ADD-KC-MEDIAPER-Q (v1.5.120): Extract a YouTube video ID from any standard YouTube URL.
@@ -216,6 +216,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             'Option B',
             'Option C',
             'Option D',
+            'Option E',
             'Correct Answer',
             'Correct Option Text',
             'Explanation'
@@ -239,6 +240,8 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 '"' + ((q.options && q.options[1]) || '').replace(/"/g, '""') + '"',
                 '"' + ((q.options && q.options[2]) || '').replace(/"/g, '""') + '"',
                 '"' + ((q.options && q.options[3]) || '').replace(/"/g, '""') + '"',
+                // FIX-KC-EDIT-SURVEY (v1.5.139): 5-point scales have a 5th option.
+                '"' + ((q.options && q.options[4]) || '').replace(/"/g, '""') + '"',
                 '"' + correctLabel + '"',
                 '"' + correctText.replace(/"/g, '""') + '"',
                 '"' + explanation.replace(/"/g, '""') + '"'
@@ -3717,8 +3720,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         
         quizData.forEach(function (q, idx) {
             var correctAnswer = q.correctAnswer !== undefined ? q.correctAnswer : 0;
+            // FIX-KC-EDIT-SURVEY (v1.5.139): the editor was written for 4-option quizzes and
+            // was never updated for survey mode.
+            var isFreeText = (q.questionType === 'freetext');
+            var isSurvey   = !!config.surveyMode;
             
-            var html = '<div class="kc-edit-question" data-question-index="' + idx + '">' +
+            var html = '<div class="kc-edit-question" data-question-index="' + idx + '"' +
+                ' data-question-type="' + (isFreeText ? 'freetext' : 'scale') + '">' +
                 '<div class="kc-edit-question-header">' +
                     '<span class="kc-edit-question-number">Question ' + (idx + 1) + '</span>' +
                     '<div class="kc-edit-question-actions">' +
@@ -3730,29 +3738,54 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 '<div class="kc-edit-field">' +
                     '<label>Question Text</label>' +
                     '<textarea class="kc-edit-question-text" data-index="' + idx + '" rows="3">' + escapeHtml(q.question) + '</textarea>' +
-                '</div>' +
-                '<div class="kc-edit-options">' +
-                    '<label>Answer Options <span class="kc-edit-hint">(select the correct answer)</span></label>';
-            
-            // Build options A-D
-            var optionLabels = ['A', 'B', 'C', 'D'];
-            for (var i = 0; i < 4; i++) {
-                var optionText = q.options && q.options[i] ? q.options[i] : '';
-                var isCorrect = (correctAnswer === i);
-                var explanation = q.explanations && q.explanations[i] ? q.explanations[i] : '';
+                '</div>';
+
+            if (isFreeText) {
+                // Free-text questions have no answer options — the student types a response.
+                // Rendering them as multiple choice previously made them unsaveable ("Option A
+                // cannot be empty") and reset them to scale questions on save.
+                html += '<div class="kc-edit-options kc-edit-options-freetext">' +
+                    '<label>Answer Format</label>' +
+                    '<div style="padding: 10px 12px; background: #f8f9fa; border: 1px dashed #ced4da; border-radius: 6px; font-size: 13px; color: #6c757d;">' +
+                        '<strong>Free text response.</strong> Students type their own answer, so this ' +
+                        'question has no answer options and no correct answer.' +
+                    '</div>' +
+                '</div>';
+            } else {
+                html += '<div class="kc-edit-options">' +
+                    '<label>Answer Options' +
+                        (isSurvey ? '' : ' <span class="kc-edit-hint">(select the correct answer)</span>') +
+                    '</label>';
+
+                // Render exactly as many options as the question actually has, rather than a
+                // hardcoded 4. Survey scales may be 2, 3, 4 or 5 points; forcing a floor of 4
+                // would render blank boxes that then fail the non-empty validation on save.
+                // Quiz questions keep the historic 4-option minimum.
+                var optionLabels = ['A', 'B', 'C', 'D', 'E'];
+                var optCount = (q.options && q.options.length) ? q.options.length : 4;
+                if (!isSurvey && optCount < 4) { optCount = 4; }
+                if (optCount < 1) { optCount = 1; }
+                if (optCount > 5) { optCount = 5; }
+
+                for (var i = 0; i < optCount; i++) {
+                    var optionText = q.options && q.options[i] ? q.options[i] : '';
+                    var isCorrect = (!isSurvey && correctAnswer === i);
+                    var explanation = q.explanations && q.explanations[i] ? q.explanations[i] : '';
                 
                 html += '<div class="kc-edit-option ' + (isCorrect ? 'kc-edit-option-correct' : '') + '">' +
                     '<div class="kc-edit-option-header">' +
                         '<label class="kc-edit-option-radio">' +
-                            '<input type="radio" name="correct-' + idx + '" value="' + i + '" ' + (isCorrect ? 'checked' : '') + '>' +
+                            (isSurvey ? '' :
+                             '<input type="radio" name="correct-' + idx + '" value="' + i + '" ' + (isCorrect ? 'checked' : '') + '>') +
                             '<span class="kc-option-label">' + optionLabels[i] + '</span>' +
                         '</label>' +
                         '<input type="text" class="kc-edit-option-text" data-question="' + idx + '" data-option="' + i + '" value="' + escapeAttr(optionText) + '" placeholder="Option ' + optionLabels[i] + '">' +
                     '</div>' +
-                    '<div class="kc-edit-explanation">' +
+                    '<div class="kc-edit-explanation"' + (isSurvey ? ' style="display:none;"' : '') + '>' +
                         '<textarea class="kc-edit-explanation-text" data-question="' + idx + '" data-option="' + i + '" rows="2" placeholder="Explanation for this option...">' + escapeHtml(explanation) + '</textarea>' +
                     '</div>' +
                 '</div>';
+                }
             }
             
             // ADD-KC-IMAGEGATE (v1.5.115): Per-question image controls.
@@ -3991,6 +4024,11 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             var correctAnswer = 0;
             
             var hasCorrectSelected = false;
+            // FIX-KC-EDIT-SURVEY (v1.5.139): free-text questions have no options and no correct
+            // answer, so option/correct-answer validation must not run for them.
+            var isFreeText = ($q.attr('data-question-type') === 'freetext') ||
+                             (quizData[idx] && quizData[idx].questionType === 'freetext');
+            var isSurvey   = !!config.surveyMode;
             
             $q.find('.kc-edit-option').each(function (optIdx) {
                 var optionText = $(this).find('.kc-edit-option-text').val().trim();
@@ -4013,8 +4051,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             
             if (hasErrors) return false;
             
-            // Validate that a correct answer is selected
-            if (!hasCorrectSelected) {
+            // Validate that a correct answer is selected. Skipped for free-text questions
+            // (no options) and in survey mode (no correct answer by definition).
+            if (!isFreeText && !isSurvey && !hasCorrectSelected) {
                 hasErrors = true;
                 alert('Question ' + (idx + 1) + ': Please select a correct answer.');
                 return false;
@@ -4025,6 +4064,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 options: options,
                 explanations: explanations,
                 correctAnswer: correctAnswer,
+                // FIX-KC-EDIT-SURVEY (v1.5.139): carry question type through the edit round
+                // trip; it was omitted, so ajax.php fell back to its 'scale' default and every
+                // free-text question was converted to multiple choice on save.
+                questionType: isFreeText ? 'freetext' : ((quizData[idx] && quizData[idx].questionType) || 'scale'),
                 audioData: ($('#voiceover-toggle').is(':checked') && quizData[idx]) ? quizData[idx].audioData : null,
                 // FIX-KC-SAVEEDITS-TIMESTAMP (v1.5.111): Preserve timestamp_seconds,
                 // mappingTopic, and mappingCriteria from the original quizData entry.
@@ -4135,14 +4178,27 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
     // Save edited questions with callback for proper async handling
     function saveEditedQuestions(callback) {
         var questionsForDb = quizData.map(function (q) {
+            // FIX-KC-EDIT-SURVEY (v1.5.139): this payload hardcoded options[0..3] and omitted
+            // questionType, causing two silent data losses on every save from the editor:
+            //   - ajax.php sets answer5 = null when options[4] is absent, deleting the 5th
+            //     point of 5-point survey scales;
+            //   - ajax.php defaults questiontype to 'scale' when the field is absent,
+            //     converting free-text questions into blank multiple-choice questions.
+            var qType = q.questionType || 'scale';
+            var opts = [];
+            if (qType !== 'freetext') {
+                var srcOpts = q.options || [];
+                for (var oi = 0; oi < srcOpts.length && oi < 5; oi++) {
+                    opts.push({
+                        text: srcOpts[oi],
+                        explanation: q.explanations ? (q.explanations[oi] || '') : ''
+                    });
+                }
+            }
             return {
                 question: q.question,
-                options: [
-                    { text: q.options[0], explanation: q.explanations ? q.explanations[0] : '' },
-                    { text: q.options[1], explanation: q.explanations ? q.explanations[1] : '' },
-                    { text: q.options[2], explanation: q.explanations ? q.explanations[2] : '' },
-                    { text: q.options[3], explanation: q.explanations ? q.explanations[3] : '' }
-                ],
+                options: opts,
+                questionType: qType,
                 correctIndex: q.correctAnswer,
                 audioData: q.audioData || null,
                 mappingTopic: q.mappingTopic || '',
@@ -4402,15 +4458,24 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
 
             if (currentQuestions.length === 0) {
                 currentQuestions = quizData.map(function (q) {
+                    // FIX-KC-EDIT-SURVEY (v1.5.139): same fix as saveEditedQuestions — send
+                    // every option the question has (up to 5) and carry questionType.
+                    var qType2 = q.questionType || 'scale';
+                    var opts2 = [];
+                    if (qType2 !== 'freetext') {
+                        var srcOpts2 = q.options || [];
+                        for (var oj = 0; oj < srcOpts2.length && oj < 5; oj++) {
+                            opts2.push({
+                                text: srcOpts2[oj] || '',
+                                explanation: (q.explanations && q.explanations[oj]) || ''
+                            });
+                        }
+                    }
                     return {
                         type: q.type || 'mcq',
                         question: q.question,
-                        options: [
-                            { text: (q.options && q.options[0]) || '', explanation: (q.explanations && q.explanations[0]) || '' },
-                            { text: (q.options && q.options[1]) || '', explanation: (q.explanations && q.explanations[1]) || '' },
-                            { text: (q.options && q.options[2]) || '', explanation: (q.explanations && q.explanations[2]) || '' },
-                            { text: (q.options && q.options[3]) || '', explanation: (q.explanations && q.explanations[3]) || '' }
-                        ],
+                        options: opts2,
+                        questionType: qType2,
                         correctIndex: q.correctAnswer
                     };
                 });
