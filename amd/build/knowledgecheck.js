@@ -1156,7 +1156,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             voiceId: $('#voice-style').val(),
             // ADD-SURVEY-MODE (v1.5.126): Forward survey params to SaaS via ajax.php.
             surveyMode: config.surveyMode ? 1 : 0,
-            surveyScale: config.surveyMode ? ($('#survey-scale').val() || 'likert5agree') : 'likert5agree',
+            // FIX-KC-SURVEY-SCALE (v1.5.140): read the scale from the activity config, not from
+            // a '#survey-scale' element. The teacher picks the Response Scale in the activity
+            // settings form (mod_form.php); no such element has ever existed on the view page,
+            // so .val() always returned undefined and the '|| likert5agree' fallback fired on
+            // every generation. Every scale other than the first silently produced Agreement
+            // questions. view.php already supplies the real value as config.surveyScale.
+            surveyScale: config.surveyMode ? (config.surveyScale || 'likert5agree') : 'likert5agree',
             // ADD-SURVEY-FREETEXT (v1.5.127): Forward free-text questions (one per line).
             freetextQuestions: config.surveyMode
                 ? JSON.stringify(($('#freetext-questions-input').val() || '').split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; }))

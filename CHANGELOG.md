@@ -2,6 +2,17 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.140] - 2026-08-28
+
+### Fixed
+- **FIX-KC-SURVEY-SCALE — only the first Response Scale worked** (`amd/src/knowledgecheck.js`): the generate request built its `surveyScale` value from `$('#survey-scale').val()`, but no element with that ID has ever existed in the plugin — the Response Scale is chosen in the activity settings form (`mod_form.php`), not on the view page. jQuery returned `undefined`, the `|| 'likert5agree'` fallback fired on every generation, and eight of the nine scales silently generated Agreement questions instead: Satisfaction, Frequency, Quality, Importance, Likert 4-point, Yes/No, Yes/No/Unsure and NPS 5-point. `view.php` already supplied the teacher's real choice to the JS as `config.surveyScale` (both in the student and teacher-preview configs); it was simply never read. The JS now uses it, with the same safe fallback when the value is absent.
+
+### Changed
+- **VERSION BUMP**: `version.php` → `2026082800` (release `1.5.140`). No DB schema changes, no new upgrade savepoints. AMD artifacts rebuilt.
+
+### Note for existing surveys
+Survey activities generated on 1.5.126–1.5.139 with any scale other than Agreement will have Agreement-style questions and answer options stored against them. Changing the Response Scale alone will not rewrite existing questions — those activities need regenerating to pick up the intended scale.
+
 ## [1.5.139] - 2026-08-27
 
 ### Fixed
