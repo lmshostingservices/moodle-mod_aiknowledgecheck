@@ -502,6 +502,34 @@ switch ($action) {
             if (!in_array($record->questiontype, ['scale', 'freetext'])) {
                 $record->questiontype = 'scale';
             }
+
+            // FIX-KC-SURVEY-SCALE-OPTIONS (v1.5.141): in survey mode the response scale is a
+            // fixed, known list chosen by the teacher — it is not something the generation
+            // model should be deciding. Previously the plugin stored whatever options the API
+            // returned, so picking "Yes / No" (or any scale other than 5-point Agreement)
+            // frequently produced Agreement options anyway, with nothing to indicate the
+            // teacher's choice had been ignored.
+            //
+            // Overwrite the options with the canonical set for the activity's scale. The AI
+            // still writes the question text; it no longer determines the answer options.
+            // Free-text questions have no options and are left alone.
+            if (!empty($knowledgecheck->surveymode) && $record->questiontype !== 'freetext') {
+                $scalekey = isset($knowledgecheck->surveyscale) && $knowledgecheck->surveyscale !== ''
+                    ? $knowledgecheck->surveyscale
+                    : 'likert5agree';
+                $scaleopts = mod_aiknowledgecheck_survey_scale_options($scalekey);
+                for ($si = 0; $si < 5; $si++) {
+                    $field = 'answer' . ($si + 1);
+                    $record->$field = $scaleopts[$si] ?? ($si < 4 ? '' : null);
+                }
+                // Survey questions are ungraded; per-option feedback is meaningless and the
+                // AI's explanations refer to options that no longer exist.
+                $record->feedback1 = '';
+                $record->feedback2 = '';
+                $record->feedback3 = '';
+                $record->feedback4 = '';
+                $record->correctanswer = 0;
+            }
             $record->correctanswer = (int)$kcstring($q['correctIndex'] ?? 0);
             $record->feedback1 = $kcoption($q, 0, 'explanation');
             $record->feedback2 = $kcoption($q, 1, 'explanation');

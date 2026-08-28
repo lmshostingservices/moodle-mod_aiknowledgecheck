@@ -2815,7 +2815,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                         '</button>' +
                     '</div>' +
                 '</div>';
-            $('#kc-results-container').html(surveyHtml).show();
+            // FIX-KC-SURVEY-BLANK (v1.5.142): render into '#kc-results', the container that
+            // actually exists in view.php and that the quiz path uses. This previously targeted
+            // '#kc-results-container', which is not present anywhere in the plugin's markup, so
+            // jQuery matched nothing, the hidden '#kc-results' card was never revealed, and the
+            // student was left staring at a blank screen after answering the last question —
+            // with no indication their responses had been saved.
+            $('#kc-results').html(surveyHtml).show();
             setTimeout(function () {
                 $('#retake-quiz-btn').prop('disabled', false);
             }, 800);

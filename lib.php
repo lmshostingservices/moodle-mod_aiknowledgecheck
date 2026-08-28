@@ -968,3 +968,51 @@ function mod_aiknowledgecheck_trim_options(array $options, string $questiontype 
 
     return array_values($rows);
 }
+
+/**
+ * FIX-KC-SURVEY-SCALE-OPTIONS (v1.5.141): canonical answer options for each survey scale.
+ *
+ * Survey response scales are fixed, known lists — "Yes / No" always has exactly two options
+ * reading Yes and No. Until now the plugin defined them nowhere and simply stored whatever
+ * answer options the generation API returned, so the scale the teacher chose was honoured
+ * only if the language model happened to comply. In practice it frequently returned the
+ * 5-point Agreement scale regardless, and a teacher who picked Yes/No got Agreement options
+ * with no indication anything had gone wrong.
+ *
+ * These are the authoritative option sets. They are applied to every scale question on save,
+ * so the chosen scale is guaranteed regardless of what the API returns. The AI still writes
+ * the question text; it no longer decides the response options.
+ *
+ * Order is significant: stored answers are positional indexes, so options must always run
+ * from the most positive to the most negative (or 1..5 for NPS), matching the label shown in
+ * the activity header and the ordering report.php assumes.
+ *
+ * @return array<string, string[]> Map of scale key => ordered option labels.
+ */
+function mod_aiknowledgecheck_survey_scales(): array {
+    return [
+        'likert5agree' => ['Strongly Agree', 'Agree', 'Neither Agree nor Disagree', 'Disagree', 'Strongly Disagree'],
+        'likert5sat'   => ['Very Satisfied', 'Satisfied', 'Neither Satisfied nor Dissatisfied', 'Dissatisfied', 'Very Dissatisfied'],
+        'likert5freq'  => ['Always', 'Often', 'Sometimes', 'Rarely', 'Never'],
+        'likert5qual'  => ['Excellent', 'Good', 'Average', 'Poor', 'Very Poor'],
+        'likert5imp'   => ['Very Important', 'Important', 'Moderately Important', 'Slightly Important', 'Not Important at All'],
+        'likert4agree' => ['Strongly Agree', 'Agree', 'Disagree', 'Strongly Disagree'],
+        'yesno'        => ['Yes', 'No'],
+        'yesnounsure'  => ['Yes', 'No', 'Unsure'],
+        'nps5'         => ['5 - Excellent', '4 - Good', '3 - Average', '2 - Poor', '1 - Very Poor'],
+    ];
+}
+
+/**
+ * Resolve the canonical option labels for a survey scale key.
+ *
+ * Unknown or empty keys fall back to the 5-point Agreement scale, which is the plugin-wide
+ * default used by mod_form.php, lib.php and view.php.
+ *
+ * @param string $scalekey Scale key, e.g. 'yesno'.
+ * @return string[] Ordered option labels.
+ */
+function mod_aiknowledgecheck_survey_scale_options(string $scalekey): array {
+    $scales = mod_aiknowledgecheck_survey_scales();
+    return $scales[$scalekey] ?? $scales['likert5agree'];
+}

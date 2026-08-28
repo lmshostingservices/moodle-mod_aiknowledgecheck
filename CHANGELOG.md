@@ -2,6 +2,28 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.142] - 2026-08-28
+
+### Fixed
+- **FIX-KC-SURVEY-BLANK — blank screen after the last survey question** (`amd/src/knowledgecheck.js`): `showResults()` rendered the survey "Survey Complete" panel into `#kc-results-container`. No element with that ID exists anywhere in the plugin — `view.php` defines `#kc-results`, which is what the quiz path writes to and reveals. jQuery matched nothing, `.show()` did nothing, and the hidden `#kc-results` card stayed at `display: none`, leaving the student on a blank screen after answering the final question. Responses were saved correctly throughout; only the confirmation screen was invisible. The survey path now renders into `#kc-results`, exactly as the quiz path does.
+
+  This is the same defect class as the phantom `#survey-scale` element fixed in v1.5.140: JavaScript addressing markup that was never added. A sweep of all 39 element IDs the JS writes to, shows, or appends confirms no others are missing from `view.php`.
+
+### Changed
+- **Test harness corrected**: the survey test previously defined `#kc-results-container` in its own fixture, so it asserted the panel's HTML was written without ever asserting it was visible — which is why it passed against broken code. The fixture now mirrors `view.php`, and the suite asserts the completion screen is actually visible, the player is hidden, and the Retake button is present. Verified to fail against 1.5.141 and pass against 1.5.142.
+- **VERSION BUMP**: `version.php` → `2026082802` (release `1.5.142`). No DB schema changes, no new upgrade savepoints. AMD artifacts rebuilt.
+
+## [1.5.141] - 2026-08-28
+
+### Fixed
+- **FIX-KC-SURVEY-SCALE-OPTIONS — the chosen Response Scale was not enforced** (`lib.php`, `ajax.php`): the plugin defined the survey scales nowhere. The strings in `view.php` are display-only labels for the activity header and were never used to build answer options. On save, the plugin stored whatever options the generation API returned, so the teacher's chosen scale was honoured only if the language model happened to comply — in practice it frequently returned 5-point Agreement regardless, and a teacher who picked "Yes / No" got Agreement options with nothing to indicate their choice had been ignored. `lib.php` now defines the authoritative ordered option set for all nine scales, and `ajax.php` overwrites the stored options with the correct set for the activity's scale on every save. The AI still writes the question text; it no longer decides the answer options. Per-option AI feedback is discarded for survey questions (it described options that no longer exist) and `correctanswer` is pinned to 0, since surveys are ungraded. Free-text questions and quiz mode are untouched.
+
+### Changed
+- **VERSION BUMP**: `version.php` → `2026082801` (release `1.5.141`). No DB schema changes, no new upgrade savepoints. AMD artifacts rebuilt. Includes v1.5.140's `FIX-KC-SURVEY-SCALE`.
+
+### Note for existing surveys
+Questions generated before this release keep whatever options were stored at the time — changing the Response Scale has never rewritten existing questions, and still does not. Any survey created on 1.5.126–1.5.140 with a scale other than 5-point Agreement should be **regenerated** to pick up the correct options. Existing responses are recorded as positional indexes, so regenerating a survey that already has responses will change what those indexes mean; export the attempts report first if the data matters.
+
 ## [1.5.140] - 2026-08-28
 
 ### Fixed
