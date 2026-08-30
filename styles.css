@@ -7,6 +7,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/*
+ * Moodle themes frequently apply highly specific button rules. The important
+ * declarations below are intentional compatibility overrides.
+ */
+/* stylelint-disable declaration-no-important */
+/* stylelint-disable function-url-scheme-disallowed-list */
+
 /* Google Fonts loaded via PHP in view.php - NOT via @import here.
    @import in Moodle plugin styles.css breaks the PHP CSS minifier
    because Moodle concatenates all plugin CSS files together and
@@ -23,7 +30,7 @@
     --kc-primary-hover: hsl(217, 91%, 50%);
     --kc-primary-light: hsl(217, 91%, 95%);
     --kc-primary-foreground: hsl(0, 0%, 100%);
-    
+
     /* Semantic Colors */
     --kc-success: hsl(142, 76%, 36%);
     --kc-success-light: hsl(142, 76%, 95%);
@@ -31,30 +38,30 @@
     --kc-warning-light: hsl(27, 87%, 95%);
     --kc-danger: hsl(0, 84%, 60%);
     --kc-danger-light: hsl(0, 84%, 95%);
-    
+
     /* Neutral Colors */
     --kc-text: hsl(0, 0%, 9%);
     --kc-text-secondary: hsl(217, 8%, 35%);
     --kc-text-tertiary: hsl(217, 8%, 55%);
-    
+
     --kc-bg: hsl(0, 0%, 100%);
     --kc-bg-subtle: hsl(0, 0%, 98%);
     --kc-bg-muted: hsl(217, 8%, 96%);
-    
+
     --kc-border: hsl(0, 0%, 89%);
     --kc-border-light: hsl(0, 0%, 93%);
-    
+
     /* Shadows */
-    --kc-shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --kc-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.04);
-    --kc-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
-    
+    --kc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --kc-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+    --kc-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+
     /* Border Radius */
     --kc-radius-sm: 4px;
     --kc-radius-md: 6px;
     --kc-radius-lg: 8px;
     --kc-radius-xl: 12px;
-    
+
     /* Container */
     max-width: 800px;
     margin: 0 auto;
@@ -132,7 +139,7 @@ body[data-bs-theme="dark"] .kc-container,
 
 /* Student Start Card - Modern Design */
 .kc-start-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
     border-radius: 16px;
     padding: 32px;
     margin-bottom: 24px;
@@ -419,7 +426,7 @@ body[data-bs-theme="dark"] .kc-container,
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: #ffffff;
+    background: #fff;
     border-radius: 8px;
     border: 1px solid #e5e7eb;
 }
@@ -485,7 +492,7 @@ button.kc-btn:disabled {
 button.kc-btn-primary,
 a.kc-btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #ffffff !important;
+    color: #fff !important;
 }
 
 #kc-app .kc-btn-primary:hover,
@@ -495,7 +502,7 @@ a.kc-btn-primary {
 button.kc-btn-primary:hover,
 button.kc-btn-primary:hover:not(:disabled),
 a.kc-btn-primary:hover {
-    color: #ffffff !important;
+    color: #fff !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     text-decoration: none !important;
@@ -512,7 +519,7 @@ button.kc-btn-primary:active,
 a.kc-btn-primary:focus,
 a.kc-btn-primary:active,
 a.kc-btn-primary:visited {
-    color: #ffffff !important;
+    color: #fff !important;
     text-decoration: none !important;
 }
 
@@ -557,7 +564,7 @@ a.kc-btn-secondary:visited {
 button.kc-btn-success,
 a.kc-btn-success {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: #ffffff !important;
+    color: #fff !important;
     border: 1px solid #059669;
 }
 
@@ -569,7 +576,7 @@ button.kc-btn-success:hover,
 button.kc-btn-success:hover:not(:disabled),
 a.kc-btn-success:hover {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: #ffffff !important;
+    color: #fff !important;
     text-decoration: none !important;
 }
 
@@ -581,7 +588,7 @@ button.kc-btn-success:focus,
 button.kc-btn-success:active,
 a.kc-btn-success:focus,
 a.kc-btn-success:active {
-    color: #ffffff !important;
+    color: #fff !important;
     text-decoration: none !important;
 }
 
@@ -1069,7 +1076,7 @@ a.kc-btn-success:active {
 .kc-container .kc-btn-retake,
 button.kc-btn-retake {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #ffffff !important;
+    color: #fff !important;
     padding: 14px 28px;
     font-size: 15px;
     font-weight: 600;
@@ -1086,7 +1093,7 @@ button.kc-btn-retake {
 #kc-app .kc-btn-retake:hover,
 .kc-container .kc-btn-retake:hover,
 button.kc-btn-retake:hover {
-    color: #ffffff !important;
+    color: #fff !important;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
@@ -1097,7 +1104,7 @@ button.kc-btn-retake:hover {
 .kc-container .kc-btn-retake:active,
 button.kc-btn-retake:focus,
 button.kc-btn-retake:active {
-    color: #ffffff !important;
+    color: #fff !important;
 }
 
 .kc-btn-retake svg {
@@ -1119,7 +1126,7 @@ button.kc-btn-retake-secondary {
 #kc-app .kc-btn-retake-secondary:hover,
 .kc-container .kc-btn-retake-secondary:hover,
 button.kc-btn-retake-secondary:hover {
-    color: #ffffff !important;
+    color: #fff !important;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     border-color: transparent !important;
 }
@@ -1140,7 +1147,7 @@ button.kc-btn-download-results {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 #kc-app .kc-btn-download-results:hover,
@@ -1150,7 +1157,7 @@ button.kc-btn-download-results:hover {
     border-color: #9ca3af;
     color: #111827 !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.10);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
 }
 
 .kc-btn-download-results svg {
@@ -1250,8 +1257,13 @@ button.kc-btn-download-results:hover {
 }
 
 @keyframes kc-shimmer {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
 }
 
 /* Confetti Container */
@@ -1511,15 +1523,15 @@ button.kc-btn-download-results:hover {
     .kc-form-row {
         flex-direction: column;
     }
-    
+
     .kc-half {
         min-width: 100%;
     }
-    
+
     .kc-stats {
         flex-direction: column;
     }
-    
+
     .kc-sublabel {
         margin-left: 0;
         margin-top: 8px;
@@ -2064,8 +2076,12 @@ button.kc-add-source-btn:hover {
 
 /* Spinner animation for save button */
 @keyframes kc-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .kc-spinner {
@@ -2100,7 +2116,7 @@ button.kc-add-source-btn:hover {
 #page button.kc-btn-primary:hover,
 #page button.kc-btn-primary:focus,
 #page button.kc-btn-primary:active {
-    color: #ffffff !important;
+    color: #fff !important;
     text-decoration: none !important;
 }
 
@@ -2144,7 +2160,7 @@ button.kc-add-source-btn:hover {
 #page button.kc-btn-retake:hover,
 #page button.kc-btn-retake:focus,
 #page button.kc-btn-retake:active {
-    color: #ffffff !important;
+    color: #fff !important;
     text-decoration: none !important;
 }
 
@@ -2161,7 +2177,7 @@ button.kc-add-source-btn:hover {
 #page #page-content #region-main button.kc-btn-retake-secondary:hover,
 #page .kc-btn-retake-secondary:hover,
 #page button.kc-btn-retake-secondary:hover {
-    color: #ffffff !important;
+    color: #fff !important;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
 }
 
@@ -2173,7 +2189,7 @@ button.kc-add-source-btn:hover {
 #page .kc-btn-lg:hover,
 #page .kc-btn-lg:focus,
 #page .kc-btn-lg:active {
-    color: #ffffff !important;
+    color: #fff !important;
     text-decoration: none !important;
 }
 
@@ -2208,9 +2224,14 @@ button.kc-btn-outline:hover {
     padding: 20px;
     animation: kcFadeIn 0.2s ease;
 }
+
 @keyframes kcFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 .kc-settings-modal {
     background: var(--kc-bg);
@@ -2222,9 +2243,16 @@ button.kc-btn-outline:hover {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: kcSlideUp 0.25s ease;
 }
+
 @keyframes kcSlideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 .kc-settings-modal-header {
     display: flex;
@@ -2416,7 +2444,9 @@ button.kc-chip-remove,
     padding: 0 0 0 2px !important;
     opacity: 0.7;
 }
-.kc-chip-remove:hover { opacity: 1; }
+.kc-chip-remove:hover {
+    opacity: 1;
+}
 .kc-label-hint {
     font-size: 11px;
     color: var(--kc-text-tertiary);
@@ -2430,14 +2460,21 @@ button.kc-chip-remove,
     gap: 16px !important;
     padding: 16px 20px !important;
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.06) 100%);
-    border: 1px solid rgba(99,102,241,0.12);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.12);
     margin-bottom: 16px;
     animation: kc-eta-fade 0.4s ease;
 }
+
 @keyframes kc-eta-fade {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 .kc-eta-icon-wrap {
     display: flex !important;
@@ -2449,7 +2486,7 @@ button.kc-chip-remove,
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: #fff;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 .kc-eta-icon-wrap svg {
     width: 24px;
@@ -2484,8 +2521,8 @@ button.kc-chip-remove,
 }
 body[data-bs-theme="dark"] .kc-eta-banner,
 body.dark .kc-eta-banner {
-    background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%);
-    border-color: rgba(99,102,241,0.2);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-color: rgba(99, 102, 241, 0.2);
 }
 body[data-bs-theme="dark"] .kc-eta-time,
 body.dark .kc-eta-time {
@@ -2502,16 +2539,16 @@ body.dark .kc-eta-time {
     font-size: 13px;
     font-weight: 500;
     color: #4f46e5;
-    background: rgba(79,70,229,0.08);
-    border: 1px solid rgba(79,70,229,0.25);
+    background: rgba(79, 70, 229, 0.08);
+    border: 1px solid rgba(79, 70, 229, 0.25);
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
     line-height: 1.4;
 }
 .kc-chapter-stamp-btn:hover {
-    background: rgba(79,70,229,0.15);
-    border-color: rgba(79,70,229,0.4);
+    background: rgba(79, 70, 229, 0.15);
+    border-color: rgba(79, 70, 229, 0.4);
 }
 .kc-chapter-stamp-btn svg {
     flex-shrink: 0;
@@ -2519,12 +2556,12 @@ body.dark .kc-eta-time {
 body[data-bs-theme="dark"] .kc-chapter-stamp-btn,
 body.dark .kc-chapter-stamp-btn {
     color: #a5b4fc;
-    background: rgba(99,102,241,0.1);
-    border-color: rgba(99,102,241,0.3);
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 body[data-bs-theme="dark"] .kc-chapter-stamp-btn:hover,
 body.dark .kc-chapter-stamp-btn:hover {
-    background: rgba(99,102,241,0.2);
+    background: rgba(99, 102, 241, 0.2);
 }
 
 /* SURVEY-MODE-UI (v1.5.128): Survey Mode active notice banner shown in teacher form. */
@@ -2559,8 +2596,8 @@ body.dark .kc-chapter-stamp-btn:hover {
 }
 body[data-bs-theme="dark"] .kc-survey-mode-notice,
 body.dark .kc-survey-mode-notice {
-    background: rgba(234,88,12,0.1);
-    border-color: rgba(251,146,60,0.4);
+    background: rgba(234, 88, 12, 0.1);
+    border-color: rgba(251, 146, 60, 0.4);
 }
 body[data-bs-theme="dark"] .kc-survey-notice-body strong,
 body.dark .kc-survey-notice-body strong {

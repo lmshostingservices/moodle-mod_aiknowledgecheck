@@ -55,7 +55,7 @@ function aiknowledgecheck_supports($feature) {
  * Saves a new instance of the module into the database.
  *
  * @param stdClass $data Form data
- * @param mod_aiknowledgecheck_mod_form|null $mform The form
+ * @param object|null $mform The form
  * @return int The id of the newly inserted record
  */
 function aiknowledgecheck_add_instance($data, ?object $mform = null) {
@@ -165,7 +165,7 @@ function aiknowledgecheck_add_instance($data, ?object $mform = null) {
  * Updates an instance of the module in the database.
  *
  * @param stdClass $data Form data
- * @param mod_aiknowledgecheck_mod_form|null $mform The form
+ * @param object|null $mform The form
  * @return bool Success/Failure
  */
 function aiknowledgecheck_update_instance($data, ?object $mform = null) {

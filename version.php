@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026083014;
+$plugin->version = 2026083015;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
@@ -37,4 +37,4 @@ $plugin->maturity = MATURITY_STABLE;
 // second workflow in that repo under the same name, running on every push and tag -- double
 // the CI minutes and two sets of identically named runs for the release gate to match against.
 // The plugin should not carry CI configuration of its own. See CHANGELOG.md.
-$plugin->release = '1.5.157';
+$plugin->release = '1.5.158';

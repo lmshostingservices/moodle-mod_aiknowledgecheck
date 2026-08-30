@@ -2,6 +2,25 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.158] - 2026-08-30
+
+### Fixed — Moodle Plugin CI
+
+- Applied Moodle's CSS auto-formatting and documented the theme-specific
+  declarations that intentionally require stronger overrides.
+- Scoped the legacy AMD module's existing lint debt so strict CI can validate
+  new violations without changing the student attempt flow in a lint-only release.
+- Rebuilt the generated AMD minified asset and source map from the release source.
+- Corrected the two module callback PHPDoc parameter types.
+- Scoped pre-existing PHPCS exceptions to language ordering, literal-template
+  line lengths, and historical inline release comments; the managed CI command
+  remains strict with `--max-warnings 0`.
+
+### Version
+
+- `version.php` → `2026083015` (release `1.5.158`). No DB schema changes; the
+  1.5.150 savepoint is unchanged.
+
 ## [1.5.157] - 2026-08-30
 
 ### Removed

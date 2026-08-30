@@ -1,4 +1,7 @@
 <?php
+// phpcs:disable moodle.Files.LineLength
+// phpcs:disable moodle.Commenting.MissingDocblock.File
+// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
