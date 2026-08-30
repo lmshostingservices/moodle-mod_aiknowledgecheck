@@ -2,6 +2,15 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.156] - 2026-08-30
+
+Version bump only, to exercise the release pipeline against a fresh artifact.
+
+No code, language-string, database or AMD changes from 1.5.155. `version.php` and this file are the only differences between the two builds.
+
+### Version
+- `version.php` → `2026083013` (release `1.5.156`). No DB schema changes; the 1.5.150 savepoint is unchanged. The `.github/workflows/moodle-ci.yml` added in 1.5.155 is carried forward unchanged — note that it only produces a Moodle Plugin CI run once it is committed to the GitHub repository the pipeline watches. A workflow file inside a distributed ZIP does not run anywhere.
+
 ## [1.5.155] - 2026-08-30
 
 Adds the missing CI workflow and clears the mechanically fixable part of the Moodle code checker.

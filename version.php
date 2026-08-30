@@ -27,15 +27,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026083012;
+$plugin->version = 2026083013;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
-// MOODLE-CI-PREP (v1.5.155, build 2026083012): adds the missing Moodle Plugin CI workflow, and clears the
-// mechanically fixable part of the Moodle code checker -- 1505 unique findings down to well
-// under 200 -- with phpcbf plus targeted fixes. Completes three truncated GPL headers, adds
-// missing trailing newlines, removes MOODLE_INTERNAL where the checker says it is not needed,
-// renames non-conforming local variables, adds the backup and restore docblocks, and
-// reformats multi-line calls to one argument per line, which is what the Moodle standard
-// wants and what the previous release's formatting had broken. See CHANGELOG.md.
-$plugin->release = '1.5.155';
+// PIPELINE-TEST (v1.5.156): version bump only, to exercise the release pipeline against a
+// fresh artifact. No code, language-string or AMD changes from 1.5.155 -- the two builds are
+// byte-identical apart from this file and CHANGELOG.md. See CHANGELOG.md.
+$plugin->release = '1.5.156';
