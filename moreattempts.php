@@ -63,13 +63,15 @@ if ($action === 'plusone' && confirm_sesskey() && $userid) {
         $DB->update_record('aiknowledgecheck_overrides', $rec);
     } else {
         $DB->insert_record(
-            'aiknowledgecheck_overrides', (object)[
+            'aiknowledgecheck_overrides',
+            (object)[
                 'aiknowledgecheckid' => $kc->id,
                 'userid' => $userid,
                 'extraattempts' => 1,
                 'timecreated' => $now,
                 'timemodified' => $now,
-            ]);
+            ]
+        );
     }
     redirect(new moodle_url($PAGE->url), get_string('changessaved'));
 }
@@ -79,11 +81,14 @@ if ($action === 'bulkplusone' && confirm_sesskey()) {
     if ($selected) {
         $transaction = $DB->start_delegated_transaction();
         $now = time();
-        list($inSql, $params) = $DB->get_in_or_equal($selected, SQL_PARAMS_NAMED);
+        [$insql, $params] = $DB->get_in_or_equal($selected, SQL_PARAMS_NAMED);
         $existing = $DB->get_records_select(
             'aiknowledgecheck_overrides',
-            'aiknowledgecheckid = :kcid AND userid ' . $inSql,
-            ['kcid' => $kc->id] + $params, '', 'id, userid, extraattempts');
+            'aiknowledgecheckid = :kcid AND userid ' . $insql,
+            ['kcid' => $kc->id] + $params,
+            '',
+            'id, userid, extraattempts'
+        );
         $map = [];
         foreach ($existing as $rec) {
             $map[$rec->userid] = $rec;
@@ -96,13 +101,15 @@ if ($action === 'bulkplusone' && confirm_sesskey()) {
                 $DB->update_record('aiknowledgecheck_overrides', $rec);
             } else {
                 $DB->insert_record(
-                    'aiknowledgecheck_overrides', (object)[
+                    'aiknowledgecheck_overrides',
+                    (object)[
                         'aiknowledgecheckid' => $kc->id,
                         'userid' => $uid,
                         'extraattempts' => 1,
                         'timecreated' => $now,
                         'timemodified' => $now,
-                    ]);
+                    ]
+                );
             }
         }
         $transaction->allow_commit();
@@ -113,18 +120,24 @@ if ($action === 'bulkplusone' && confirm_sesskey()) {
 // Enrolled users who can attempt - include all name fields for fullname().
 $namefields = 'u.id, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename, u.email';
 $users = get_enrolled_users(
-    $context, 'mod/aiknowledgecheck:view', 0,
-    $namefields, 'u.lastname, u.firstname');
+    $context,
+    'mod/aiknowledgecheck:view',
+    0,
+    $namefields,
+    'u.lastname, u.firstname'
+);
 
 $userids = array_map(
     function ($u) {
-    return $u->id;
-}, $users);
+        return $u->id;
+    },
+    $users
+);
 
 // Attempts used (completed) per user.
 $attemptsused = [];
 if ($userids) {
-    list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+    [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
     $sql = "SELECT userid, COUNT(1) AS used
               FROM {aiknowledgecheck_attempts}
              WHERE aiknowledgecheckid = :kcid AND userid $insql AND status = 1
@@ -135,11 +148,14 @@ if ($userids) {
 // Overrides per user.
 $overridesmap = [];
 if ($userids) {
-    list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+    [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
     $ovrs = $DB->get_records_select(
         'aiknowledgecheck_overrides',
         'aiknowledgecheckid = :kcid AND userid ' . $insql,
-        ['kcid' => $kc->id] + $inparams, '', 'userid, extraattempts');
+        ['kcid' => $kc->id] + $inparams,
+        '',
+        'userid, extraattempts'
+    );
     foreach ($ovrs as $o) {
         $overridesmap[$o->userid] = (int)$o->extraattempts;
     }
@@ -176,11 +192,13 @@ foreach ($users as $u) {
     $effective = ($basemax === 0) ? 0 : ($basemax + $extra);
 
     $checkbox = html_writer::empty_tag(
-        'input', [
+        'input',
+        [
             'type' => 'checkbox',
             'name' => 'selected[]',
             'value' => $u->id,
-        ]);
+        ]
+    );
     $name = fullname($u) . html_writer::empty_tag('br') . s($u->email);
 
     $basecell = ($basemax === 0) ? get_string('unlimited', 'mod_aiknowledgecheck') : $basemax;
@@ -188,19 +206,23 @@ foreach ($users as $u) {
 
     // "User attempts" column → link to the report filtered by this user.
     $reporturl = new moodle_url(
-        '/mod/aiknowledgecheck/report.php', [
+        '/mod/aiknowledgecheck/report.php',
+        [
             'id' => $cm->id,
             'userid' => $u->id,
-        ]);
+        ]
+    );
     $userattemptslink = html_writer::link($reporturl, get_string('view', 'mod_aiknowledgecheck'));
 
     // Actions.
     $plusoneurl = new moodle_url(
-        $PAGE->url, [
+        $PAGE->url,
+        [
             'action' => 'plusone',
             'userid' => $u->id,
             'sesskey' => sesskey(),
-        ]);
+        ]
+    );
     $actions = html_writer::link($plusoneurl, get_string('grantplusone', 'mod_aiknowledgecheck'));
 
     $table->data[] = new html_table_row(
@@ -213,13 +235,16 @@ foreach ($users as $u) {
             new html_table_cell($extra),
             new html_table_cell($effcell),
             new html_table_cell($actions),
-        ]);
+        ]
+    );
 }
 
 echo html_writer::table($table);
 echo html_writer::tag(
-    'button', get_string('bulkgrantplusone', 'mod_aiknowledgecheck'),
-    ['type' => 'submit', 'class' => 'btn btn-primary']);
+    'button',
+    get_string('bulkgrantplusone', 'mod_aiknowledgecheck'),
+    ['type' => 'submit', 'class' => 'btn btn-primary']
+);
 echo html_writer::end_tag('form');
 
 echo $OUTPUT->footer();

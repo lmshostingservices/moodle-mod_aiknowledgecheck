@@ -53,7 +53,8 @@ class get_questions extends external_api {
         return new external_function_parameters(
             [
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -134,7 +135,9 @@ class get_questions extends external_api {
                     ['text' => $text($q->answer4), 'explanation' => $canseeanswers ? $text($q->feedback4 ?? '') : ''],
                     // ADD-SURVEY-MODE (v1.5.126): 5th option for 5-point scales.
                     (!empty($q->answer5)) ? ['text' => $text($q->answer5), 'explanation' => ''] : null,
-                ], ($q->questiontype ?? 'scale'));
+                ],
+                ($q->questiontype ?? 'scale')
+            );
 
             $result[] = [
                 'id' => (int)$q->id,
@@ -189,7 +192,8 @@ class get_questions extends external_api {
                                             PARAM_TEXT,
                                             'Explanation for this option; empty string for students'
                                         ),
-                                    ]),
+                                    ]
+                                ),
                                 'Answer options, 0 for free-text questions'
                             ),
                             'correctIndex' => new external_value(
@@ -201,13 +205,16 @@ class get_questions extends external_api {
                                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — base64 audio payload
                                     'Base64 audio clip for the option at this index'
                                 ),
-                               'Spoken explanations indexed by option; empty when the question has no audio'
+                                'Spoken explanations indexed by option; empty when the question has no audio'
                             ),
                             'mappingTopic' => new external_value(PARAM_TEXT, 'Topic this question maps to'),
                             'mappingCriteria' => new external_value(PARAM_TEXT, 'Criteria this question maps to'),
-                            'timestamp_seconds' => new external_value(PARAM_INT, 'Video position this question relates to, or null'),
+                            'timestamp_seconds' => new external_value(
+                                PARAM_INT,
+                                'Video position this question relates to, or null'
+                            ),
                             'imageUrl' => new external_value(
-                                PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL; PARAM_URL rejects it. Sanitised on write
+                                PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL, sanitised on write
                                 'Per-question image URL'
                             ),
                             'imageEnabled' => new external_value(PARAM_INT, '1 if the image gate is enabled'),
@@ -216,9 +223,11 @@ class get_questions extends external_api {
                             'questionAudioUrl' => new external_value(PARAM_URL, 'Per-question audio URL'),
                             'questionAudioEnabled' => new external_value(PARAM_INT, '1 if the audio gate is enabled'),
                             'questionType' => new external_value(PARAM_ALPHA, 'Either "scale" or "freetext"'),
-                        ]),
+                        ]
+                    ),
                     'Questions in activity order'
                 ),
-            ]);
+            ]
+        );
     }
 }

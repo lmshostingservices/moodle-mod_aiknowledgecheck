@@ -42,8 +42,10 @@ if ($iscsvexport && !empty($knowledgecheck->surveymode)) {
     // Load questions.
     $csvquestions = $DB->get_records(
         'aiknowledgecheck_questions',
-        ['aiknowledgecheckid' => $knowledgecheck->id], 'id ASC',
-        'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype');
+        ['aiknowledgecheckid' => $knowledgecheck->id],
+        'id ASC',
+        'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype'
+    );
 
     // Load all completed attempts with user details.
     $csvsql = "SELECT a.id AS attemptid, a.userid, a.answers, a.timestarted, a.timeended,
@@ -123,10 +125,12 @@ $user = null;
 if ($userid) {
     $hasattempt = $DB->record_exists(
         'aiknowledgecheck_attempts',
-        ['aiknowledgecheckid' => $knowledgecheck->id, 'userid' => $userid]);
+        ['aiknowledgecheckid' => $knowledgecheck->id, 'userid' => $userid]
+    );
     if ($hasattempt) {
         $user = $DB->get_record(
-            'user', ['id' => $userid, 'deleted' => 0],
+            'user',
+            ['id' => $userid, 'deleted' => 0],
             'id,firstname,lastname,alternatename,firstnamephonetic,lastnamephonetic,middlename,email',
             MUST_EXIST
         );
@@ -184,11 +188,14 @@ foreach ($enrolled as $eu) {
     $picker[$eu->id] = $eu;
 }
 if (!empty($attemptuserids)) {
-    list($insql, $inparams) = $DB->get_in_or_equal(array_keys($attemptuserids), SQL_PARAMS_NAMED);
+    [$insql, $inparams] = $DB->get_in_or_equal(array_keys($attemptuserids), SQL_PARAMS_NAMED);
     $extrausers = $DB->get_records_select(
-        'user', "id $insql AND deleted = 0",
-        $inparams, 'lastname, firstname, id',
-        'id, firstname, lastname, firstnamephonetic, lastnamephonetic, middlename, alternatename, email');
+        'user',
+        "id $insql AND deleted = 0",
+        $inparams,
+        'lastname, firstname, id',
+        'id, firstname, lastname, firstnamephonetic, lastnamephonetic, middlename, alternatename, email'
+    );
     foreach ($extrausers as $xu) {
         if (!isset($picker[$xu->id])) {
             $picker[$xu->id] = $xu;
@@ -198,14 +205,16 @@ if (!empty($attemptuserids)) {
 
 // Sort picker list.
 usort(
-    $picker, function ($a, $b) {
-    $al = core_text::strtolower($a->lastname . ' ' . $a->firstname);
-    $bl = core_text::strtolower($b->lastname . ' ' . $b->firstname);
-    if ($al === $bl) {
-        return $a->id <=> $b->id;
+    $picker,
+    function ($a, $b) {
+        $al = core_text::strtolower($a->lastname . ' ' . $a->firstname);
+        $bl = core_text::strtolower($b->lastname . ' ' . $b->firstname);
+        if ($al === $bl) {
+            return $a->id <=> $b->id;
+        }
+        return $al <=> $bl;
     }
-    return $al <=> $bl;
-});
+);
 
 // Prepare options for user picker.
 $useroptions = [];
@@ -222,7 +231,8 @@ $allurl = new moodle_url('/mod/aiknowledgecheck/report.php', ['id' => $cm->id]);
 echo html_writer::start_div('kc-userpicker mb-3');
 echo html_writer::tag('label', get_string('user') . ':', ['for' => 'kc-userinput', 'class' => 'mr-2']);
 echo html_writer::empty_tag(
-    'input', [
+    'input',
+    [
         'type' => 'text',
         'id' => 'kc-userinput',
         'class' => 'form-control',
@@ -231,7 +241,8 @@ echo html_writer::empty_tag(
         'placeholder' => '',
         'value' => $currentlabel,
         'autocomplete' => 'off',
-    ]);
+    ]
+);
 echo html_writer::start_tag('datalist', ['id' => 'kc-userdatalist']);
 foreach ($useroptions as $opt) {
     echo html_writer::empty_tag('option', ['value' => $opt['label']]);
@@ -275,7 +286,7 @@ $js = <<<JS
 JS;
 $PAGE->requires->js_init_code($js);
 
-// ── Data loading ──────────────────────────────────────────────────────────────
+// ── Data loading ──────────────────────────────────────────────────────────────.
 
 // Total quiz questions — used as fixed denominator for all attempt scores.
 $totalqs = (int)$DB->count_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $knowledgecheck->id]);
@@ -329,9 +340,11 @@ if (!empty($attempts)) {
                     return (int)$a->userid;
                 },
                 $attempts
-            )));
+            )
+        )
+    );
     if (!empty($userids)) {
-        list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $ovrs = $DB->get_records_select(
             'aiknowledgecheck_overrides',
             'aiknowledgecheckid = :kcid AND userid ' . $insql,
@@ -349,12 +362,14 @@ if (!empty($attempts)) {
 $timespentlabel = get_string_manager()->string_exists('timespent', 'mod_aiknowledgecheck')
     ? get_string('timespent', 'mod_aiknowledgecheck') : 'Time Spent';
 
-// ── Group attempts by user ────────────────────────────────────────────────────
+// ── Group attempts by user ────────────────────────────────────────────────────.
 // Each row shows THAT ATTEMPT'S actual score (not a running maximum).
 // The "Best:" summary shown in the accordion header is the true maximum.
-// correctcount already includes carry-forward answers for retry-mode attempts
-// (ajax.php stores the cumulative count on every answer save and on finish).
-$byuser   = [];   // [ userid => [ 'name' => ..., 'bestcorrect' => int, 'attempts' => [...] ] ]
+// The correctcount field already includes carry-forward answers for retry-mode attempts:
+// the save-answer and finish-attempt services store the cumulative count each time.
+// Keyed by user id; each entry holds the display name, the best correct count, and the
+// list of that user's attempts.
+$byuser   = [];
 $counters = [];
 
 foreach ($attempts as $a) {
@@ -370,7 +385,7 @@ foreach ($attempts as $a) {
     }
     $counters[$uid]++;
 
-    // ── Per-attempt correct count ─────────────────────────────────────────────
+    // ── Per-attempt correct count ─────────────────────────────────────────────.
     // Use the stored correctcount directly. For "Retry Wrong Answers" mode,
     // ajax.php pre-saves carry-forward correct answers so correctcount already
     // reflects the cumulative total (not just newly answered questions).
@@ -381,7 +396,10 @@ foreach ($attempts as $a) {
         // Fallback: recompute from answers JSON + question map.
         $qmap = $qmap ?? $DB->get_records_menu(
             'aiknowledgecheck_questions',
-            ['aiknowledgecheckid' => $knowledgecheck->id], '', 'id,correctanswer');
+            ['aiknowledgecheckid' => $knowledgecheck->id],
+            '',
+            'id,correctanswer'
+        );
         $answers = json_decode($a->answers, true) ?: [];
         foreach ($answers as $qid => $ans) {
             $selected = is_array($ans) ? ($ans['answer'] ?? null) : $ans;
@@ -399,7 +417,7 @@ foreach ($attempts as $a) {
         $byuser[$uid]['bestcorrect'] = $correctcount;
     }
 
-    // ── Times — use aliased attempt columns (avoid user-table collision) ───────
+    // ── Times — use aliased attempt columns (avoid user-table collision) ───────.
     $startts = 0;
     $timestarted = '';
     if (!empty($a->timestarted)) {
@@ -429,7 +447,7 @@ foreach ($attempts as $a) {
         $timespentstr = get_string('inprogress', 'mod_aiknowledgecheck');
     }
 
-    // ── Attempt label (X/max) ─────────────────────────────────────────────────
+    // ── Attempt label (X/max) ─────────────────────────────────────────────────.
     $extra = $extrabyuser[$uid] ?? 0;
     $effectivemax = ($basemax > 0) ? ($basemax + max(0, (int)$extra)) : 0;
     $attemptno = $counters[$uid] . '/' . ($effectivemax > 0 ? $effectivemax : '∞');
@@ -444,7 +462,7 @@ foreach ($attempts as $a) {
     ];
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────────.
 
 // ADD-SURVEY-REPORT (v1.5.127): For survey mode, show response distribution and freetext responses
 // instead of the standard score accordion.
@@ -452,8 +470,10 @@ if (!empty($knowledgecheck->surveymode)) {
     // Load questions and collect responses from all completed attempts.
     $surveyqs = $DB->get_records(
         'aiknowledgecheck_questions',
-        ['aiknowledgecheckid' => $knowledgecheck->id], 'id ASC',
-        'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype');
+        ['aiknowledgecheckid' => $knowledgecheck->id],
+        'id ASC',
+        'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype'
+    );
 
     $surveysql = "SELECT a.id AS attemptid, a.userid, a.answers, a.timestarted, a.timeended, a.status,
                          u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
@@ -464,9 +484,9 @@ if (!empty($knowledgecheck->surveymode)) {
                 ORDER BY u.lastname, u.firstname, u.id, a.id ASC";
     $surveyattempts = $DB->get_records_sql($surveysql, ['kid' => $knowledgecheck->id]);
 
-    // Build response counts per question.
-    // For scale questions: $responsecounts[qid][optionIndex (0-based)] = count
-    // For freetext questions: $freetextresponses[qid][] = ['name' => ..., 'response' => ..., 'date' => ...]
+    // Build response counts per question. Scale questions are counted per question id and
+    // zero-based option index. Free-text questions instead collect one entry per response,
+    // each holding the student name, the response text and the submission date.
     $responsecounts   = [];
     $freetextresponses = [];
     $studentrows      = []; // Per-student summary: name, completion date, time spent.
@@ -520,7 +540,8 @@ if (!empty($knowledgecheck->surveymode)) {
 
     // Survey report styles.
     echo html_writer::tag(
-        'style', '
+        'style',
+        '
         .kc-survey-report { max-width: 900px; }
         .kc-survey-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
         .kc-survey-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
@@ -549,7 +570,8 @@ if (!empty($knowledgecheck->surveymode)) {
         .kc-survey-students { margin-top: 28px; }
         .kc-survey-students h3 { font-size: 1em; font-weight: 700; margin-bottom: 10px; color: #374151; }
         @media print { .kc-survey-actions { display: none; } .kc-userpicker { display: none; } }
-    ');
+    '
+    );
 
     echo html_writer::start_div('kc-survey-report');
 
@@ -570,36 +592,44 @@ if (!empty($knowledgecheck->surveymode)) {
     echo html_writer::tag(
         'div',
         '<strong>' . $totalresponses . '</strong> ' . ($totalresponses === 1 ? 'response' : 'responses'),
-        ['class' => 'kc-survey-stat-chip']);
+        ['class' => 'kc-survey-stat-chip']
+    );
     $scaleqs = array_filter(
-        (array)$surveyqs, function ($q) {
-        return $q->questiontype !== 'freetext';
-    });
+        (array)$surveyqs,
+        function ($q) {
+            return $q->questiontype !== 'freetext';
+        }
+    );
     $ftqs = array_filter(
-        (array)$surveyqs, function ($q) {
-        return $q->questiontype === 'freetext';
-    });
+        (array)$surveyqs,
+        function ($q) {
+            return $q->questiontype === 'freetext';
+        }
+    );
     echo html_writer::tag(
         'div',
         '<strong>' . count($scaleqs) . '</strong> scale ' . (count($scaleqs) === 1 ? 'question' : 'questions'),
-        ['class' => 'kc-survey-stat-chip']);
+        ['class' => 'kc-survey-stat-chip']
+    );
     if (count($ftqs) > 0) {
         echo html_writer::tag(
             'div',
             '<strong>' . count($ftqs) . '</strong> open-ended ' . (count($ftqs) === 1 ? 'question' : 'questions'),
-            ['class' => 'kc-survey-stat-chip']);
+            ['class' => 'kc-survey-stat-chip']
+        );
     }
     echo html_writer::end_div();
 
     if (empty($surveyattempts)) {
         echo html_writer::div(get_string('noattempts', 'mod_aiknowledgecheck'), 'text-muted mb-3');
     } else {
-
-        // ── Scale questions: response distribution ────────────────────────────
+        // ── Scale questions: response distribution ────────────────────────────.
         $qnum = 0;
         foreach ($surveyqs as $sq) {
             $qnum++;
-            if ($sq->questiontype === 'freetext') continue; // Handled separately below.
+            if ($sq->questiontype === 'freetext') {
+                continue; // Handled separately below.
+            }
 
             // Build option labels.
             $optlabels = [];
@@ -636,21 +666,25 @@ if (!empty($knowledgecheck->surveymode)) {
                 }
             }
 
-            echo html_writer::end_div(); // .kc-survey-q-body
-            echo html_writer::end_div(); // .kc-survey-q-block
+            echo html_writer::end_div(); // .kc-survey-q-body.
+            echo html_writer::end_div(); // .kc-survey-q-block.
         }
 
-        // ── Free-text questions: collected responses ──────────────────────────
+        // ── Free-text questions: collected responses ──────────────────────────.
         $ftqs = array_filter(
-            (array)$surveyqs, function ($q) {
-            return $q->questiontype === 'freetext';
-        });
+            (array)$surveyqs,
+            function ($q) {
+                return $q->questiontype === 'freetext';
+            }
+        );
         if (!empty($ftqs)) {
             echo html_writer::start_div('kc-survey-freetext-section');
             echo '<h3>Open-Ended Responses</h3>';
             $ftqnum = 0;
             foreach ($surveyqs as $sq) {
-                if ($sq->questiontype !== 'freetext') continue;
+                if ($sq->questiontype !== 'freetext') {
+                    continue;
+                }
                 $ftqnum++;
                 $responses = $freetextresponses[$sq->id];
 
@@ -671,13 +705,13 @@ if (!empty($knowledgecheck->surveymode)) {
                         echo '</div>';
                     }
                 }
-                echo html_writer::end_div(); // .kc-survey-ft-body
-                echo html_writer::end_div(); // .kc-survey-ft-block
+                echo html_writer::end_div(); // .kc-survey-ft-body.
+                echo html_writer::end_div(); // .kc-survey-ft-block.
             }
-            echo html_writer::end_div(); // .kc-survey-freetext-section
+            echo html_writer::end_div(); // .kc-survey-freetext-section.
         }
 
-        // ── Per-student completion table ──────────────────────────────────────
+        // ── Per-student completion table ──────────────────────────────────────.
         echo html_writer::start_div('kc-survey-students');
         echo '<h3>Student Completions</h3>';
         echo '<table class="generaltable" style="width:auto;">';
@@ -690,10 +724,10 @@ if (!empty($knowledgecheck->surveymode)) {
             echo '</tr>';
         }
         echo '</tbody></table>';
-        echo html_writer::end_div(); // .kc-survey-students
+        echo html_writer::end_div(); // .kc-survey-students.
     }
 
-    echo html_writer::end_div(); // .kc-survey-report
+    echo html_writer::end_div(); // .kc-survey-report.
     echo $OUTPUT->footer();
     die();
 }
@@ -703,7 +737,8 @@ if (empty($byuser)) {
 } else {
     // Inline styles for the accordion (avoids requiring a separate CSS file update on the server).
     echo html_writer::tag(
-        'style', '
+        'style',
+        '
         .kc-report-accordion { border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
         .kc-report-accordion summary {
             display: flex; align-items: center; justify-content: space-between;
@@ -722,7 +757,8 @@ if (empty($byuser)) {
         .kc-report-accordion-body table tbody td { padding: 8px 16px; vertical-align: middle; }
         .kc-report-summary-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
         .kc-report-summary-chip { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 10px; font-size: 0.85em; color: #495057; }
-    ');
+    '
+    );
 
     // Summary bar: total students + total attempts.
     $totalstudents = count($byuser);
@@ -732,7 +768,8 @@ if (empty($byuser)) {
                 return count($u['attempts']);
             },
             $byuser
-        ));
+        )
+    );
     echo html_writer::start_div('kc-report-summary-bar');
     echo html_writer::tag('span', $totalstudents . ' ' . ($totalstudents === 1 ? 'student' : 'students'), ['class' => 'kc-report-summary-chip']);
     echo html_writer::tag('span', $totalattempts . ' total ' . ($totalattempts === 1 ? 'attempt' : 'attempts'), ['class' => 'kc-report-summary-chip']);
@@ -796,7 +833,7 @@ if (empty($byuser)) {
         }
 
         echo '</tbody></table>';
-        echo html_writer::end_div(); // .kc-report-accordion-body
+        echo html_writer::end_div(); // .kc-report-accordion-body.
         echo html_writer::end_tag('details');
     }
 }

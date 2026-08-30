@@ -67,7 +67,12 @@ class generate extends external_api {
                     'Topics to generate questions from'
                 ),
                 'questionsPerTopic' => new external_value(PARAM_INT, 'Questions per topic, 1-20', VALUE_DEFAULT, 5),
-                'workplaceContextEnabled' => new external_value(PARAM_INT, '1 to apply the workplace context fields', VALUE_DEFAULT, 0),
+                'workplaceContextEnabled' => new external_value(
+                    PARAM_INT,
+                    '1 to apply the workplace context fields',
+                    VALUE_DEFAULT,
+                    0
+                ),
                 'country' => new external_value(
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace country',
@@ -139,7 +144,8 @@ class generate extends external_api {
                     VALUE_DEFAULT,
                     '[]'
                 ),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -173,19 +179,37 @@ class generate extends external_api {
      * @return array Result array matching execute_returns().
      */
     public static function execute(
-        int $cmid, string $topics, int $questionspertopic = 5,
-            int $workplacecontextenabled = 0, string $country = '', string $state = '',
-            string $industry = '', string $industrydetails = '', string $joblevel = '',
-            string $jobtitle = '', string $educationtype = 'vet', string $vetlevel = 'cert3',
-            string $academiclevel = '', string $extrainstructions = '', int $useownquestions = 0,
-            string $userquestions = '', int $usetextsources = 0, string $textsources = '',
-            int $voiceoverenabled = 0, string $voicelanguage = 'en-AU',
-            string $voicegender = 'female', string $voiceid = 'Zephyr', int $surveymode = 0,
-            string $surveyscale = 'likert5agree', string $freetextquestions = '[]'): array {
+        int $cmid,
+        string $topics,
+        int $questionspertopic = 5,
+        int $workplacecontextenabled = 0,
+        string $country = '',
+        string $state = '',
+        string $industry = '',
+        string $industrydetails = '',
+        string $joblevel = '',
+        string $jobtitle = '',
+        string $educationtype = 'vet',
+        string $vetlevel = 'cert3',
+        string $academiclevel = '',
+        string $extrainstructions = '',
+        int $useownquestions = 0,
+        string $userquestions = '',
+        int $usetextsources = 0,
+        string $textsources = '',
+        int $voiceoverenabled = 0,
+        string $voicelanguage = 'en-AU',
+        string $voicegender = 'female',
+        string $voiceid = 'Zephyr',
+        int $surveymode = 0,
+        string $surveyscale = 'likert5agree',
+        string $freetextquestions = '[]'
+    ): array {
         global $DB;
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'topics' => $topics,
                 'questionsPerTopic' => $questionspertopic,
@@ -211,7 +235,8 @@ class generate extends external_api {
                 'surveyMode' => $surveymode,
                 'surveyScale' => $surveyscale,
                 'freetextQuestions' => $freetextquestions,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $knowledgecheck = $DB->get_record('aiknowledgecheck', ['id' => $cm->instance], '*', MUST_EXIST);
@@ -282,12 +307,15 @@ class generate extends external_api {
             array_filter(
                 array_map(
                     function ($q) {
-                    return is_scalar($q) ? clean_param(trim((string)$q), PARAM_TEXT) : '';
-                }, $freetext),
+                        return is_scalar($q) ? clean_param(trim((string)$q), PARAM_TEXT) : '';
+                    },
+                    $freetext
+                ),
                 function ($q) {
                     return $q !== '' && strlen($q) <= 500;
                 }
-            ));
+            )
+        );
         if (count($freetext) > 20) {
             $freetext = array_slice($freetext, 0, 20);
         }
@@ -338,7 +366,8 @@ class generate extends external_api {
         }
 
         self::persist_source_context(
-            $cm, [
+            $cm,
+            [
                 'topics' => $topics,
                 'useOwnQuestions' => $useownquestions,
                 'userQuestions' => $userquestions,
@@ -356,7 +385,8 @@ class generate extends external_api {
                 'academicLevel' => $params['academicLevel'],
                 'showChapterStamps' => isset($knowledgecheck->showchapterstamps)
                     ? (int)$knowledgecheck->showchapterstamps : 0,
-            ]);
+            ]
+        );
 
         [$raw, $httpcode, $connectionerror] = saas_client::post_json(
             $apibase . '/api/generate-knowledgecheck',
@@ -407,6 +437,7 @@ class generate extends external_api {
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'The generation service response verbatim, as a JSON string'
                 ),
-            ]);
+            ]
+        );
     }
 }

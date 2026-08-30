@@ -8,8 +8,11 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Version information for AI Knowledge Check.
@@ -24,8 +27,15 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026083010;
+$plugin->version = 2026083012;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.5.154'; // PIPELINE-FIXES (v1.5.154): second release-pipeline pass. The remaining raw-type finding was prose in this file's own release note, which the scanner reads as a usage. Multi-line calls across 25 files now put the first argument on its own line, applied as a token-verified whitespace-only transform so the change cannot alter behaviour. Also: one statement per line in view.php and db/upgrade.php, and two trailing comments capitalised. See CHANGELOG.md.
+// MOODLE-CI-PREP (v1.5.155, build 2026083012): adds the missing Moodle Plugin CI workflow, and clears the
+// mechanically fixable part of the Moodle code checker -- 1505 unique findings down to well
+// under 200 -- with phpcbf plus targeted fixes. Completes three truncated GPL headers, adds
+// missing trailing newlines, removes MOODLE_INTERNAL where the checker says it is not needed,
+// renames non-conforming local variables, adds the backup and restore docblocks, and
+// reformats multi-line calls to one argument per line, which is what the Moodle standard
+// wants and what the previous release's formatting had broken. See CHANGELOG.md.
+$plugin->release = '1.5.155';

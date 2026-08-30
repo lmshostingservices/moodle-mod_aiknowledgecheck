@@ -30,14 +30,26 @@ require_once($CFG->dirroot . '/mod/aiknowledgecheck/backup/moodle2/backup_aiknow
  * Backup task that provides all the settings and steps to perform one complete backup of the activity.
  */
 class backup_aiknowledgecheck_activity_task extends backup_activity_task {
+    /**
+     * Define the particular settings this activity can have.
+     */
     protected function define_my_settings() {
         // No particular settings for this activity.
     }
 
+    /**
+     * Define the structure of the backup file.
+     */
     protected function define_my_steps() {
         $this->add_step(new backup_aiknowledgecheck_activity_structure_step('aiknowledgecheck_structure', 'aiknowledgecheck.xml'));
     }
 
+    /**
+     * Encode links to this activity so they survive backup and restore.
+     *
+     * @param mixed $content The content value.
+     * @return string The content with links encoded.
+     */
     public static function encode_content_links($content) {
         global $CFG;
 

@@ -32,9 +32,9 @@ $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 $knowledgecheck = $DB->get_record('aiknowledgecheck', ['id' => $cm->instance], '*', MUST_EXIST);
 
 // Survey mode helpers — used throughout view.php for conditional copy.
-$is_survey_mode = !empty($knowledgecheck->surveymode);
-$survey_scale_key = isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree';
-$survey_scale_labels = [
+$issurveymode = !empty($knowledgecheck->surveymode);
+$surveyscalekey = isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree';
+$surveyscalelabels = [
     'likert5agree' => 'Strongly Agree → Strongly Disagree',
     'likert5sat'   => 'Very Satisfied → Very Dissatisfied',
     'likert5freq'  => 'Always → Never',
@@ -45,7 +45,7 @@ $survey_scale_labels = [
     'yesnounsure'  => 'Yes / No / Unsure',
     'nps5'         => '1 (Very Poor) → 5 (Excellent)',
 ];
-$survey_scale_display = $survey_scale_labels[$survey_scale_key] ?? 'Strongly Agree → Strongly Disagree';
+$surveyscaledisplay = $surveyscalelabels[$surveyscalekey] ?? 'Strongly Agree → Strongly Disagree';
 
 require_login($course, true, $cm);
 
@@ -71,13 +71,13 @@ $canviewreports = has_capability('mod/aiknowledgecheck:viewreports', $context);
 $canoverride = has_capability('mod/aiknowledgecheck:manageoverrides', $context);
 $isstaff = $cancreate || $canviewreports;
 
-// Explicitly include aiconfig lib.php if available
+// Explicitly include aiconfig lib.php if available.
 $aiconfiglib = $CFG->dirroot . '/local/aiconfig/lib.php';
 if (file_exists($aiconfiglib)) {
     require_once($aiconfiglib);
 }
 
-// Priority 1: Central Config (recommended for multi-plugin setups)
+// Priority 1: Central Config (recommended for multi-plugin setups).
 $siteid = '';
 $apikey = '';
 if (function_exists('local_aiconfig_get_siteid')) {
@@ -87,7 +87,7 @@ if (function_exists('local_aiconfig_get_apikey')) {
     $apikey = local_aiconfig_get_apikey();
 }
 
-// Priority 2: Plugin settings as fallback
+// Priority 2: Plugin settings as fallback.
 if (empty($siteid)) {
     $siteid = get_config('mod_aiknowledgecheck', 'siteid');
 }
@@ -110,10 +110,13 @@ $PAGE->set_pagelayout('incourse');
 // Load Google Fonts via PHP (NOT via @import in styles.css which breaks Moodle CSS minifier).
 $PAGE->requires->css(
     new moodle_url(
-        'https://fonts.googleapis.com/css2', [
+        'https://fonts.googleapis.com/css2',
+        [
             'family' => 'Inter:wght@400;500;600;700',
-            'display' => 'swap'
-        ]));
+            'display' => 'swap',
+        ]
+    )
+);
 
 // Trigger module viewed event.
 aiknowledgecheck_view($knowledgecheck, $course, $cm, $context);
@@ -143,7 +146,8 @@ $gradeitem = grade_item::fetch(
         'itemmodule' => 'aiknowledgecheck',
         'iteminstance' => $knowledgecheck->id,
         'courseid' => $course->id,
-    ]);
+    ]
+);
 if ($gradeitem && $gradeitem->gradepass > 0) {
     $gradepass = (float)$gradeitem->gradepass;
 }
@@ -181,11 +185,11 @@ if (!empty($knowledgecheck->audiourl)) {
 $hasaudio = !empty($audiourl);
 $audiogated = $hasaudio && $audioreq !== 'none';
 // Image gate setup (ADD-KC-IMAGEGATE v1.5.115).
-$imageurl_gate = '';
+$imageurlgate = '';
 if (!empty($knowledgecheck->imageurl)) {
-    $imageurl_gate = $knowledgecheck->imageurl;
+    $imageurlgate = $knowledgecheck->imageurl;
 }
-$hasimage   = !empty($imageurl_gate);
+$hasimage   = !empty($imageurlgate);
 $imagegated = $hasimage; // Image gate is always active when a URL is set.
 $anygated  = $videogated || $audiogated || $imagegated;
 // FIX-KC-TAKEGATED-UNDEFINED (v1.5.65): $takegated was only assigned inside the
@@ -226,7 +230,6 @@ if ($canviewreports) {
 
 // Show different views based on capability.
 if ($cancreate) {
-
     ?>
     <div id="kc-app" class="kc-container">
         <!-- Credits Badge (Teachers Only) -->
@@ -282,7 +285,7 @@ if ($cancreate) {
                     </select>
                 </div>
 
-                <?php if ($is_survey_mode): ?>
+                <?php if ($issurveymode) : ?>
                 <!-- SURVEY-MODE-NOTICE (v1.5.128): Inform the teacher their context before they paste questions. -->
                 <div class="kc-survey-mode-notice">
                     <div class="kc-survey-notice-icon">
@@ -292,7 +295,7 @@ if ($cancreate) {
                     </div>
                     <div class="kc-survey-notice-body">
                         <strong><?php echo get_string('survey_mode_notice_title', 'mod_aiknowledgecheck'); ?></strong>
-                        <span><?php echo get_string('survey_mode_notice_body', 'mod_aiknowledgecheck', htmlspecialchars($survey_scale_display)); ?></span>
+                        <span><?php echo get_string('survey_mode_notice_body', 'mod_aiknowledgecheck', htmlspecialchars($surveyscaledisplay)); ?></span>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -305,7 +308,7 @@ if ($cancreate) {
                             <span class="kc-toggle-switch"></span>
                             <span class="kc-toggle-text"><?php echo get_string('use_own_questions', 'mod_aiknowledgecheck'); ?></span>
                         </label>
-                        <p class="kc-sublabel"><?php echo $is_survey_mode
+                        <p class="kc-sublabel"><?php echo $issurveymode
                             ? get_string('use_own_questions_help_survey', 'mod_aiknowledgecheck')
                             : get_string('use_own_questions_help', 'mod_aiknowledgecheck'); ?></p>
                     </div>
@@ -313,11 +316,11 @@ if ($cancreate) {
                         <div class="kc-form-group">
                             <label for="user-questions-input" class="kc-label"><?php echo get_string('your_questions', 'mod_aiknowledgecheck'); ?></label>
                             <textarea id="user-questions-input" class="kc-textarea" rows="8" 
-                                placeholder="<?php echo $is_survey_mode
+                                placeholder="<?php echo $issurveymode
                                     ? get_string('your_questions_placeholder_survey', 'mod_aiknowledgecheck')
                                     : get_string('your_questions_placeholder', 'mod_aiknowledgecheck'); ?>"></textarea>
-                            <small class="kc-help"><?php echo $is_survey_mode
-                                ? get_string('your_questions_help_survey', 'mod_aiknowledgecheck', htmlspecialchars($survey_scale_display))
+                            <small class="kc-help"><?php echo $issurveymode
+                                ? get_string('your_questions_help_survey', 'mod_aiknowledgecheck', htmlspecialchars($surveyscaledisplay))
                                 : get_string('your_questions_help', 'mod_aiknowledgecheck'); ?></small>
                         </div>
                     </div>
@@ -734,7 +737,7 @@ if ($cancreate) {
                     <span id="ready-regen-count" class="kc-regen-count"></span>
                 </div>
             </div>
-            <?php if ($hasaudio): ?>
+            <?php if ($hasaudio) : ?>
             <div id="kc-teacher-audio-gate" style="margin-top: 16px; padding: 14px; border-radius: 6px; border: 1px solid #dee2e6; background: #f8f9fa;">
                 <strong style="display: block; margin-bottom: 8px; font-size: 14px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
@@ -746,7 +749,7 @@ if ($cancreate) {
                 <audio id="kc-audio-player" controls style="width: 100%; border-radius: 6px; display: block;">
                     <source src="<?php echo s($audiourl); ?>">
                 </audio>
-                <?php if ($audiogated): ?>
+                <?php if ($audiogated) : ?>
                 <div id="kc-audio-status" style="margin-top: 8px; padding: 8px 12px; border-radius: 6px; background: #fff3cd; border: 1px solid #ffeaa7; font-size: 13px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -765,7 +768,7 @@ if ($cancreate) {
                 <?php endif; ?>
             </div>
             <?php endif; ?>
-            <?php if ($hasimage): ?>
+            <?php if ($hasimage) : ?>
             <div id="kc-teacher-image-gate" style="margin-top: 16px; padding: 14px; border-radius: 6px; border: 1px solid #dee2e6; background: #f8f9fa;">
                 <strong style="display: block; margin-bottom: 8px; font-size: 14px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
@@ -775,7 +778,7 @@ if ($cancreate) {
                     </svg>
                     <?php echo get_string('imagegate_viewimage', 'mod_aiknowledgecheck'); ?>
                 </strong>
-                <img src="<?php echo s($imageurl_gate); ?>" alt="Image gate preview" style="max-width: 100%; max-height: 300px; border-radius: 6px; display: block; object-fit: contain; margin-bottom: 8px;">
+                <img src="<?php echo s($imageurlgate); ?>" alt="Image gate preview" style="max-width: 100%; max-height: 300px; border-radius: 6px; display: block; object-fit: contain; margin-bottom: 8px;">
                 <small style="color: #6c757d; font-size: 12px;">Students must acknowledge this image before the quiz unlocks. Manage the image URL in the activity settings (Image Gate section).</small>
             </div>
             <?php endif; ?>
@@ -1095,7 +1098,7 @@ if ($cancreate) {
             </button>
         </div>
     </div>
-    <?php if ($hasaudio && $audiogated): ?>
+    <?php if ($hasaudio && $audiogated) : ?>
     <script>
     (function () {
         var audioEl = document.getElementById('kc-audio-player');
@@ -1148,15 +1151,19 @@ if ($cancreate) {
     <?php endif; ?>
     <?php
 
-    // Check for any in-progress student attempts (for edit warning)
+    // Check for any in-progress student attempts (for edit warning).
     $inprogresscount = $DB->count_records(
-        'aiknowledgecheck_attempts', [
+        'aiknowledgecheck_attempts',
+        [
             'aiknowledgecheckid' => $knowledgecheck->id,
-            'status' => 0, // In progress
-        ]);
+            'status' => 0, // In progress.
+        ]
+    );
 
     $PAGE->requires->js_call_amd(
-        'mod_aiknowledgecheck/knowledgecheck', 'init', [[
+        'mod_aiknowledgecheck/knowledgecheck',
+        'init',
+        [[
             'cmid' => $cm->id,
             'wwwroot' => $CFG->wwwroot,
             'sesskey' => sesskey(),
@@ -1173,7 +1180,8 @@ if ($cancreate) {
             'hasImage' => $hasimage ? 1 : 0,
             'surveyMode' => isset($knowledgecheck->surveymode) ? (int)$knowledgecheck->surveymode : 0,
             'surveyScale' => isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree',
-        ]]);
+        ]]
+    );
     ?>
     <script>
     // AI Image Generator — teacher-only inline script (ADD-KC-IMAGEGATE v1.5.115).
@@ -1282,11 +1290,13 @@ if ($cancreate) {
 
         // Check for in-progress attempt.
         $inprogress = $DB->get_record(
-            'aiknowledgecheck_attempts', [
+            'aiknowledgecheck_attempts',
+            [
                 'aiknowledgecheckid' => $knowledgecheck->id,
                 'userid' => $userid,
                 'status' => 0,
-            ]);
+            ]
+        );
 
         // Build attempts label for use inside cards.
         if ($maxattempts > 0) {
@@ -1297,23 +1307,26 @@ if ($cancreate) {
 
         // Show previous attempts table.
         $attempts = $DB->get_records(
-            'aiknowledgecheck_attempts', [
+            'aiknowledgecheck_attempts',
+            [
                 'aiknowledgecheckid' => $knowledgecheck->id,
                 'userid' => $userid,
                 'status' => 1,
-            ], 'id ASC');
+            ],
+            'id ASC'
+        );
 
         if ($attempts) {
             echo html_writer::start_tag('details', ['class' => 'kc-details mb-3']);
             echo html_writer::tag('summary', get_string('review', 'mod_aiknowledgecheck'));
-            
+
             $table = new html_table();
             $table->head = [
                 get_string('attempt', 'mod_aiknowledgecheck'),
                 get_string('score', 'mod_aiknowledgecheck'),
                 get_string('timeended', 'mod_aiknowledgecheck'),
             ];
-            
+
             $num = 1;
             foreach ($attempts as $a) {
                 $table->data[] = [
@@ -1322,7 +1335,7 @@ if ($cancreate) {
                     userdate($a->timeended),
                 ];
             }
-            
+
             echo html_writer::table($table);
             echo html_writer::end_tag('details');
         }
@@ -1330,15 +1343,15 @@ if ($cancreate) {
         // Gate variables already computed at top of file.
         ?>
         <div id="kc-app" class="kc-container">
-            <?php if (!$canattempt && !$inprogress): ?>
+            <?php if (!$canattempt && !$inprogress) : ?>
                 <!-- Limit reached -->
                 <div class="kc-card">
                     <div class="alert alert-warning">
                         <?php echo get_string('attemptslimitreached', 'mod_aiknowledgecheck', $maxattempts); ?>
                     </div>
                 </div>
-            <?php else: ?>
-                <?php if ($hasvideo): ?>
+            <?php else : ?>
+                <?php if ($hasvideo) : ?>
                 <div id="kc-video-section" class="kc-card" style="margin-bottom: 16px;">
                     <h4 style="margin: 0 0 12px 0; font-weight: 600;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;">
@@ -1350,7 +1363,7 @@ if ($cancreate) {
                     <div id="kc-video-container" style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000;">
                         <div id="kc-yt-player" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
                     </div>
-                    <?php if ($videogated): ?>
+                    <?php if ($videogated) : ?>
                     <div id="kc-video-status" style="margin-top: 12px; padding: 10px 14px; border-radius: 6px; background: #fff3cd; border: 1px solid #ffeaa7; font-size: 14px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -1370,7 +1383,7 @@ if ($cancreate) {
                 </div>
                 <?php endif; ?>
 
-                <?php if ($hasaudio): ?>
+                <?php if ($hasaudio) : ?>
                 <div id="kc-audio-section" class="kc-card" style="margin-bottom: 16px;">
                     <h4 style="margin: 0 0 12px 0; font-weight: 600;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;">
@@ -1382,7 +1395,7 @@ if ($cancreate) {
                     <audio id="kc-audio-player" controls style="width: 100%; border-radius: 6px; display: block;">
                         <source src="<?php echo s($audiourl); ?>">
                     </audio>
-                    <?php if ($audiogated): ?>
+                    <?php if ($audiogated) : ?>
                     <div id="kc-audio-status" style="margin-top: 12px; padding: 10px 14px; border-radius: 6px; background: #fff3cd; border: 1px solid #ffeaa7; font-size: 14px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -1402,7 +1415,7 @@ if ($cancreate) {
                 </div>
                 <?php endif; ?>
 
-                <?php if ($hasimage): ?>
+                <?php if ($hasimage) : ?>
                 <div id="kc-image-section" class="kc-card" style="margin-bottom: 16px;">
                     <h4 style="margin: 0 0 12px 0; font-weight: 600;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;">
@@ -1412,8 +1425,8 @@ if ($cancreate) {
                         </svg>
                         <?php echo get_string('imagegate_viewimage', 'mod_aiknowledgecheck'); ?>
                     </h4>
-                    <img src="<?php echo s($imageurl_gate); ?>" alt="Activity image" style="max-width: 100%; border-radius: 8px; display: block; margin: 0 auto 12px; max-height: 500px; object-fit: contain;">
-                    <?php if ($imagegated && !$isstaff): ?>
+                    <img src="<?php echo s($imageurlgate); ?>" alt="Activity image" style="max-width: 100%; border-radius: 8px; display: block; margin: 0 auto 12px; max-height: 500px; object-fit: contain;">
+                    <?php if ($imagegated && !$isstaff) : ?>
                     <div id="kc-image-status" style="margin-top: 8px; padding: 10px 14px; border-radius: 6px; background: #fff3cd; border: 1px solid #ffeaa7; font-size: 14px; text-align: center;">
                         <button id="kc-image-acknowledge-btn" class="kc-btn kc-btn-secondary" type="button">
                             <?php echo get_string('imagegate_acknowledge', 'mod_aiknowledgecheck'); ?>
@@ -1425,19 +1438,21 @@ if ($cancreate) {
 
                 <!-- Estimated Time Banner -->
                 <?php
-                    $kcVoiceEnabled = !empty($knowledgecheck->voiceoverenabled);
-                    $kcSecPerQ = $kcVoiceEnabled ? 120 : 90;
-                    $kcTotalSec = $questioncount * $kcSecPerQ;
-                    $kcEtaMin = (int)ceil($kcTotalSec / 60);
-                    if ($kcEtaMin < 1) $kcEtaMin = 1;
-                    if ($kcEtaMin < 60) {
-                        $kcEtaStr = '~' . $kcEtaMin . ' minute' . ($kcEtaMin > 1 ? 's' : '');
-                    } else {
-                        $kcEtaHrs = floor($kcEtaMin / 60);
-                        $kcEtaRem = $kcEtaMin % 60;
-                        $kcEtaStr = '~' . $kcEtaHrs . ($kcEtaHrs == 1 ? ' hr ' : ' hrs ') . $kcEtaRem . ' min';
-                    }
-                    $kcEtaDetail = $questioncount . ' question' . ($questioncount != 1 ? 's' : '') . ($kcVoiceEnabled ? ' with audio explanations' : '');
+                    $kcvoiceenabled = !empty($knowledgecheck->voiceoverenabled);
+                    $kcsecperq = $kcvoiceenabled ? 120 : 90;
+                    $kctotalsec = $questioncount * $kcsecperq;
+                    $kcetamin = (int)ceil($kctotalsec / 60);
+                if ($kcetamin < 1) {
+                    $kcetamin = 1;
+                }
+                if ($kcetamin < 60) {
+                    $kcetastr = '~' . $kcetamin . ' minute' . ($kcetamin > 1 ? 's' : '');
+                } else {
+                    $kcetahrs = floor($kcetamin / 60);
+                    $kcetarem = $kcetamin % 60;
+                    $kcetastr = '~' . $kcetahrs . ($kcetahrs == 1 ? ' hr ' : ' hrs ') . $kcetarem . ' min';
+                }
+                    $kcetadetail = $questioncount . ' question' . ($questioncount != 1 ? 's' : '') . ($kcvoiceenabled ? ' with audio explanations' : '');
                 ?>
                 <div class="kc-eta-banner"<?php echo $anygated ? ' style="display:none;"' : ''; ?>>
                     <div class="kc-eta-icon-wrap">
@@ -1445,8 +1460,8 @@ if ($cancreate) {
                     </div>
                     <div class="kc-eta-body">
                         <span class="kc-eta-label">Estimated completion time</span>
-                        <span class="kc-eta-time"><?php echo $kcEtaStr; ?></span>
-                        <span class="kc-eta-detail"><?php echo $kcEtaDetail; ?></span>
+                        <span class="kc-eta-time"><?php echo $kcetastr; ?></span>
+                        <span class="kc-eta-detail"><?php echo $kcetadetail; ?></span>
                     </div>
                 </div>
 
@@ -1478,26 +1493,28 @@ if ($cancreate) {
                         </span>
                     </div>
                     
-                    <?php if ($inprogress): ?>
+                    <?php if ($inprogress) : ?>
                         <button id="continue-attempt-btn" class="kc-btn kc-btn-primary kc-btn-lg<?php echo $gatedclass; ?>"<?php echo $gateddisabled; ?> data-attemptid="<?php echo $inprogress->id; ?>">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
                             Continue Attempt
                         </button>
-                    <?php else: ?>
+                    <?php else : ?>
                         <button id="start-attempt-btn" class="kc-btn kc-btn-primary kc-btn-lg<?php echo $gatedclass; ?>"<?php echo $gateddisabled; ?>>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
-                            <?php 
-                            // Show "Start Quiz" for first attempt, "Retake Quiz" for subsequent attempts
+                            <?php
+                            // Show "Start Quiz" for first attempt, "Retake Quiz" for subsequent attempts.
                             $haspreviousattempts = $DB->record_exists(
-                                'aiknowledgecheck_attempts', [
+                                'aiknowledgecheck_attempts',
+                                [
                                     'aiknowledgecheckid' => $knowledgecheck->id,
                                     'userid' => $userid,
-                                    'status' => 1
-                                ]);
+                                    'status' => 1,
+                                ]
+                            );
                             echo get_string($haspreviousattempts ? 'retakequiz' : 'startquiz', 'mod_aiknowledgecheck');
                             ?>
                         </button>
@@ -1543,7 +1560,7 @@ if ($cancreate) {
                     <h3 class="kc-card-title"><?php echo get_string('quiz_complete', 'mod_aiknowledgecheck'); ?></h3>
                     <div id="results-score" class="kc-results-score"></div>
                     <p id="results-message" class="kc-results-message"></p>
-                    <?php if ($canattempt || $maxattempts == 0): ?>
+                    <?php if ($canattempt || $maxattempts == 0) : ?>
                         <button id="retake-btn" class="kc-btn kc-btn-secondary">
                             <?php echo get_string('retake_btn', 'mod_aiknowledgecheck'); ?>
                         </button>
@@ -1554,7 +1571,7 @@ if ($cancreate) {
                 </div>
             <?php endif; ?>
         </div>
-        <?php if ($anygated): ?>
+        <?php if ($anygated) : ?>
         <script>
         // Gate coordinator: all active gates must unlock before the start section is revealed.
         // FIX-KC-VIDEO-GATE: start section and eta banner are hidden on load (see PHP above).
@@ -1568,9 +1585,15 @@ if ($cancreate) {
             // would have been freed from one gate and still held by the other two. The status
             // banners and the watcher scripts are untouched; with no lock registered there is
             // simply nothing for them to hold. ?>
-            <?php if ($videogated && !$isstaff): ?> locks['video'] = true; originals['video'] = true; <?php endif; ?>
-            <?php if ($audiogated && !$isstaff): ?> locks['audio'] = true; originals['audio'] = true; <?php endif; ?>
-            <?php if ($imagegated && !$isstaff): ?> locks['image'] = true; originals['image'] = true; <?php endif; ?>
+            <?php if ($videogated && !$isstaff) :
+?> locks['video'] = true; originals['video'] = true; <?php
+            endif; ?>
+            <?php if ($audiogated && !$isstaff) :
+?> locks['audio'] = true; originals['audio'] = true; <?php
+            endif; ?>
+            <?php if ($imagegated && !$isstaff) :
+?> locks['image'] = true; originals['image'] = true; <?php
+            endif; ?>
 
             function showStart() {
                 var s = document.getElementById('kc-start-section');
@@ -1581,7 +1604,7 @@ if ($cancreate) {
                 // gates unlock so video/audio and quiz start are never shown together.
                 // v1.5.63 FIX-KC-SHOWVIDEO: only hide video section if showVideoDuringQuiz is off,
                 // so the video remains visible alongside the quiz when the teacher enabled that option.
-                <?php if (empty($knowledgecheck->showvideoduringquiz)): ?>
+                <?php if (empty($knowledgecheck->showvideoduringquiz)) : ?>
                 var v = document.getElementById('kc-video-section');
                 if (v) v.style.display = 'none';
                 <?php endif; ?>
@@ -1646,7 +1669,7 @@ if ($cancreate) {
         })();
         </script>
         <?php endif; ?>
-        <?php if ($hasvideo): ?>
+        <?php if ($hasvideo) : ?>
         <script>
         (function () {
             var videoId = '<?php echo $videoid; ?>';
@@ -1699,11 +1722,11 @@ if ($cancreate) {
 
             // FIX-KC-VIDEO-GATE: expose reset function so retakeQuiz() can re-lock the gate.
             var kcOriginalVideoMsg = '<?php
-                if ($videoreq === 'full') {
-                    echo addslashes(get_string('videogate_watchfull', 'mod_aiknowledgecheck'));
-                } else {
-                    echo addslashes(get_string('videogate_watchseconds', 'mod_aiknowledgecheck', $videominsec));
-                }
+            if ($videoreq === 'full') {
+                echo addslashes(get_string('videogate_watchfull', 'mod_aiknowledgecheck'));
+            } else {
+                echo addslashes(get_string('videogate_watchseconds', 'mod_aiknowledgecheck', $videominsec));
+            }
             ?>';
             window.kcVideoGate = {
                 resetLock: function () {
@@ -1803,7 +1826,7 @@ if ($cancreate) {
         })();
         </script>
         <?php endif; ?>
-        <?php if ($hasaudio && $audiogated): ?>
+        <?php if ($hasaudio && $audiogated) : ?>
         <script>
         (function () {
             var audioEl = document.getElementById('kc-audio-player');
@@ -1856,11 +1879,11 @@ if ($cancreate) {
 
             // FIX-KC-VIDEO-GATE: expose reset function for retake gate reset.
             var kcOriginalAudioMsg = '<?php
-                if ($audioreq === 'full') {
-                    echo addslashes(get_string('audiogate_listenfull', 'mod_aiknowledgecheck'));
-                } else {
-                    echo addslashes(get_string('audiogate_listenseconds', 'mod_aiknowledgecheck', $audiominsec));
-                }
+            if ($audioreq === 'full') {
+                echo addslashes(get_string('audiogate_listenfull', 'mod_aiknowledgecheck'));
+            } else {
+                echo addslashes(get_string('audiogate_listenseconds', 'mod_aiknowledgecheck', $audiominsec));
+            }
             ?>';
             window.kcAudioGate = {
                 resetLock: function () {
@@ -1880,7 +1903,7 @@ if ($cancreate) {
         })();
         </script>
         <?php endif; ?>
-        <?php if ($hasimage && $imagegated && !$isstaff): ?>
+        <?php if ($hasimage && $imagegated && !$isstaff) : ?>
         <script>
         // ADD-KC-IMAGEGATE v1.5.115 — Image acknowledgment gate.
         (function () {
@@ -1920,7 +1943,9 @@ if ($cancreate) {
 
         // Initialize JS module for student.
         $PAGE->requires->js_call_amd(
-            'mod_aiknowledgecheck/knowledgecheck', 'init', [[
+            'mod_aiknowledgecheck/knowledgecheck',
+            'init',
+            [[
                 'cmid' => $cm->id,
                 'wwwroot' => $CFG->wwwroot,
                 'sesskey' => sesskey(),
@@ -1950,7 +1975,8 @@ if ($cancreate) {
                     'activityLockedNotice' => get_string('activity_locked_notice', 'mod_aiknowledgecheck'),
                     'startAgain'           => get_string('startAgain', 'mod_aiknowledgecheck'),
                 ],
-            ]]);
+            ]]
+        );
     }
 }
 

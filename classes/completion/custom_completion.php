@@ -55,7 +55,8 @@ class custom_completion extends activity_custom_completion {
                 if ($issurvey) {
                     $done = $DB->record_exists(
                         'aiknowledgecheck_attempts',
-                        ['aiknowledgecheckid' => $kid, 'userid' => $userid, 'status' => 1]);
+                        ['aiknowledgecheckid' => $kid, 'userid' => $userid, 'status' => 1]
+                    );
                     return $done ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
                 }
 
@@ -93,8 +94,10 @@ class custom_completion extends activity_custom_completion {
                     return COMPLETION_INCOMPLETE;
                 }
 
-                if (property_exists($attempt, 'correctcount') && property_exists($attempt, 'totalcount')
-                    && $attempt->totalcount !== null && $attempt->totalcount !== '') {
+                if (
+                    property_exists($attempt, 'correctcount') && property_exists($attempt, 'totalcount')
+                    && $attempt->totalcount !== null && $attempt->totalcount !== ''
+                ) {
                     $total = (int)$attempt->totalcount;
                     $correct = (int)$attempt->correctcount;
                     return ($total > 0 && $correct === $total) ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;

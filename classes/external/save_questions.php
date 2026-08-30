@@ -69,10 +69,16 @@ class save_questions extends external_api {
                     VALUE_DEFAULT,
                     -1
                 ),
-                'voiceLanguage' => new external_value(PARAM_TEXT, 'Voice language code, empty to leave unchanged', VALUE_DEFAULT, ''),
+                'voiceLanguage' => new external_value(
+                    PARAM_TEXT,
+                    'Voice language code, empty to leave unchanged',
+                    VALUE_DEFAULT,
+                    ''
+                ),
                 'voiceGender' => new external_value(PARAM_ALPHA, 'Voice gender, empty to leave unchanged', VALUE_DEFAULT, ''),
                 'voiceStyle' => new external_value(PARAM_ALPHA, 'Voice style, empty to leave unchanged', VALUE_DEFAULT, ''),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -87,19 +93,26 @@ class save_questions extends external_api {
      * @return array Result array matching execute_returns().
      */
     public static function execute(
-        int $cmid, string $questions, int $voiceoverenabled = -1,
-            string $voicelanguage = '', string $voicegender = '', string $voicestyle = ''): array {
+        int $cmid,
+        string $questions,
+        int $voiceoverenabled = -1,
+        string $voicelanguage = '',
+        string $voicegender = '',
+        string $voicestyle = ''
+    ): array {
         global $DB;
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'questions' => $questions,
                 'voiceoverEnabled' => $voiceoverenabled,
                 'voiceLanguage' => $voicelanguage,
                 'voiceGender' => $voicegender,
                 'voiceStyle' => $voicestyle,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $knowledgecheck = $DB->get_record('aiknowledgecheck', ['id' => $cm->instance], '*', MUST_EXIST);
@@ -138,10 +151,12 @@ class save_questions extends external_api {
         // stale — its saved answers reference question IDs that no longer exist, so the next
         // start_attempt would resume from it and the quiz would skip Q1. Delete them.
         $DB->delete_records(
-            'aiknowledgecheck_attempts', [
+            'aiknowledgecheck_attempts',
+            [
                 'aiknowledgecheckid' => $cm->instance,
                 'status' => 0,
-            ]);
+            ]
+        );
 
         self::persist_voice_settings($cm, $questionsdata, $params);
 
@@ -340,6 +355,7 @@ class save_questions extends external_api {
                 'ok' => new external_value(PARAM_BOOL, 'True when the questions were saved'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty on success'),
                 'saved' => new external_value(PARAM_INT, 'Number of questions written'),
-            ]);
+            ]
+        );
     }
 }

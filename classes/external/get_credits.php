@@ -54,7 +54,8 @@ class get_credits extends external_api {
         return new external_function_parameters(
             [
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -127,13 +128,16 @@ class get_credits extends external_api {
         // not blocked behind it, exactly as ajax.php does.
         \core\session\manager::write_close();
 
-        // '&' is passed explicitly because some PHP configurations default the separator
+        // '&' is passed explicitly because some PHP configurations default the separator.
         // to '&amp;', which produces a malformed query string.
         $url = $apibase . '/api/credits?' . http_build_query(
             [
                 'siteId' => $siteid,
                 'apiKey' => $apikey,
-            ], '', '&');
+            ],
+            '',
+            '&'
+        );
 
         $curl = new \curl();
         $curl->setopt(
@@ -141,7 +145,8 @@ class get_credits extends external_api {
                 'CURLOPT_TIMEOUT' => 30,
                 'CURLOPT_SSL_VERIFYPEER' => true,
                 'CURLOPT_FOLLOWLOCATION' => true,
-            ]);
+            ]
+        );
         $response = $curl->get($url);
         $httpcode = isset($curl->info['http_code']) ? (int)$curl->info['http_code'] : 0;
 
@@ -196,6 +201,7 @@ class get_credits extends external_api {
                 'ok' => new external_value(PARAM_BOOL, 'True if the credit balance was retrieved'),
                 'credits' => new external_value(PARAM_INT, 'Remaining generation credits, 0 on failure'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty string on success'),
-            ]);
+            ]
+        );
     }
 }

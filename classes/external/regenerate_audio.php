@@ -60,7 +60,8 @@ class regenerate_audio extends external_api {
                 ),
                 'voiceLanguage' => new external_value(PARAM_TEXT, 'Voice language code', VALUE_DEFAULT, 'en-AU'),
                 'voiceId' => new external_value(PARAM_ALPHA, 'Voice identifier', VALUE_DEFAULT, 'Zephyr'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -73,16 +74,21 @@ class regenerate_audio extends external_api {
      * @return array Result array matching execute_returns().
      */
     public static function execute(
-        int $cmid, string $questions, string $voicelanguage = 'en-AU',
-            string $voiceid = 'Zephyr'): array {
+        int $cmid,
+        string $questions,
+        string $voicelanguage = 'en-AU',
+        string $voiceid = 'Zephyr'
+    ): array {
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'questions' => $questions,
                 'voiceLanguage' => $voicelanguage,
                 'voiceId' => $voiceid,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
@@ -129,6 +135,7 @@ class regenerate_audio extends external_api {
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'The generation service response verbatim, as a JSON string'
                 ),
-            ]);
+            ]
+        );
     }
 }

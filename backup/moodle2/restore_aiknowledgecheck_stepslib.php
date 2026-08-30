@@ -22,12 +22,15 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Structure step to restore one knowledgecheck activity.
  */
 class restore_aiknowledgecheck_activity_structure_step extends restore_activity_structure_step {
+    /**
+     * Define the structure of this step.
+     *
+     * @return mixed The structure this step defines.
+     */
     protected function define_structure() {
         $paths = [];
         $userinfo = $this->get_setting_value('userinfo');
@@ -43,6 +46,11 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
         return $this->prepare_activity_structure($paths);
     }
 
+    /**
+     * Restore one aiknowledgecheck activity record.
+     *
+     * @param mixed $data The data value.
+     */
     protected function process_aiknowledgecheck($data) {
         global $DB;
 
@@ -75,6 +83,11 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
         $this->apply_activity_instance($newitemid);
     }
 
+    /**
+     * Restore one question belonging to the activity.
+     *
+     * @param mixed $data The data value.
+     */
     protected function process_aiknowledgecheck_question($data) {
         global $DB;
 
@@ -86,6 +99,11 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
         $this->set_mapping('aiknowledgecheck_question', $oldid, $newitemid);
     }
 
+    /**
+     * Restore one student attempt.
+     *
+     * @param mixed $data The data value.
+     */
     protected function process_aiknowledgecheck_attempt($data) {
         global $DB;
 
@@ -127,6 +145,11 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
         $this->set_mapping('aiknowledgecheck_attempt', $oldid, $newitemid);
     }
 
+    /**
+     * Restore one attempt override.
+     *
+     * @param mixed $data The data value.
+     */
     protected function process_aiknowledgecheck_override($data) {
         global $DB;
 
@@ -141,6 +164,9 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
         $this->set_mapping('aiknowledgecheck_override', $oldid, $newitemid);
     }
 
+    /**
+     * Run the tasks that must happen once the whole activity is restored.
+     */
     protected function after_execute() {
         $this->add_related_files('mod_aiknowledgecheck', 'intro', null);
         // Restore the per-question image-gate images backed up above.

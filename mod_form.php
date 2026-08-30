@@ -55,7 +55,7 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
 
         // ---------------------------------------------------------------
         // Survey Mode settings.
-        // ---------------------------------------------------------------
+        // ---------------------------------------------------------------.
         $mform->addElement('header', 'surveymodehdr', get_string('surveymode_header', 'mod_aiknowledgecheck'));
         $mform->setExpanded('surveymodehdr', false);
 
@@ -65,14 +65,14 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
 
         $scaleoptions = [
             'likert5agree'  => get_string('scale_likert5agree', 'mod_aiknowledgecheck'),
-            'likert5sat'    => get_string('scale_likert5sat',   'mod_aiknowledgecheck'),
-            'likert5freq'   => get_string('scale_likert5freq',  'mod_aiknowledgecheck'),
-            'likert5qual'   => get_string('scale_likert5qual',  'mod_aiknowledgecheck'),
-            'likert5imp'    => get_string('scale_likert5imp',   'mod_aiknowledgecheck'),
+            'likert5sat'    => get_string('scale_likert5sat', 'mod_aiknowledgecheck'),
+            'likert5freq'   => get_string('scale_likert5freq', 'mod_aiknowledgecheck'),
+            'likert5qual'   => get_string('scale_likert5qual', 'mod_aiknowledgecheck'),
+            'likert5imp'    => get_string('scale_likert5imp', 'mod_aiknowledgecheck'),
             'likert4agree'  => get_string('scale_likert4agree', 'mod_aiknowledgecheck'),
-            'yesno'         => get_string('scale_yesno',        'mod_aiknowledgecheck'),
-            'yesnounsure'   => get_string('scale_yesnounsure',  'mod_aiknowledgecheck'),
-            'nps5'          => get_string('scale_nps5',         'mod_aiknowledgecheck'),
+            'yesno'         => get_string('scale_yesno', 'mod_aiknowledgecheck'),
+            'yesnounsure'   => get_string('scale_yesnounsure', 'mod_aiknowledgecheck'),
+            'nps5'          => get_string('scale_nps5', 'mod_aiknowledgecheck'),
         ];
         $mform->addElement('select', 'surveyscale', get_string('surveyscale', 'mod_aiknowledgecheck'), $scaleoptions);
         $mform->setDefault('surveyscale', 'likert5agree');
@@ -81,7 +81,7 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
 
         // ---------------------------------------------------------------
         // Attempt settings header.
-        // ---------------------------------------------------------------
+        // ---------------------------------------------------------------.
         $mform->addElement('header', 'attemptsettings', get_string('attemptsettings', 'mod_aiknowledgecheck'));
 
         // Maximum attempts field.
@@ -173,8 +173,12 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
 
         $fileoptions = ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['image']];
         $mform->addElement(
-            'filemanager', 'imagegate_filemanager',
-            get_string('imagegate_image', 'mod_aiknowledgecheck'), null, $fileoptions);
+            'filemanager',
+            'imagegate_filemanager',
+            get_string('imagegate_image', 'mod_aiknowledgecheck'),
+            null,
+            $fileoptions
+        );
         $mform->addHelpButton('imagegate_filemanager', 'imagegate_image', 'mod_aiknowledgecheck');
 
         // Standard elements.
@@ -194,8 +198,10 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $suffix = $this->get_suffix();
 
         $mform->addElement(
-            'checkbox', 'completionallcorrect' . $suffix, 
-            get_string('completionallcorrect', 'mod_aiknowledgecheck'));
+            'checkbox',
+            'completionallcorrect' . $suffix,
+            get_string('completionallcorrect', 'mod_aiknowledgecheck')
+        );
         $mform->setDefault('completionallcorrect' . $suffix, 0);
         $mform->addHelpButton('completionallcorrect' . $suffix, 'completionallcorrect', 'mod_aiknowledgecheck');
 
@@ -267,7 +273,8 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
                     'iteminstance' => $defaultvalues['instance'],
                     'courseid' => $defaultvalues['course'],
                     'itemnumber' => 0,
-                ]);
+                ]
+            );
             if ($gradeitem && $gradeitem->gradepass > 0) {
                 $defaultvalues['gradepass'] = format_float($gradeitem->gradepass, 5, true, true);
             } else {

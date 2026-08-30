@@ -16,7 +16,7 @@
 
 /**
  * AI Knowledge Check settings.
- * 
+ *
  * Note: Site ID and API Key are managed via AI Grader Central Config (local_aiconfig).
  * These fallback settings are only used if Central Config is not installed.
  *
@@ -28,10 +28,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    // Check if central config is available
+    // Check if central config is available.
     $centralconfigurl = new moodle_url('/admin/settings.php', ['section' => 'local_aiconfig']);
     $centralconfiginstalled = file_exists($CFG->dirroot . '/local/aiconfig/version.php');
-    
+
     if ($centralconfiginstalled) {
         $settings->add(
             new admin_setting_heading(
@@ -42,7 +42,8 @@ if ($hassiteconfig) {
                 'Site ID and API Key are managed centrally. ' .
                 '<a href="' . $centralconfigurl->out() . '">Configure Central Settings</a>' .
                 '</div>'
-            ));
+            )
+        );
     } else {
         $settings->add(
             new admin_setting_heading(
@@ -52,7 +53,8 @@ if ($hassiteconfig) {
                 '<strong style="color: #b45309;">Recommended: Install AI Grader Central Config</strong><br>' .
                 'Configure Site ID and API Key once for all AI Grader plugins.' .
                 '</div>'
-            ));
+            )
+        );
     }
 
     // API URL setting.
@@ -63,7 +65,8 @@ if ($hassiteconfig) {
             get_string('apiurl_desc', 'mod_aiknowledgecheck'),
             'https://lms-labs.com',
             PARAM_URL
-        ));
+        )
+    );
 
     // Site ID setting (fallback).
     $settings->add(
@@ -73,7 +76,8 @@ if ($hassiteconfig) {
             get_string('siteid_desc', 'mod_aiknowledgecheck') . ($centralconfiginstalled ? ' (Fallback - Central Config takes priority)' : ''),
             '',
             PARAM_TEXT
-        ));
+        )
+    );
 
     // API Key setting (fallback).
     $settings->add(
@@ -82,7 +86,8 @@ if ($hassiteconfig) {
             get_string('apikey', 'mod_aiknowledgecheck'),
             get_string('apikey_desc', 'mod_aiknowledgecheck') . ($centralconfiginstalled ? ' (Fallback - Central Config takes priority)' : ''),
             ''
-        ));
+        )
+    );
 
     // Credits info.
     $settings->add(
@@ -90,5 +95,6 @@ if ($hassiteconfig) {
             'mod_aiknowledgecheck/credits_heading',
             get_string('credits_heading', 'mod_aiknowledgecheck'),
             get_string('credits_info', 'mod_aiknowledgecheck')
-        ));
+        )
+    );
 }

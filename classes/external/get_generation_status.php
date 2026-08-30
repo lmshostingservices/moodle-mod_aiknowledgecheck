@@ -74,7 +74,8 @@ class get_generation_status extends external_api {
             [
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
                 'jobid' => new external_value(PARAM_ALPHANUMEXT, 'Generation job identifier'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -86,10 +87,12 @@ class get_generation_status extends external_api {
      */
     public static function execute(int $cmid, string $jobid): array {
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'jobid' => $jobid,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
@@ -148,6 +151,7 @@ class get_generation_status extends external_api {
                     'Raw JSON status document from the generation service, empty string on failure'
                 ),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty string on success'),
-            ]);
+            ]
+        );
     }
 }

@@ -24,8 +24,6 @@
 
 namespace mod_aiknowledgecheck\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Course module viewed event class.
  */

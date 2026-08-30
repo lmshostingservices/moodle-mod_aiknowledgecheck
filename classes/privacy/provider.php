@@ -32,15 +32,10 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use core_privacy\local\request\transform;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy provider implementation.
  */
-class provider implements
-    \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\core_userlist_provider {
+class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\core_userlist_provider, \core_privacy\local\request\plugin\provider {
     /**
      * Get metadata about data stored by this plugin.
      *
@@ -193,10 +188,12 @@ class provider implements
             }
 
             $attempts = $DB->get_records(
-                'aiknowledgecheck_attempts', [
+                'aiknowledgecheck_attempts',
+                [
                     'aiknowledgecheckid' => $cm->instance,
                     'userid' => $userid,
-                ]);
+                ]
+            );
 
             foreach ($attempts as $attempt) {
                 // H-4: include the actual answers (selected options AND free-text responses).
@@ -223,10 +220,12 @@ class provider implements
 
             // M-3: export the user's attempt-limit overrides for this activity.
             $overrides = $DB->get_records(
-                'aiknowledgecheck_overrides', [
+                'aiknowledgecheck_overrides',
+                [
                     'aiknowledgecheckid' => $cm->instance,
                     'userid' => $userid,
-                ]);
+                ]
+            );
             foreach ($overrides as $override) {
                 $odata = (object) [
                     'extraattempts' => $override->extraattempts,
@@ -238,7 +237,6 @@ class provider implements
                     $odata
                 );
             }
-
         }
     }
 
@@ -291,26 +289,32 @@ class provider implements
             }
 
             $DB->delete_records(
-                'aiknowledgecheck_attempts', [
+                'aiknowledgecheck_attempts',
+                [
                     'aiknowledgecheckid' => $cm->instance,
                     'userid' => $userid,
-                ]);
+                ]
+            );
 
             $DB->delete_records(
-                'aiknowledgecheck_overrides', [
+                'aiknowledgecheck_overrides',
+                [
                     'aiknowledgecheckid' => $cm->instance,
                     'userid' => $userid,
-                ]);
+                ]
+            );
 
-        // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
-        // table_exists() because it is vestigial — some sites may not have it — and an
-        // erasure request must not fail on a missing table.
+            // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
+            // table_exists() because it is vestigial — some sites may not have it — and an
+            // erasure request must not fail on a missing table.
             if ($DB->get_manager()->table_exists('aiknowledgecheck_quizzes')) {
                 $DB->delete_records(
-                    'aiknowledgecheck_quizzes', [
+                    'aiknowledgecheck_quizzes',
+                    [
                         'aiknowledgecheckid' => $cm->instance,
                         'userid' => $userid,
-                    ]);
+                    ]
+                );
             }
         }
     }
@@ -339,7 +343,7 @@ class provider implements
             return;
         }
 
-        list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $params = array_merge(['aiknowledgecheckid' => $cm->instance], $inparams);
 
         $DB->delete_records_select(

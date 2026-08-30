@@ -54,7 +54,8 @@ class start_attempt extends external_api {
         return new external_function_parameters(
             [
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -91,11 +92,13 @@ class start_attempt extends external_api {
         $transaction = $DB->start_delegated_transaction();
         try {
             $inprogress = $DB->get_record(
-                'aiknowledgecheck_attempts', [
+                'aiknowledgecheck_attempts',
+                [
                     'aiknowledgecheckid' => $knowledgecheck->id,
                     'userid' => $userid,
                     'status' => 0,
-                ]);
+                ]
+            );
 
             if (!$inprogress && aiknowledgecheck_can_attempt($knowledgecheck, $userid)) {
                 $now = time();
@@ -151,8 +154,13 @@ class start_attempt extends external_api {
      * @return array
      */
     private static function result(
-        bool $ok, string $error = '', int $attemptid = 0,
-            bool $resumed = false, int $currentquestion = 0, array $answers = []): array {
+        bool $ok,
+        string $error = '',
+        int $attemptid = 0,
+        bool $resumed = false,
+        int $currentquestion = 0,
+        array $answers = []
+    ): array {
         return [
             'ok' => $ok,
             'error' => $error,
@@ -181,7 +189,10 @@ class start_attempt extends external_api {
         return new external_single_structure(
             [
                 'ok' => new external_value(PARAM_BOOL, 'True when an attempt was started or resumed'),
-                'error' => new external_value(PARAM_TEXT, 'User-facing reason the attempt could not be started; empty when ok is true'),
+                'error' => new external_value(
+                    PARAM_TEXT,
+                    'User-facing reason the attempt could not be started; empty when ok is true'
+                ),
                 'attemptid' => new external_value(PARAM_INT, 'ID of the started or resumed attempt, 0 on failure'),
                 'resumed' => new external_value(PARAM_BOOL, 'True when an existing in-progress attempt was returned'),
                 'currentquestion' => new external_value(PARAM_INT, 'Highest question number reached so far'),
@@ -189,6 +200,7 @@ class start_attempt extends external_api {
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'The attempt answers map, keyed by question ID, as a JSON string'
                 ),
-            ]);
+            ]
+        );
     }
 }

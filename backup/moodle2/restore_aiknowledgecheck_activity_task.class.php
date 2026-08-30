@@ -30,20 +30,36 @@ require_once($CFG->dirroot . '/mod/aiknowledgecheck/backup/moodle2/restore_aikno
  * Restore task that provides all the settings and steps to perform one complete restore of the activity.
  */
 class restore_aiknowledgecheck_activity_task extends restore_activity_task {
+    /**
+     * Define the particular settings this activity can have.
+     */
     protected function define_my_settings() {
         // No particular settings for this activity.
     }
 
+    /**
+     * Define the structure of the backup file.
+     */
     protected function define_my_steps() {
         $this->add_step(new restore_aiknowledgecheck_activity_structure_step('aiknowledgecheck_structure', 'aiknowledgecheck.xml'));
     }
 
+    /**
+     * Define the contents that must be decoded on restore.
+     *
+     * @return array The decoding contents.
+     */
     public static function define_decode_contents() {
         $contents = [];
         $contents[] = new restore_decode_content('aiknowledgecheck', ['intro'], 'aiknowledgecheck');
         return $contents;
     }
 
+    /**
+     * Define the decoding rules for links belonging to this activity.
+     *
+     * @return array The decoding rules.
+     */
     public static function define_decode_rules() {
         $rules = [];
 
@@ -53,6 +69,11 @@ class restore_aiknowledgecheck_activity_task extends restore_activity_task {
         return $rules;
     }
 
+    /**
+     * Define the restore log rules for this activity.
+     *
+     * @return array The restore log rules.
+     */
     public static function define_restore_log_rules() {
         $rules = [];
         $rules[] = new restore_log_rule('aiknowledgecheck', 'add', 'view.php?id={course_module}', '{aiknowledgecheck}');
@@ -61,6 +82,11 @@ class restore_aiknowledgecheck_activity_task extends restore_activity_task {
         return $rules;
     }
 
+    /**
+     * Define the restore log rules that apply at course level.
+     *
+     * @return array The course-level restore log rules.
+     */
     public static function define_restore_log_rules_for_course() {
         $rules = [];
         $rules[] = new restore_log_rule('aiknowledgecheck', 'view all', 'index.php?id={course}', null);

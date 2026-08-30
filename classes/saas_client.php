@@ -30,8 +30,6 @@
 
 namespace mod_aiknowledgecheck;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Resolves credentials for, and posts JSON to, the generation service.
  */
@@ -109,12 +107,15 @@ class saas_client {
         // could not parse the body and rejected every request. Options must be passed as the
         // third argument to post() so they are applied after that reset.
         $raw = $curl->post(
-            $url, json_encode($payload), [
+            $url,
+            json_encode($payload),
+            [
                 'CURLOPT_TIMEOUT'        => $timeout,
                 'CURLOPT_CONNECTTIMEOUT' => 10,
                 'CURLOPT_SSL_VERIFYPEER' => true,
                 'CURLOPT_HTTPHEADER'     => ['Content-Type: application/json'],
-            ]);
+            ]
+        );
 
         $info = $curl->get_info();
         $httpcode = isset($info['http_code']) ? (int)$info['http_code'] : 0;

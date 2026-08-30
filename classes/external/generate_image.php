@@ -58,7 +58,8 @@ class generate_image extends external_api {
             [
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
                 'prompt' => new external_value(PARAM_TEXT, 'Image prompt'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -71,10 +72,12 @@ class generate_image extends external_api {
     public static function execute(int $cmid, string $prompt): array {
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'prompt' => $prompt,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
@@ -155,6 +158,7 @@ class generate_image extends external_api {
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL; PARAM_URL rejects it. Sanitised on write
                     'The generated image as a data URL, empty on failure'
                 ),
-            ]);
+            ]
+        );
     }
 }

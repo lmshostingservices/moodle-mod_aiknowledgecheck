@@ -55,7 +55,8 @@ class finish_attempt extends external_api {
         return new external_function_parameters(
             [
                 'attemptid' => new external_value(PARAM_INT, 'ID of the in-progress attempt'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -109,7 +110,8 @@ class finish_attempt extends external_api {
         $totalcount = $DB->count_records_select(
             'aiknowledgecheck_questions',
             'aiknowledgecheckid = :kcid AND (questiontype IS NULL OR questiontype <> :ft)',
-            ['kcid' => (int)$attempt->aiknowledgecheckid, 'ft' => 'freetext']);
+            ['kcid' => (int)$attempt->aiknowledgecheckid, 'ft' => 'freetext']
+        );
         if ($totalcount < $correctcount) {
             $totalcount = $correctcount; // Safety — never fewer than the correct count.
         }
@@ -170,16 +172,21 @@ class finish_attempt extends external_api {
             if (!$dbman->table_exists('local_aiqr_job') || !$dbman->field_exists('local_aiqr_job', 'sourcetype')) {
                 return;
             }
-            if ($DB->record_exists(
-                'local_aiqr_job', [
+            if (
+                $DB->record_exists(
+                    'local_aiqr_job',
+                    [
                     'attemptid'  => $attemptid,
                     'sourcetype' => 'knowledgecheck',
                     'questionid' => null,
-                ])) {
+                    ]
+                )
+            ) {
                 return;
             }
             $DB->insert_record(
-                'local_aiqr_job', (object) [
+                'local_aiqr_job',
+                (object) [
                     'userid'       => $USER->id,
                     'courseid'     => $courseid,
                     'quizid'       => null,
@@ -191,7 +198,8 @@ class finish_attempt extends external_api {
                     'errormsg'     => null,
                     'timecreated'  => time(),
                     'timemodified' => time(),
-                ]);
+                ]
+            );
         } catch (Throwable $e) {
             // Remediation job creation is optional — never let it break the KC attempt.
             debugging('aiknowledgecheck: remedial job creation failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
@@ -210,8 +218,13 @@ class finish_attempt extends external_api {
      * @return array
      */
     private static function result(
-        bool $ok, string $error = '', int $correctcount = 0,
-            int $totalcount = 0, int $attemptsused = 0, bool $canattempt = false): array {
+        bool $ok,
+        string $error = '',
+        int $correctcount = 0,
+        int $totalcount = 0,
+        int $attemptsused = 0,
+        bool $canattempt = false
+    ): array {
         return [
             'ok' => $ok,
             'error' => $error,
@@ -239,6 +252,7 @@ class finish_attempt extends external_api {
                 'totalcount' => new external_value(PARAM_INT, 'Total scale questions in the activity'),
                 'attemptsUsed' => new external_value(PARAM_INT, 'Attempts used by this user after finishing'),
                 'canAttempt' => new external_value(PARAM_BOOL, 'Whether the user may start another attempt'),
-            ]);
+            ]
+        );
     }
 }

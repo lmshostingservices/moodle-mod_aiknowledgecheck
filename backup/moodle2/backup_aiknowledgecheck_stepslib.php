@@ -22,17 +22,22 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Define the complete knowledgecheck structure for backup.
  */
 class backup_aiknowledgecheck_activity_structure_step extends backup_activity_structure_step {
+    /**
+     * Define the structure of this step.
+     *
+     * @return mixed The structure this step defines.
+     */
     protected function define_structure() {
         $userinfo = $this->get_setting_value('userinfo');
 
         $knowledgecheck = new backup_nested_element(
-            'aiknowledgecheck', ['id'], [
+            'aiknowledgecheck',
+            ['id'],
+            [
                 'name', 'intro', 'introformat', 'grade', 'maxattempts', 'questioncount',
                 'passinggrade', 'completionallcorrect', 'completionpassgrade', 'ccemail',
                 'voiceoverenabled', 'voicelanguage', 'voicegender', 'voicestyle',
@@ -40,11 +45,14 @@ class backup_aiknowledgecheck_activity_structure_step extends backup_activity_st
                 'showchapterstamps', 'audiourl', 'audiorequirement', 'audiominseconds',
                 'imageurl', 'aftercompletion', 'sourcecontext', 'surveymode', 'surveyscale',
                 'timecreated', 'timemodified',
-            ]);
+            ]
+        );
 
         $questions = new backup_nested_element('questions');
         $question = new backup_nested_element(
-            'question', ['id'], [
+            'question',
+            ['id'],
+            [
                 'questionnumber', 'questiontext',
                 'answer1', 'answer2', 'answer3', 'answer4', 'answer5',
                 'correctanswer',
@@ -52,21 +60,28 @@ class backup_aiknowledgecheck_activity_structure_step extends backup_activity_st
                 'audiodata', 'mappingtopic', 'mappingcriteria', 'timestamp_seconds',
                 'imageurl', 'imageenabled', 'questiontype',
                 'questionvideourl', 'questionvideoenabled', 'questionaudiourl', 'questionaudioenabled',
-            ]);
+            ]
+        );
 
         $attempts = new backup_nested_element('attempts');
         $attempt = new backup_nested_element(
-            'attempt', ['id'], [
+            'attempt',
+            ['id'],
+            [
                 'userid', 'currentquestion', 'answers',
                 'correctcount', 'totalcount', 'status',
                 'timecreated', 'timemodified', 'timestarted', 'timeended',
-            ]);
+            ]
+        );
 
         $overrides = new backup_nested_element('overrides');
         $override = new backup_nested_element(
-            'override', ['id'], [
+            'override',
+            ['id'],
+            [
                 'userid', 'extraattempts', 'timecreated', 'timemodified',
-            ]);
+            ]
+        );
 
         $knowledgecheck->add_child($questions);
         $questions->add_child($question);

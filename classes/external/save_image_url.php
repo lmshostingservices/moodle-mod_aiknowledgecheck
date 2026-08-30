@@ -63,7 +63,8 @@ class save_image_url extends external_api {
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL; PARAM_URL rejects it. Sanitised on write
                     'An http(s) URL or a data:image URL'
                 ),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -77,10 +78,12 @@ class save_image_url extends external_api {
         global $DB;
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'imageurl' => $imageurl,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
@@ -110,6 +113,7 @@ class save_image_url extends external_api {
             [
                 'ok' => new external_value(PARAM_BOOL, 'True when the URL was stored'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty on success'),
-            ]);
+            ]
+        );
     }
 }

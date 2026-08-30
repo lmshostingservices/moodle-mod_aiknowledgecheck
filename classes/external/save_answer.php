@@ -71,7 +71,8 @@ class save_answer extends external_api {
                     VALUE_DEFAULT,
                     ''
                 ),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -87,12 +88,14 @@ class save_answer extends external_api {
         global $DB, $USER;
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'attemptid' => $attemptid,
                 'questionid' => $questionid,
                 'answerindex' => $answerindex,
                 'freetextvalue' => $freetextvalue,
-            ]);
+            ]
+        );
 
         $attempt = $DB->get_record('aiknowledgecheck_attempts', ['id' => $params['attemptid']], '*', MUST_EXIST);
         $knowledgecheck = $DB->get_record('aiknowledgecheck', ['id' => $attempt->aiknowledgecheckid], '*', MUST_EXIST);
@@ -203,11 +206,13 @@ class save_answer extends external_api {
         // flow re-saves an already-answered scale question.
         if (self::already_answered($answers, $question->id)) {
             return self::result(
-                true, '',
+                true,
+                '',
                 !empty($answers[$question->id]['iscorrect']),
                 (int)$question->correctanswer,
                 $explanations,
-                true);
+                true
+            );
         }
 
         $iscorrect = ($answerindex == $question->correctanswer);
@@ -279,8 +284,13 @@ class save_answer extends external_api {
      * @return array
      */
     private static function result(
-        bool $ok, string $error = '', ?bool $iscorrect = null,
-            ?int $correctanswer = null, array $explanations = [], bool $locked = false): array {
+        bool $ok,
+        string $error = '',
+        ?bool $iscorrect = null,
+        ?int $correctanswer = null,
+        array $explanations = [],
+        bool $locked = false
+    ): array {
         return [
             'ok' => $ok,
             'error' => $error,
@@ -319,6 +329,7 @@ class save_answer extends external_api {
                     'Per-option explanations in original option order; empty when withheld'
                 ),
                 'locked' => new external_value(PARAM_BOOL, 'True when a previously recorded answer was returned unchanged'),
-            ]);
+            ]
+        );
     }
 }

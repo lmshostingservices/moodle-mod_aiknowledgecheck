@@ -73,21 +73,21 @@ $table->align[] = 'left';
 
 foreach ($knowledgechecks as $knowledgecheck) {
     $row = [];
-    
+
     if ($usesections) {
         $row[] = get_section_name($course, $knowledgecheck->section);
     }
-    
+
     $link = html_writer::link(
         new moodle_url('/mod/aiknowledgecheck/view.php', ['id' => $knowledgecheck->coursemodule]),
         format_string($knowledgecheck->name),
         ['class' => $knowledgecheck->visible ? '' : 'dimmed']
     );
     $row[] = $link;
-    
+
     $intro = format_module_intro('aiknowledgecheck', $knowledgecheck, $knowledgecheck->coursemodule);
     $row[] = $intro;
-    
+
     $table->data[] = $row;
 }
 

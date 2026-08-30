@@ -55,7 +55,8 @@ class save_voice_settings extends external_api {
                 'voicelanguage' => new external_value(PARAM_TEXT, 'Voice language code', VALUE_DEFAULT, 'en-AU'),
                 'voicegender' => new external_value(PARAM_ALPHA, 'Voice gender', VALUE_DEFAULT, 'female'),
                 'voicestyle' => new external_value(PARAM_ALPHANUMEXT, 'Voice style name', VALUE_DEFAULT, 'Aoede'),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -78,13 +79,15 @@ class save_voice_settings extends external_api {
         global $DB;
 
         $params = self::validate_parameters(
-            self::execute_parameters(), [
+            self::execute_parameters(),
+            [
                 'cmid' => $cmid,
                 'voiceoverenabled' => $voiceoverenabled,
                 'voicelanguage' => $voicelanguage,
                 'voicegender' => $voicegender,
                 'voicestyle' => $voicestyle,
-            ]);
+            ]
+        );
 
         $cm = get_coursemodule_from_id('aiknowledgecheck', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
@@ -145,6 +148,7 @@ class save_voice_settings extends external_api {
                     PARAM_INT,
                     'Number of questions whose stored audio was discarded, 0 unless voiceover was turned off'
                 ),
-            ]);
+            ]
+        );
     }
 }

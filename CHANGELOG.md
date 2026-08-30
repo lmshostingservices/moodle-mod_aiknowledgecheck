@@ -2,6 +2,35 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.155] - 2026-08-30
+
+Adds the missing CI workflow and clears the mechanically fixable part of the Moodle code checker.
+
+### Added — Moodle Plugin CI workflow
+`.github/workflows/moodle-ci.yml` runs `moodlehq/moodle-plugin-ci` v4 against MOODLE_401, 404, 405 and 500 on the PHP version each branch supports, matching `version.php` (`requires` 2022041900, `supported [400, 500]`). Steps: phplint, phpmd, phpcs, phpdoc, validate, savepoints, mustache, grunt, phpunit, behat. This is what "Moodle Plugin CI workflow run is missing" was asking for; the run itself needs the plugin in a GitHub repository.
+
+### Fixed — Moodle code checker
+Ran the real thing locally (`moodlehq/moodle-cs` under PHP_CodeSniffer 3.13.2) rather than guessing. The headline number is misleading: the raw count is 30,264, but the line-length and docblock sniffs fire once per token on a line, so the honest figure is **1,505 unique (file, line, sniff) findings**. That is now **463**.
+
+- `phpcbf` fixed 987 automatically: call-signature formatting, inline comment spacing, superfluous whitespace, `else if` → `elseif`, `list()` → short list syntax.
+- Completed three truncated GPL boilerplate headers (`version.php`, `version_repair.php`, `db/hooks.php`, `classes/hook/...`) and added missing end-of-file newlines.
+- Removed `defined('MOODLE_INTERNAL') || die();` from the eight files where the checker reports it is not needed.
+- Renamed local variables that were camelCase or carried underscores (`$inSql`, `$kcEtaMin`, `$_pluginDir`, `$is_survey_mode`, `$imageurl_gate` and others).
+- Added the 16 missing docblocks across `backup/moodle2/`.
+- Reworded two comments the checker read as commented-out code, and capitalised/punctuated 41 inline comments.
+- Wrapped the long lines in the files this migration authored, and moved this file's release note out of a single 457-character comment.
+
+**One of these undid the previous release.** The multi-line call shape v1.5.154 adopted to satisfy the LMS-Labs checker — first argument on its own line, remaining arguments together — is a `PSR2.Methods.FunctionCallSignature` violation under the Moodle standard, which wants one argument per line and the closing bracket on its own. That was 325 findings. `phpcbf` has now produced the shape that satisfies both.
+
+### Known conflict between the two checkers
+The LMS-Labs pipeline requires the literal `// pipeline-ignore: PARAM_RAW — <reason>`; the Moodle standard requires inline comments to start with a capital and end with punctuation. The 26 ignore comments cannot satisfy both, and they are currently in the form the LMS-Labs blocker demands, because a blocker outranks a warning. Resolving it means either that pipeline accepting `// Pipeline-ignore:` or the comments carrying a `phpcs:ignore` annotation.
+
+### Still structural, not addressed
+358 of the 463 remaining findings are in `view.php`: 241 `MissingDocblock.File` and 117 over-length lines. The docblock count is exactly the number of `?>` toggles in the file — the sniff treats each re-entry into PHP as a new artifact needing a docblock. Both are symptoms of the same thing: `view.php` is 1,957 lines of markup with PHP interleaved. The Moodle-correct fix is Mustache templates plus moving the inline `<script>` blocks into AMD, which is the same refactor the "hardcoded strings in AMD JS" warning points at. That is a real piece of work and it belongs in its own release with its own live verification.
+
+### Version
+- `version.php` → `2026083012` (release `1.5.155`). No DB schema changes; the 1.5.150 savepoint is unchanged. No AMD changes. An intermediate build of this release, `2026083011`, was installed on the staging site part-way through the checker pass and was never distributed; `2026083012` is the released build.
+
 ## [1.5.154] - 2026-08-30
 
 Second release-pipeline pass. No functional change of any kind — see the note on how that is guaranteed.

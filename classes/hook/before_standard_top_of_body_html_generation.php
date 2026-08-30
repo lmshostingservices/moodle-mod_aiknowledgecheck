@@ -5,10 +5,16 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace mod_aiknowledgecheck\hook;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Shows administrators a repair action for a stranded plugin version.
@@ -28,9 +34,11 @@ class before_standard_top_of_body_html_generation {
     ): void {
         global $CFG;
 
-        if ((defined('CLI_SCRIPT') && CLI_SCRIPT)
+        if (
+            (defined('CLI_SCRIPT') && CLI_SCRIPT)
             || (defined('AJAX_SCRIPT') && AJAX_SCRIPT)
-            || (defined('WS_SERVER') && WS_SERVER)) {
+            || (defined('WS_SERVER') && WS_SERVER)
+        ) {
             return;
         }
         if (!isloggedin() || isguestuser()) {
