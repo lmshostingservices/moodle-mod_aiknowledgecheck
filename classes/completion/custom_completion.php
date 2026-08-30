@@ -53,7 +53,8 @@ class custom_completion extends activity_custom_completion {
                 // has submitted any completed attempt.
                 $issurvey = (int)$DB->get_field('aiknowledgecheck', 'surveymode', ['id' => $kid]);
                 if ($issurvey) {
-                    $done = $DB->record_exists('aiknowledgecheck_attempts',
+                    $done = $DB->record_exists(
+                        'aiknowledgecheck_attempts',
                         ['aiknowledgecheckid' => $kid, 'userid' => $userid, 'status' => 1]);
                     return $done ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
                 }

@@ -40,7 +40,8 @@ require_capability('mod/aiknowledgecheck:viewreports', $context);
 $iscsvexport = optional_param('export', '', PARAM_ALPHA) === 'csv';
 if ($iscsvexport && !empty($knowledgecheck->surveymode)) {
     // Load questions.
-    $csvquestions = $DB->get_records('aiknowledgecheck_questions',
+    $csvquestions = $DB->get_records(
+        'aiknowledgecheck_questions',
         ['aiknowledgecheckid' => $knowledgecheck->id], 'id ASC',
         'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype');
 
@@ -120,10 +121,12 @@ if ($iscsvexport && !empty($knowledgecheck->surveymode)) {
 // for anyone with viewreports here. Validate against this activity's attempts first.
 $user = null;
 if ($userid) {
-    $hasattempt = $DB->record_exists('aiknowledgecheck_attempts',
+    $hasattempt = $DB->record_exists(
+        'aiknowledgecheck_attempts',
         ['aiknowledgecheckid' => $knowledgecheck->id, 'userid' => $userid]);
     if ($hasattempt) {
-        $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0],
+        $user = $DB->get_record(
+            'user', ['id' => $userid, 'deleted' => 0],
             'id,firstname,lastname,alternatename,firstnamephonetic,lastnamephonetic,middlename,email',
             MUST_EXIST
         );
@@ -182,7 +185,8 @@ foreach ($enrolled as $eu) {
 }
 if (!empty($attemptuserids)) {
     list($insql, $inparams) = $DB->get_in_or_equal(array_keys($attemptuserids), SQL_PARAMS_NAMED);
-    $extrausers = $DB->get_records_select('user', "id $insql AND deleted = 0",
+    $extrausers = $DB->get_records_select(
+        'user', "id $insql AND deleted = 0",
         $inparams, 'lastname, firstname, id',
         'id, firstname, lastname, firstnamephonetic, lastnamephonetic, middlename, alternatename, email');
     foreach ($extrausers as $xu) {
@@ -193,7 +197,8 @@ if (!empty($attemptuserids)) {
 }
 
 // Sort picker list.
-usort($picker, function ($a, $b) {
+usort(
+    $picker, function ($a, $b) {
     $al = core_text::strtolower($a->lastname . ' ' . $a->firstname);
     $bl = core_text::strtolower($b->lastname . ' ' . $b->firstname);
     if ($al === $bl) {
@@ -216,16 +221,17 @@ $allurl = new moodle_url('/mod/aiknowledgecheck/report.php', ['id' => $cm->id]);
 // Render user picker.
 echo html_writer::start_div('kc-userpicker mb-3');
 echo html_writer::tag('label', get_string('user') . ':', ['for' => 'kc-userinput', 'class' => 'mr-2']);
-echo html_writer::empty_tag('input', [
-    'type' => 'text',
-    'id' => 'kc-userinput',
-    'class' => 'form-control',
-    'style' => 'max-width:520px; display:inline-block;',
-    'list' => 'kc-userdatalist',
-    'placeholder' => '',
-    'value' => $currentlabel,
-    'autocomplete' => 'off',
-]);
+echo html_writer::empty_tag(
+    'input', [
+        'type' => 'text',
+        'id' => 'kc-userinput',
+        'class' => 'form-control',
+        'style' => 'max-width:520px; display:inline-block;',
+        'list' => 'kc-userdatalist',
+        'placeholder' => '',
+        'value' => $currentlabel,
+        'autocomplete' => 'off',
+    ]);
 echo html_writer::start_tag('datalist', ['id' => 'kc-userdatalist']);
 foreach ($useroptions as $opt) {
     echo html_writer::empty_tag('option', ['value' => $opt['label']]);
@@ -316,10 +322,18 @@ $basemax = isset($knowledgecheck->maxattempts) ? (int)$knowledgecheck->maxattemp
 // Load per-user overrides.
 $extrabyuser = [];
 if (!empty($attempts)) {
-    $userids = array_values(array_unique(array_map(function ($a) { return (int)$a->userid; }, $attempts)));
+    $userids = array_values(
+        array_unique(
+            array_map(
+                function ($a) {
+                    return (int)$a->userid;
+                },
+                $attempts
+            )));
     if (!empty($userids)) {
         list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
-        $ovrs = $DB->get_records_select('aiknowledgecheck_overrides',
+        $ovrs = $DB->get_records_select(
+            'aiknowledgecheck_overrides',
             'aiknowledgecheckid = :kcid AND userid ' . $insql,
             ['kcid' => $knowledgecheck->id] + $inparams,
             '',
@@ -365,7 +379,8 @@ foreach ($attempts as $a) {
         $correctcount = (int)$a->correctcount;
     } else if (!empty($a->answers)) {
         // Fallback: recompute from answers JSON + question map.
-        $qmap = $qmap ?? $DB->get_records_menu('aiknowledgecheck_questions',
+        $qmap = $qmap ?? $DB->get_records_menu(
+            'aiknowledgecheck_questions',
             ['aiknowledgecheckid' => $knowledgecheck->id], '', 'id,correctanswer');
         $answers = json_decode($a->answers, true) ?: [];
         foreach ($answers as $qid => $ans) {
@@ -435,7 +450,8 @@ foreach ($attempts as $a) {
 // instead of the standard score accordion.
 if (!empty($knowledgecheck->surveymode)) {
     // Load questions and collect responses from all completed attempts.
-    $surveyqs = $DB->get_records('aiknowledgecheck_questions',
+    $surveyqs = $DB->get_records(
+        'aiknowledgecheck_questions',
         ['aiknowledgecheckid' => $knowledgecheck->id], 'id ASC',
         'id, questiontext AS question, answer1, answer2, answer3, answer4, answer5, questiontype');
 
@@ -503,7 +519,8 @@ if (!empty($knowledgecheck->surveymode)) {
     $csvurl = (new moodle_url('/mod/aiknowledgecheck/report.php', ['id' => $id, 'export' => 'csv']))->out(false);
 
     // Survey report styles.
-    echo html_writer::tag('style', '
+    echo html_writer::tag(
+        'style', '
         .kc-survey-report { max-width: 900px; }
         .kc-survey-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
         .kc-survey-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
@@ -538,7 +555,8 @@ if (!empty($knowledgecheck->surveymode)) {
 
     // Actions bar.
     echo html_writer::start_div('kc-survey-actions');
-    echo html_writer::link($csvurl,
+    echo html_writer::link(
+        $csvurl,
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV',
         ['class' => 'btn btn-secondary btn-sm']
     );
@@ -549,16 +567,25 @@ if (!empty($knowledgecheck->surveymode)) {
 
     // Summary stats.
     echo html_writer::start_div('kc-survey-stats');
-    echo html_writer::tag('div',
+    echo html_writer::tag(
+        'div',
         '<strong>' . $totalresponses . '</strong> ' . ($totalresponses === 1 ? 'response' : 'responses'),
         ['class' => 'kc-survey-stat-chip']);
-    $scaleqs = array_filter((array)$surveyqs, function ($q) { return $q->questiontype !== 'freetext'; });
-    $ftqs    = array_filter((array)$surveyqs, function ($q) { return $q->questiontype === 'freetext'; });
-    echo html_writer::tag('div',
+    $scaleqs = array_filter(
+        (array)$surveyqs, function ($q) {
+        return $q->questiontype !== 'freetext';
+    });
+    $ftqs = array_filter(
+        (array)$surveyqs, function ($q) {
+        return $q->questiontype === 'freetext';
+    });
+    echo html_writer::tag(
+        'div',
         '<strong>' . count($scaleqs) . '</strong> scale ' . (count($scaleqs) === 1 ? 'question' : 'questions'),
         ['class' => 'kc-survey-stat-chip']);
     if (count($ftqs) > 0) {
-        echo html_writer::tag('div',
+        echo html_writer::tag(
+            'div',
             '<strong>' . count($ftqs) . '</strong> open-ended ' . (count($ftqs) === 1 ? 'question' : 'questions'),
             ['class' => 'kc-survey-stat-chip']);
     }
@@ -572,7 +599,7 @@ if (!empty($knowledgecheck->surveymode)) {
         $qnum = 0;
         foreach ($surveyqs as $sq) {
             $qnum++;
-            if ($sq->questiontype === 'freetext') continue; // handled separately below
+            if ($sq->questiontype === 'freetext') continue; // Handled separately below.
 
             // Build option labels.
             $optlabels = [];
@@ -614,7 +641,10 @@ if (!empty($knowledgecheck->surveymode)) {
         }
 
         // ── Free-text questions: collected responses ──────────────────────────
-        $ftqs = array_filter((array)$surveyqs, function ($q) { return $q->questiontype === 'freetext'; });
+        $ftqs = array_filter(
+            (array)$surveyqs, function ($q) {
+            return $q->questiontype === 'freetext';
+        });
         if (!empty($ftqs)) {
             echo html_writer::start_div('kc-survey-freetext-section');
             echo '<h3>Open-Ended Responses</h3>';
@@ -672,7 +702,8 @@ if (empty($byuser)) {
     echo html_writer::div(get_string('noattempts', 'mod_aiknowledgecheck'));
 } else {
     // Inline styles for the accordion (avoids requiring a separate CSS file update on the server).
-    echo html_writer::tag('style', '
+    echo html_writer::tag(
+        'style', '
         .kc-report-accordion { border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
         .kc-report-accordion summary {
             display: flex; align-items: center; justify-content: space-between;
@@ -695,7 +726,13 @@ if (empty($byuser)) {
 
     // Summary bar: total students + total attempts.
     $totalstudents = count($byuser);
-    $totalattempts = array_sum(array_map(function ($u) { return count($u['attempts']); }, $byuser));
+    $totalattempts = array_sum(
+        array_map(
+            function ($u) {
+                return count($u['attempts']);
+            },
+            $byuser
+        ));
     echo html_writer::start_div('kc-report-summary-bar');
     echo html_writer::tag('span', $totalstudents . ' ' . ($totalstudents === 1 ? 'student' : 'students'), ['class' => 'kc-report-summary-chip']);
     echo html_writer::tag('span', $totalattempts . ' total ' . ($totalattempts === 1 ? 'attempt' : 'attempts'), ['class' => 'kc-report-summary-chip']);

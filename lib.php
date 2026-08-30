@@ -99,7 +99,7 @@ function aiknowledgecheck_add_instance($data, ?object $mform = null) {
         $data->grade = 100;
     }
 
-    // imageurl will be populated after file save below; default to empty.
+    // The imageurl column is populated after the file save below; default to empty.
     if (!isset($data->imageurl)) {
         $data->imageurl = '';
     }
@@ -119,10 +119,12 @@ function aiknowledgecheck_add_instance($data, ?object $mform = null) {
     if (!empty($data->imagegate_filemanager) && !empty($data->coursemodule)) {
         $fileoptions = ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['image']];
         $context = context_module::instance($data->coursemodule);
-        file_save_draft_area_files($data->imagegate_filemanager, $context->id,
+        file_save_draft_area_files(
+            $data->imagegate_filemanager, $context->id,
             'mod_aiknowledgecheck', 'imagegate', 0, $fileoptions);
         $fs = get_file_storage();
-        $files = $fs->get_area_files($context->id, 'mod_aiknowledgecheck', 'imagegate', 0,
+        $files = $fs->get_area_files(
+            $context->id, 'mod_aiknowledgecheck', 'imagegate', 0,
             'sortorder DESC, id DESC', false);
         if (!empty($files)) {
             $file = reset($files);
@@ -197,10 +199,12 @@ function aiknowledgecheck_update_instance($data, ?object $mform = null) {
     if (isset($data->imagegate_filemanager) && !empty($data->coursemodule)) {
         $fileoptions = ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['image']];
         $context = context_module::instance($data->coursemodule);
-        file_save_draft_area_files($data->imagegate_filemanager, $context->id,
+        file_save_draft_area_files(
+            $data->imagegate_filemanager, $context->id,
             'mod_aiknowledgecheck', 'imagegate', 0, $fileoptions);
         $fs = get_file_storage();
-        $files = $fs->get_area_files($context->id, 'mod_aiknowledgecheck', 'imagegate', 0,
+        $files = $fs->get_area_files(
+            $context->id, 'mod_aiknowledgecheck', 'imagegate', 0,
             'sortorder DESC, id DESC', false);
         if (!empty($files)) {
             $file = reset($files);
@@ -311,7 +315,8 @@ function aiknowledgecheck_grade_item_update($knowledgecheck, $grades = null) {
         $grades = null;
     }
 
-    $result = grade_update('mod/aiknowledgecheck', $knowledgecheck->course, 'mod', 'aiknowledgecheck',
+    $result = grade_update(
+        'mod/aiknowledgecheck', $knowledgecheck->course, 'mod', 'aiknowledgecheck',
         $knowledgecheck->id, 0, $grades, $params);
 
     return $result;
@@ -327,7 +332,8 @@ function aiknowledgecheck_grade_item_delete($knowledgecheck) {
     global $CFG;
     require_once($CFG->libdir . '/gradelib.php');
 
-    return grade_update('mod/aiknowledgecheck', $knowledgecheck->course, 'mod', 'aiknowledgecheck',
+    return grade_update(
+        'mod/aiknowledgecheck', $knowledgecheck->course, 'mod', 'aiknowledgecheck',
         $knowledgecheck->id, 0, null, ['deleted' => 1]);
 }
 
@@ -387,7 +393,8 @@ function aiknowledgecheck_update_grades($knowledgecheck, $userid = 0, $nullifnon
     }
 
     if (!empty($grades)) {
-        grade_update('mod/aiknowledgecheck', $knowledgecheck->course, 'mod', 'aiknowledgecheck',
+        grade_update(
+            'mod/aiknowledgecheck', $knowledgecheck->course, 'mod', 'aiknowledgecheck',
             $knowledgecheck->id, 0, $grades);
     }
 }
@@ -441,7 +448,8 @@ function mod_aiknowledgecheck_get_fontawesome_icon_map() {
 function aiknowledgecheck_get_coursemodule_info($coursemodule) {
     global $DB;
 
-    if (!$knowledgecheck = $DB->get_record('aiknowledgecheck', ['id' => $coursemodule->instance],
+    if (!$knowledgecheck = $DB->get_record(
+        'aiknowledgecheck', ['id' => $coursemodule->instance],
             'id, name, intro, introformat, completionallcorrect')) {
         return null;
     }
@@ -471,10 +479,11 @@ function aiknowledgecheck_get_coursemodule_info($coursemodule) {
  */
 function aiknowledgecheck_view($knowledgecheck, $course, $cm, $context) {
     // Trigger the course_module_viewed event.
-    $event = \mod_aiknowledgecheck\event\course_module_viewed::create([
-        'objectid' => $knowledgecheck->id,
-        'context' => $context,
-    ]);
+    $event = \mod_aiknowledgecheck\event\course_module_viewed::create(
+        [
+            'objectid' => $knowledgecheck->id,
+            'context' => $context,
+        ]);
     $event->add_record_snapshot('course', $course);
     $event->add_record_snapshot('aiknowledgecheck', $knowledgecheck);
     $event->trigger();
@@ -509,10 +518,11 @@ function aiknowledgecheck_effective_maxattempts($knowledgecheck, $userid) {
     }
 
     // Check for user override.
-    $override = $DB->get_record('aiknowledgecheck_overrides', [
-        'aiknowledgecheckid' => $knowledgecheck->id,
-        'userid' => $userid,
-    ]);
+    $override = $DB->get_record(
+        'aiknowledgecheck_overrides', [
+            'aiknowledgecheckid' => $knowledgecheck->id,
+            'userid' => $userid,
+        ]);
 
     $extra = $override ? max(0, (int)$override->extraattempts) : 0;
     return $base + $extra;
@@ -528,11 +538,12 @@ function aiknowledgecheck_effective_maxattempts($knowledgecheck, $userid) {
 function aiknowledgecheck_count_attempts($aiknowledgecheckid, $userid) {
     global $DB;
 
-    return (int)$DB->count_records('aiknowledgecheck_attempts', [
-        'aiknowledgecheckid' => $aiknowledgecheckid,
-        'userid' => $userid,
-        'status' => 1, // Completed.
-    ]);
+    return (int)$DB->count_records(
+        'aiknowledgecheck_attempts', [
+            'aiknowledgecheckid' => $aiknowledgecheckid,
+            'userid' => $userid,
+            'status' => 1, // Completed.
+        ]);
 }
 
 /**
@@ -567,10 +578,11 @@ function aiknowledgecheck_send_attempts_notification($knowledgecheck, $course, $
 
     // Check for throttling - only send notification once per user per activity per effective limit.
     // Use override record to track last notification timestamp.
-    $override = $DB->get_record('aiknowledgecheck_overrides', [
-        'aiknowledgecheckid' => $knowledgecheck->id,
-        'userid' => $user->id,
-    ]);
+    $override = $DB->get_record(
+        'aiknowledgecheck_overrides', [
+            'aiknowledgecheckid' => $knowledgecheck->id,
+            'userid' => $user->id,
+        ]);
 
     $maxattempts = aiknowledgecheck_effective_maxattempts($knowledgecheck, $user->id);
     $attemptsused = aiknowledgecheck_count_attempts($knowledgecheck->id, $user->id);
@@ -744,7 +756,8 @@ function aiknowledgecheck_pluginfile($course, $cm, $context, $filearea, $args, $
     $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
 
     $fs = get_file_storage();
-    $file = $fs->get_file($context->id, 'mod_aiknowledgecheck', 'imagegate',
+    $file = $fs->get_file(
+        $context->id, 'mod_aiknowledgecheck', 'imagegate',
         $itemid, $filepath, $filename);
 
     if (!$file || $file->is_directory()) {

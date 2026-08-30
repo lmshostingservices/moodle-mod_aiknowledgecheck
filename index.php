@@ -30,6 +30,12 @@ $course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);
 
 require_login($course);
 
+// The list itself carries no activity data beyond names and links, and
+// get_all_instances_in_course() below already filters by each activity's own visibility and
+// availability. This states the read requirement explicitly at the course context rather
+// than leaving it implied by require_login().
+require_capability('mod/aiknowledgecheck:view', context_course::instance($course->id));
+
 $PAGE->set_url('/mod/aiknowledgecheck/index.php', ['id' => $id]);
 $PAGE->set_pagelayout('incourse');
 

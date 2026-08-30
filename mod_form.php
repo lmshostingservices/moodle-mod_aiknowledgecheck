@@ -172,7 +172,8 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $mform->addElement('header', 'imagegatehdr', get_string('imagegate_header', 'mod_aiknowledgecheck'));
 
         $fileoptions = ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['image']];
-        $mform->addElement('filemanager', 'imagegate_filemanager',
+        $mform->addElement(
+            'filemanager', 'imagegate_filemanager',
             get_string('imagegate_image', 'mod_aiknowledgecheck'), null, $fileoptions);
         $mform->addHelpButton('imagegate_filemanager', 'imagegate_image', 'mod_aiknowledgecheck');
 
@@ -192,7 +193,8 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $mform = $this->_form;
         $suffix = $this->get_suffix();
 
-        $mform->addElement('checkbox', 'completionallcorrect' . $suffix, 
+        $mform->addElement(
+            'checkbox', 'completionallcorrect' . $suffix, 
             get_string('completionallcorrect', 'mod_aiknowledgecheck'));
         $mform->setDefault('completionallcorrect' . $suffix, 0);
         $mform->addHelpButton('completionallcorrect' . $suffix, 'completionallcorrect', 'mod_aiknowledgecheck');
@@ -258,13 +260,14 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         if (isset($defaultvalues['instance'])) {
             global $CFG;
             require_once($CFG->libdir . '/gradelib.php');
-            $gradeitem = grade_item::fetch([
-                'itemtype' => 'mod',
-                'itemmodule' => 'aiknowledgecheck',
-                'iteminstance' => $defaultvalues['instance'],
-                'courseid' => $defaultvalues['course'],
-                'itemnumber' => 0,
-            ]);
+            $gradeitem = grade_item::fetch(
+                [
+                    'itemtype' => 'mod',
+                    'itemmodule' => 'aiknowledgecheck',
+                    'iteminstance' => $defaultvalues['instance'],
+                    'courseid' => $defaultvalues['course'],
+                    'itemnumber' => 0,
+                ]);
             if ($gradeitem && $gradeitem->gradepass > 0) {
                 $defaultvalues['gradepass'] = format_float($gradeitem->gradepass, 5, true, true);
             } else {

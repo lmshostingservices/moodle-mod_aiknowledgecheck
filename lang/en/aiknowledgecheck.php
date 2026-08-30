@@ -508,7 +508,7 @@ $string['scale_likert5imp']     = 'Likert 5-point — Importance (Very Important
 $string['scale_likert4agree']   = 'Likert 4-point — Agreement (Strongly Agree … Strongly Disagree)';
 $string['scale_yesno']          = 'Yes / No';
 $string['scale_yesnounsure']    = 'Yes / No / Unsure';
-$string['scale_nps5']           = 'NPS 5-point (1-Very Poor … 5-Excellent)';
+$string['scale_nps5']           = 'Net Promoter 5-point (1-Very Poor … 5-Excellent)';
 
 // Survey student-facing strings.
 $string['startsurvey']          = 'Start Survey';
@@ -537,3 +537,19 @@ $string['versionrepair_gotonotifications'] = 'Continue to Notifications';
 
 // Events.
 $string['eventcoursemoduleviewed'] = 'Course module viewed';
+
+// MIGRATE-EXTERNAL-SERVICES (v1.5.144): user-facing errors returned by the External
+// Services layer. Declared here rather than hard-coded so they can be translated.
+$string['error:notconfigured'] = 'This plugin is not configured. Ask an administrator to set the Site ID and API Key under Site administration → Plugins → Activity modules → AI Knowledge Check.';
+$string['error:connectionfailed'] = 'Could not connect to the AI service. Please try again shortly.';
+$string['error:invalidresponse'] = 'The AI service returned an unexpected response.';
+$string['error:apihttp'] = 'The AI service returned an error (HTTP {$a}).';
+$string['error:statuscheckfailed'] = 'Could not check the generation status. Please try again shortly.';
+// MIGRATE-EXTERNAL-SERVICES (v1.5.152): errors for the remaining migrated actions. These
+// were hard-coded English strings inside ajax.php and are declared here so they translate.
+$string['error:topicstoolong'] = 'The topics text is too long. Please keep it under 10,000 characters.';
+$string['error:toomanytextsources'] = 'You can generate from a maximum of 10 text sources at a time.';
+$string['error:invalidquestions'] = 'The question data could not be read. Please reload the page and try again.';
+$string['error:zeroquestions'] = 'Cannot save zero questions — this would delete all existing questions. Reload the page and try again.';
+$string['error:emptyprompt'] = 'An image prompt is required.';
+$string['error:invalidimageurl'] = 'Invalid image URL format. Use https:// or a data:image/(png|jpg|gif|webp) URL.';

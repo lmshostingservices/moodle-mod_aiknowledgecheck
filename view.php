@@ -102,14 +102,18 @@ $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('incourse');
 
-// Add CSS.
-$PAGE->requires->css('/mod/aiknowledgecheck/styles.css');
+// FIX-KC-REVIEW-CSS (v1.5.143): Moodle aggregates and caches each plugin's styles.css
+// automatically, so requiring it here was redundant and could load the stylesheet twice.
+// The Google Fonts stylesheet below is a genuine external resource and is still required
+// explicitly, because an @import inside styles.css breaks Moodle's CSS minifier.
 
 // Load Google Fonts via PHP (NOT via @import in styles.css which breaks Moodle CSS minifier).
-$PAGE->requires->css(new moodle_url('https://fonts.googleapis.com/css2', [
-    'family' => 'Inter:wght@400;500;600;700',
-    'display' => 'swap'
-]));
+$PAGE->requires->css(
+    new moodle_url(
+        'https://fonts.googleapis.com/css2', [
+            'family' => 'Inter:wght@400;500;600;700',
+            'display' => 'swap'
+        ]));
 
 // Trigger module viewed event.
 aiknowledgecheck_view($knowledgecheck, $course, $cm, $context);
@@ -133,12 +137,13 @@ if ($maxgrade <= 0) {
     $maxgrade = 100;
 }
 require_once($CFG->libdir . '/gradelib.php');
-$gradeitem = grade_item::fetch([
-    'itemtype' => 'mod',
-    'itemmodule' => 'aiknowledgecheck',
-    'iteminstance' => $knowledgecheck->id,
-    'courseid' => $course->id,
-]);
+$gradeitem = grade_item::fetch(
+    [
+        'itemtype' => 'mod',
+        'itemmodule' => 'aiknowledgecheck',
+        'iteminstance' => $knowledgecheck->id,
+        'courseid' => $course->id,
+    ]);
 if ($gradeitem && $gradeitem->gradepass > 0) {
     $gradepass = (float)$gradeitem->gradepass;
 }
@@ -181,7 +186,7 @@ if (!empty($knowledgecheck->imageurl)) {
     $imageurl_gate = $knowledgecheck->imageurl;
 }
 $hasimage   = !empty($imageurl_gate);
-$imagegated = $hasimage; // image gate always active when URL is set
+$imagegated = $hasimage; // Image gate is always active when a URL is set.
 $anygated  = $videogated || $audiogated || $imagegated;
 // FIX-KC-TAKEGATED-UNDEFINED (v1.5.65): $takegated was only assigned inside the
 // teacher/creator if ($cancreate) branch (line ~670). When a student lands on the
@@ -189,6 +194,9 @@ $anygated  = $videogated || $audiogated || $imagegated;
 // warnings on the Start Quiz / Continue Attempt buttons at the bottom of the
 // student view. Initialise here so it is always defined before any HTML output.
 $takegated = $anygated && !$isstaff;
+// Pre-rendered button attributes, so the markup below carries one statement per line.
+$gatedclass = $takegated ? ' kc-gated-btn' : '';
+$gateddisabled = $takegated ? ' disabled' : '';
 
 // FIX-KC-NONEDITING-TEACHER (v1.5.137): the staff navigation is rendered for anyone holding
 // :viewreports, whether or not they can author. It used to sit inside the if ($cancreate)
@@ -800,14 +808,16 @@ if ($cancreate) {
             </div>
             <div class="kc-ready-actions">
                 <?php
-                // v1.5.50 FIX-KC-GATE-TEACHER: Teachers/managers (who have the
+                // Release v1.5.50 FIX-KC-GATE-TEACHER: Teachers/managers (who have the
                 // 'create' capability) must never see the Review Questions button
                 // gated. Previously $anygated applied unconditionally even for
                 // teachers viewing their own activity, blocking teacher access
                 // to their own quiz review flow.
                 $takegated = $anygated && !$isstaff;
+                $gatedclass = $takegated ? ' kc-gated-btn' : '';
+                $gateddisabled = $takegated ? ' disabled' : '';
                 ?>
-                <button id="take-quiz-btn" class="kc-btn kc-btn-primary<?php echo $takegated ? ' kc-gated-btn' : ''; ?>"<?php echo $takegated ? ' disabled' : ''; ?>>
+                <button id="take-quiz-btn" class="kc-btn kc-btn-primary<?php echo $gatedclass; ?>"<?php echo $gateddisabled; ?>>
                     <?php echo get_string('review_questions_btn', 'mod_aiknowledgecheck'); ?>
                 </button>
                 <button id="add-more-questions-btn" class="kc-btn kc-btn-success">
@@ -1139,29 +1149,31 @@ if ($cancreate) {
     <?php
 
     // Check for any in-progress student attempts (for edit warning)
-    $inprogresscount = $DB->count_records('aiknowledgecheck_attempts', [
-        'aiknowledgecheckid' => $knowledgecheck->id,
-        'status' => 0, // In progress
-    ]);
+    $inprogresscount = $DB->count_records(
+        'aiknowledgecheck_attempts', [
+            'aiknowledgecheckid' => $knowledgecheck->id,
+            'status' => 0, // In progress
+        ]);
 
-    $PAGE->requires->js_call_amd('mod_aiknowledgecheck/knowledgecheck', 'init', [[
-        'cmid' => $cm->id,
-        'wwwroot' => $CFG->wwwroot,
-        'sesskey' => sesskey(),
-        'isTeacher' => true,
-        'inProgressAttempts' => (int)$inprogresscount,
-        'gradePass' => $gradepass,
-        'maxGrade' => $maxgrade,
-        'voiceoverEnabled' => isset($knowledgecheck->voiceoverenabled) ? (int)$knowledgecheck->voiceoverenabled : 0,
-        'voiceLanguage' => isset($knowledgecheck->voicelanguage) ? $knowledgecheck->voicelanguage : 'en-AU',
-        'voiceGender' => isset($knowledgecheck->voicegender) ? $knowledgecheck->voicegender : 'female',
-        'voiceStyle' => isset($knowledgecheck->voicestyle) ? $knowledgecheck->voicestyle : 'Zephyr',
-        'showChapterStamps' => isset($knowledgecheck->showchapterstamps) ? (int)$knowledgecheck->showchapterstamps : 0,
-        'hasVideo' => $hasvideo ? 1 : 0,
-        'hasImage' => $hasimage ? 1 : 0,
-        'surveyMode' => isset($knowledgecheck->surveymode) ? (int)$knowledgecheck->surveymode : 0,
-        'surveyScale' => isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree',
-    ]]);
+    $PAGE->requires->js_call_amd(
+        'mod_aiknowledgecheck/knowledgecheck', 'init', [[
+            'cmid' => $cm->id,
+            'wwwroot' => $CFG->wwwroot,
+            'sesskey' => sesskey(),
+            'isTeacher' => true,
+            'inProgressAttempts' => (int)$inprogresscount,
+            'gradePass' => $gradepass,
+            'maxGrade' => $maxgrade,
+            'voiceoverEnabled' => isset($knowledgecheck->voiceoverenabled) ? (int)$knowledgecheck->voiceoverenabled : 0,
+            'voiceLanguage' => isset($knowledgecheck->voicelanguage) ? $knowledgecheck->voicelanguage : 'en-AU',
+            'voiceGender' => isset($knowledgecheck->voicegender) ? $knowledgecheck->voicegender : 'female',
+            'voiceStyle' => isset($knowledgecheck->voicestyle) ? $knowledgecheck->voicestyle : 'Zephyr',
+            'showChapterStamps' => isset($knowledgecheck->showchapterstamps) ? (int)$knowledgecheck->showchapterstamps : 0,
+            'hasVideo' => $hasvideo ? 1 : 0,
+            'hasImage' => $hasimage ? 1 : 0,
+            'surveyMode' => isset($knowledgecheck->surveymode) ? (int)$knowledgecheck->surveymode : 0,
+            'surveyScale' => isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree',
+        ]]);
     ?>
     <script>
     // AI Image Generator — teacher-only inline script (ADD-KC-IMAGEGATE v1.5.115).
@@ -1189,15 +1201,16 @@ if ($cancreate) {
                 if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = '<?php echo addslashes(get_string('imagegate_generating', 'mod_aiknowledgecheck')); ?>'; statusEl.style.color = '#6c757d'; }
                 if (resultEl) resultEl.style.display = 'none';
 
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '<?php echo $CFG->wwwroot; ?>/mod/aiknowledgecheck/ajax.php');
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr.timeout = 90000;
-                xhr.onload = function () {
-                    genBtn.disabled = false;
-                    genBtn.textContent = 'Generate Image';
-                    try {
-                        var resp = JSON.parse(xhr.responseText);
+                // MIGRATE-EXTERNAL-SERVICES (v1.5.152): generateimage now runs through the
+                // declared mod_aiknowledgecheck_generate_image service instead of a raw
+                // XMLHttpRequest against ajax.php.
+                require(['core/ajax'], function (Ajax) {
+                    Ajax.call([{
+                        methodname: 'mod_aiknowledgecheck_generate_image',
+                        args: { cmid: <?php echo (int)$cm->id; ?>, prompt: prompt }
+                    }])[0].done(function (resp) {
+                        genBtn.disabled = false;
+                        genBtn.textContent = 'Generate Image';
                         if (resp.ok && resp.imageDataUrl) {
                             lastGeneratedUrl = resp.imageDataUrl;
                             if (previewEl) previewEl.src = resp.imageDataUrl;
@@ -1207,17 +1220,12 @@ if ($cancreate) {
                         } else {
                             if (statusEl) { statusEl.textContent = (resp.error || '<?php echo addslashes(get_string('imagegate_error', 'mod_aiknowledgecheck')); ?>'); statusEl.style.color = '#dc3545'; }
                         }
-                    } catch (e) {
+                    }).fail(function () {
+                        genBtn.disabled = false;
+                        genBtn.textContent = 'Generate Image';
                         if (statusEl) { statusEl.textContent = '<?php echo addslashes(get_string('imagegate_error', 'mod_aiknowledgecheck')); ?>'; statusEl.style.color = '#dc3545'; }
-                    }
-                };
-                xhr.onerror = function () {
-                    genBtn.disabled = false;
-                    genBtn.textContent = 'Generate Image';
-                    if (statusEl) { statusEl.textContent = '<?php echo addslashes(get_string('imagegate_error', 'mod_aiknowledgecheck')); ?>'; statusEl.style.color = '#dc3545'; }
-                };
-                var params = 'action=generateimage&sesskey=<?php echo sesskey(); ?>&cmid=<?php echo $cm->id; ?>&prompt=' + encodeURIComponent(prompt);
-                xhr.send(params);
+                    });
+                });
             });
         }
 
@@ -1226,29 +1234,24 @@ if ($cancreate) {
                 if (!lastGeneratedUrl) return;
                 saveGateBtn.disabled = true;
                 if (saveStatusEl) { saveStatusEl.textContent = 'Saving...'; saveStatusEl.style.color = '#6c757d'; }
-                var xhr2 = new XMLHttpRequest();
-                xhr2.open('POST', '<?php echo $CFG->wwwroot; ?>/mod/aiknowledgecheck/ajax.php');
-                xhr2.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr2.timeout = 30000;
-                xhr2.onload = function () {
-                    saveGateBtn.disabled = false;
-                    try {
-                        var resp2 = JSON.parse(xhr2.responseText);
+                // MIGRATE-EXTERNAL-SERVICES (v1.5.152): saveimageurl now runs through the
+                // declared mod_aiknowledgecheck_save_image_url service.
+                require(['core/ajax'], function (Ajax) {
+                    Ajax.call([{
+                        methodname: 'mod_aiknowledgecheck_save_image_url',
+                        args: { cmid: <?php echo (int)$cm->id; ?>, imageurl: lastGeneratedUrl }
+                    }])[0].done(function (resp2) {
+                        saveGateBtn.disabled = false;
                         if (resp2.ok) {
                             if (saveStatusEl) { saveStatusEl.textContent = 'Saved! Refresh the page to see the image gate.'; saveStatusEl.style.color = '#28a745'; }
                         } else {
                             if (saveStatusEl) { saveStatusEl.textContent = 'Save failed: ' + (resp2.error || 'Unknown error'); saveStatusEl.style.color = '#dc3545'; }
                         }
-                    } catch (e) {
+                    }).fail(function () {
+                        saveGateBtn.disabled = false;
                         if (saveStatusEl) { saveStatusEl.textContent = 'Save failed.'; saveStatusEl.style.color = '#dc3545'; }
-                    }
-                };
-                xhr2.onerror = function () {
-                    saveGateBtn.disabled = false;
-                    if (saveStatusEl) { saveStatusEl.textContent = 'Save failed.'; saveStatusEl.style.color = '#dc3545'; }
-                };
-                var params2 = 'action=saveimageurl&sesskey=<?php echo sesskey(); ?>&cmid=<?php echo $cm->id; ?>&imageurl=' + encodeURIComponent(lastGeneratedUrl);
-                xhr2.send(params2);
+                    });
+                });
             });
         }
 
@@ -1278,11 +1281,12 @@ if ($cancreate) {
         $canattempt = aiknowledgecheck_can_attempt($knowledgecheck, $userid);
 
         // Check for in-progress attempt.
-        $inprogress = $DB->get_record('aiknowledgecheck_attempts', [
-            'aiknowledgecheckid' => $knowledgecheck->id,
-            'userid' => $userid,
-            'status' => 0,
-        ]);
+        $inprogress = $DB->get_record(
+            'aiknowledgecheck_attempts', [
+                'aiknowledgecheckid' => $knowledgecheck->id,
+                'userid' => $userid,
+                'status' => 0,
+            ]);
 
         // Build attempts label for use inside cards.
         if ($maxattempts > 0) {
@@ -1292,11 +1296,12 @@ if ($cancreate) {
         }
 
         // Show previous attempts table.
-        $attempts = $DB->get_records('aiknowledgecheck_attempts', [
-            'aiknowledgecheckid' => $knowledgecheck->id,
-            'userid' => $userid,
-            'status' => 1,
-        ], 'id ASC');
+        $attempts = $DB->get_records(
+            'aiknowledgecheck_attempts', [
+                'aiknowledgecheckid' => $knowledgecheck->id,
+                'userid' => $userid,
+                'status' => 1,
+            ], 'id ASC');
 
         if ($attempts) {
             echo html_writer::start_tag('details', ['class' => 'kc-details mb-3']);
@@ -1462,7 +1467,7 @@ if ($cancreate) {
                                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
                             </svg>
-                            <?php echo $questioncount; ?> <?php echo get_string('total_questions', 'mod_aiknowledgecheck'); ?>
+                            <?php echo $questioncount . ' ' . get_string('total_questions', 'mod_aiknowledgecheck'); ?>
                         </span>
                         <span class="kc-attempts-badge">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1474,24 +1479,25 @@ if ($cancreate) {
                     </div>
                     
                     <?php if ($inprogress): ?>
-                        <button id="continue-attempt-btn" class="kc-btn kc-btn-primary kc-btn-lg<?php echo $takegated ? ' kc-gated-btn' : ''; ?>"<?php echo $takegated ? ' disabled' : ''; ?> data-attemptid="<?php echo $inprogress->id; ?>">
+                        <button id="continue-attempt-btn" class="kc-btn kc-btn-primary kc-btn-lg<?php echo $gatedclass; ?>"<?php echo $gateddisabled; ?> data-attemptid="<?php echo $inprogress->id; ?>">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
                             Continue Attempt
                         </button>
                     <?php else: ?>
-                        <button id="start-attempt-btn" class="kc-btn kc-btn-primary kc-btn-lg<?php echo $takegated ? ' kc-gated-btn' : ''; ?>"<?php echo $takegated ? ' disabled' : ''; ?>>
+                        <button id="start-attempt-btn" class="kc-btn kc-btn-primary kc-btn-lg<?php echo $gatedclass; ?>"<?php echo $gateddisabled; ?>>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
                             <?php 
                             // Show "Start Quiz" for first attempt, "Retake Quiz" for subsequent attempts
-                            $haspreviousattempts = $DB->record_exists('aiknowledgecheck_attempts', [
-                                'aiknowledgecheckid' => $knowledgecheck->id,
-                                'userid' => $userid,
-                                'status' => 1
-                            ]);
+                            $haspreviousattempts = $DB->record_exists(
+                                'aiknowledgecheck_attempts', [
+                                    'aiknowledgecheckid' => $knowledgecheck->id,
+                                    'userid' => $userid,
+                                    'status' => 1
+                                ]);
                             echo get_string($haspreviousattempts ? 'retakequiz' : 'startquiz', 'mod_aiknowledgecheck');
                             ?>
                         </button>
@@ -1557,7 +1563,7 @@ if ($cancreate) {
             var locks = {};
             var originals = {};
             <?php // FIX-KC-NONEDITING-TEACHER (v1.5.137): course staff are exempt from all three
-            // media locks, not just the image one. The image gate already carried an exemption
+            // Media locks, not just the image one. The image gate already carried an exemption
             // and video and audio never did, so a non-editing teacher who reaches this branch
             // would have been freed from one gate and still held by the other two. The status
             // banners and the watcher scripts are untouched; with no lock registered there is
@@ -1725,7 +1731,7 @@ if ($cancreate) {
             var seekBlockTimer = null;
 
             function startSeekBlocking() {
-                // v1.5.60 FIX-SEEK-BLOCK: only block seeking when the requirement is 'full watch'.
+                // Release v1.5.60 FIX-SEEK-BLOCK: only block seeking when the requirement is 'full watch'.
                 // When requirement is 'seconds', students may freely seek after the timer unlocks.
                 if (seekBlockTimer || unlocked || requirement !== 'full') return;
                 seekBlockTimer = setInterval(function () {
@@ -1913,37 +1919,38 @@ if ($cancreate) {
         <?php
 
         // Initialize JS module for student.
-        $PAGE->requires->js_call_amd('mod_aiknowledgecheck/knowledgecheck', 'init', [[
-            'cmid' => $cm->id,
-            'wwwroot' => $CFG->wwwroot,
-            'sesskey' => sesskey(),
-            'isTeacher' => false,
-            'inProgressAttemptId' => $inprogress ? (int)$inprogress->id : null,
-            'inProgressAttemptQuestion' => $inprogress ? (int)$inprogress->currentquestion : 0,
-            'canAttempt' => $canattempt,
-            'maxAttempts' => $maxattempts,
-            'attemptsUsed' => $attemptsused,
-            'attemptsUsedStr' => get_string('attemptsused', 'mod_aiknowledgecheck'),
-            'attemptsUnlimitedStr' => get_string('unlimited', 'mod_aiknowledgecheck'),
-            'retakeQuizStr' => get_string('retakequiz', 'mod_aiknowledgecheck'),
-            'gradePass' => $gradepass,
-            'maxGrade' => $maxgrade,
-            'voiceoverEnabled' => isset($knowledgecheck->voiceoverenabled) ? (int)$knowledgecheck->voiceoverenabled : 0,
-            'voiceLanguage' => isset($knowledgecheck->voicelanguage) ? $knowledgecheck->voicelanguage : 'en-AU',
-            'voiceGender' => isset($knowledgecheck->voicegender) ? $knowledgecheck->voicegender : 'female',
-            'voiceStyle' => isset($knowledgecheck->voicestyle) ? $knowledgecheck->voicestyle : 'Zephyr',
-            'afterCompletion' => isset($knowledgecheck->aftercompletion) ? $knowledgecheck->aftercompletion : 'restart',
-            'showVideoDuringQuiz' => isset($knowledgecheck->showvideoduringquiz) ? (int)$knowledgecheck->showvideoduringquiz : 0,
-            'showChapterStamps' => isset($knowledgecheck->showchapterstamps) ? (int)$knowledgecheck->showchapterstamps : 0,
-            'hasVideo' => $hasvideo ? 1 : 0,
-            'hasImage' => $hasimage ? 1 : 0,
-            'surveyMode' => isset($knowledgecheck->surveymode) ? (int)$knowledgecheck->surveymode : 0,
-            'surveyScale' => isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree',
-            'strings' => [
-                'activityLockedNotice' => get_string('activity_locked_notice', 'mod_aiknowledgecheck'),
-                'startAgain'           => get_string('startAgain', 'mod_aiknowledgecheck'),
-            ],
-        ]]);
+        $PAGE->requires->js_call_amd(
+            'mod_aiknowledgecheck/knowledgecheck', 'init', [[
+                'cmid' => $cm->id,
+                'wwwroot' => $CFG->wwwroot,
+                'sesskey' => sesskey(),
+                'isTeacher' => false,
+                'inProgressAttemptId' => $inprogress ? (int)$inprogress->id : null,
+                'inProgressAttemptQuestion' => $inprogress ? (int)$inprogress->currentquestion : 0,
+                'canAttempt' => $canattempt,
+                'maxAttempts' => $maxattempts,
+                'attemptsUsed' => $attemptsused,
+                'attemptsUsedStr' => get_string('attemptsused', 'mod_aiknowledgecheck'),
+                'attemptsUnlimitedStr' => get_string('unlimited', 'mod_aiknowledgecheck'),
+                'retakeQuizStr' => get_string('retakequiz', 'mod_aiknowledgecheck'),
+                'gradePass' => $gradepass,
+                'maxGrade' => $maxgrade,
+                'voiceoverEnabled' => isset($knowledgecheck->voiceoverenabled) ? (int)$knowledgecheck->voiceoverenabled : 0,
+                'voiceLanguage' => isset($knowledgecheck->voicelanguage) ? $knowledgecheck->voicelanguage : 'en-AU',
+                'voiceGender' => isset($knowledgecheck->voicegender) ? $knowledgecheck->voicegender : 'female',
+                'voiceStyle' => isset($knowledgecheck->voicestyle) ? $knowledgecheck->voicestyle : 'Zephyr',
+                'afterCompletion' => isset($knowledgecheck->aftercompletion) ? $knowledgecheck->aftercompletion : 'restart',
+                'showVideoDuringQuiz' => isset($knowledgecheck->showvideoduringquiz) ? (int)$knowledgecheck->showvideoduringquiz : 0,
+                'showChapterStamps' => isset($knowledgecheck->showchapterstamps) ? (int)$knowledgecheck->showchapterstamps : 0,
+                'hasVideo' => $hasvideo ? 1 : 0,
+                'hasImage' => $hasimage ? 1 : 0,
+                'surveyMode' => isset($knowledgecheck->surveymode) ? (int)$knowledgecheck->surveymode : 0,
+                'surveyScale' => isset($knowledgecheck->surveyscale) ? $knowledgecheck->surveyscale : 'likert5agree',
+                'strings' => [
+                    'activityLockedNotice' => get_string('activity_locked_notice', 'mod_aiknowledgecheck'),
+                    'startAgain'           => get_string('startAgain', 'mod_aiknowledgecheck'),
+                ],
+            ]]);
     }
 }
 

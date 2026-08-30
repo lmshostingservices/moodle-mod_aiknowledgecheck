@@ -68,6 +68,21 @@ class provider implements
             'privacy:metadata:aiknowledgecheck_overrides'
         );
 
+        // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the aiknowledgecheck_quizzes table carries a
+        // userid and must be declared here so user data can be exported and deleted. The
+        // table is vestigial — nothing in the plugin writes to it any more — but it is still
+        // created by db/install.xml, so any legacy rows must remain discoverable under the
+        // Privacy API. The language strings for it already existed.
+        $collection->add_database_table(
+            'aiknowledgecheck_quizzes',
+            [
+                'userid' => 'privacy:metadata:aiknowledgecheck_quizzes:userid',
+                'title' => 'privacy:metadata:aiknowledgecheck_quizzes:title',
+                'timecreated' => 'privacy:metadata:aiknowledgecheck_quizzes:timecreated',
+            ],
+            'privacy:metadata:aiknowledgecheck_quizzes'
+        );
+
         $collection->add_external_location_link(
             'essaygraderai',
             [
@@ -177,10 +192,11 @@ class provider implements
                 continue;
             }
 
-            $attempts = $DB->get_records('aiknowledgecheck_attempts', [
-                'aiknowledgecheckid' => $cm->instance,
-                'userid' => $userid,
-            ]);
+            $attempts = $DB->get_records(
+                'aiknowledgecheck_attempts', [
+                    'aiknowledgecheckid' => $cm->instance,
+                    'userid' => $userid,
+                ]);
 
             foreach ($attempts as $attempt) {
                 // H-4: include the actual answers (selected options AND free-text responses).
@@ -206,10 +222,11 @@ class provider implements
             }
 
             // M-3: export the user's attempt-limit overrides for this activity.
-            $overrides = $DB->get_records('aiknowledgecheck_overrides', [
-                'aiknowledgecheckid' => $cm->instance,
-                'userid' => $userid,
-            ]);
+            $overrides = $DB->get_records(
+                'aiknowledgecheck_overrides', [
+                    'aiknowledgecheckid' => $cm->instance,
+                    'userid' => $userid,
+                ]);
             foreach ($overrides as $override) {
                 $odata = (object) [
                     'extraattempts' => $override->extraattempts,
@@ -244,6 +261,13 @@ class provider implements
 
         $DB->delete_records('aiknowledgecheck_attempts', ['aiknowledgecheckid' => $cm->instance]);
         $DB->delete_records('aiknowledgecheck_overrides', ['aiknowledgecheckid' => $cm->instance]);
+
+        // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
+        // table_exists() because it is vestigial — some sites may not have it — and an
+        // erasure request must not fail on a missing table.
+        if ($DB->get_manager()->table_exists('aiknowledgecheck_quizzes')) {
+            $DB->delete_records('aiknowledgecheck_quizzes', ['aiknowledgecheckid' => $cm->instance]);
+        }
     }
 
     /**
@@ -266,15 +290,28 @@ class provider implements
                 continue;
             }
 
-            $DB->delete_records('aiknowledgecheck_attempts', [
-                'aiknowledgecheckid' => $cm->instance,
-                'userid' => $userid,
-            ]);
+            $DB->delete_records(
+                'aiknowledgecheck_attempts', [
+                    'aiknowledgecheckid' => $cm->instance,
+                    'userid' => $userid,
+                ]);
 
-            $DB->delete_records('aiknowledgecheck_overrides', [
-                'aiknowledgecheckid' => $cm->instance,
-                'userid' => $userid,
-            ]);
+            $DB->delete_records(
+                'aiknowledgecheck_overrides', [
+                    'aiknowledgecheckid' => $cm->instance,
+                    'userid' => $userid,
+                ]);
+
+        // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
+        // table_exists() because it is vestigial — some sites may not have it — and an
+        // erasure request must not fail on a missing table.
+            if ($DB->get_manager()->table_exists('aiknowledgecheck_quizzes')) {
+                $DB->delete_records(
+                    'aiknowledgecheck_quizzes', [
+                        'aiknowledgecheckid' => $cm->instance,
+                        'userid' => $userid,
+                    ]);
+            }
         }
     }
 
@@ -316,5 +353,16 @@ class provider implements
             "aiknowledgecheckid = :aiknowledgecheckid AND userid $insql",
             $params
         );
+
+        // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
+        // table_exists() because it is vestigial — some sites may not have it — and an
+        // erasure request must not fail on a missing table.
+        if ($DB->get_manager()->table_exists('aiknowledgecheck_quizzes')) {
+            $DB->delete_records_select(
+                'aiknowledgecheck_quizzes',
+                "aiknowledgecheckid = :aiknowledgecheckid AND userid $insql",
+                $params
+            );
+        }
     }
 }

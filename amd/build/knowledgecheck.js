@@ -1,3 +1,18 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * AI Knowledge Check - Main JavaScript Module
  *
@@ -6,7 +21,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
+// MIGRATE-EXTERNAL-SERVICES (v1.5.144-152): 'core/ajax' is Moodle's client for declared
+// External Services. Every endpoint has now been migrated off the legacy ajax.php action
+// dispatcher, which has been deleted; there are no remaining $.ajax calls to it. jQuery is
+// still required here for DOM work.
+define('mod_aiknowledgecheck/knowledgecheck', ['jquery', 'core/ajax'], function ($, Ajax) {
     'use strict';
 
     let config = {};
@@ -542,16 +561,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
     function checkExistingQuestions() {
         console.log('[KC] Checking for existing questions...');
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'getquestions',
-                sesskey: config.sesskey,
-                cmid: config.cmid
-            },
-            success: function (response) {
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.148): getquestions now runs through the declared
+        // mod_aiknowledgecheck_get_questions service. Ajax.call resolves with the payload
+        // directly, so the old jQuery success/error pair becomes done/fail.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_get_questions',
+            args: { cmid: parseInt(config.cmid, 10) }
+        }])[0].done(function (response) {
                 if (response.ok && response.questions && response.questions.length > 0) {
                     console.log('[KC] Found existing questions:', response.questions.length);
                     
@@ -626,10 +642,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 } else {
                     console.log('[KC] No existing questions found - showing form');
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Check existing questions failed:', status, error);
-            }
+        }).fail(function (err) {
+            console.error('[KC] Check existing questions failed:',
+                err && err.message ? err.message : err);
         });
     }
 
@@ -893,34 +908,29 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
 
     function fetchCredits() {
         console.log('[KC] fetchCredits called, isTeacher:', config.isTeacher);
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'getcredits',
-                sesskey: config.sesskey,
-                cmid: config.cmid
-            },
-            success: function (response) {
-                console.log('[KC] credits response:', response);
-                if (response.ok && response.credits !== undefined) {
-                    $('#credits-value').text(response.credits);
-                    $('#kc-balance-amount').text(Number(response.credits).toLocaleString());
-                    $('#kc-progress-balance').text(Number(response.credits).toLocaleString());
-                } else {
-                    console.log('[KC] credits error:', response.error || 'Unknown error');
-                    $('#credits-value').text('--');
-                    $('#kc-balance-amount').text('--');
-                    $('#kc-progress-balance').text('--');
-                }
-            },
-            error: function (xhr, status, error) {
-                console.log('[KC] credits AJAX error:', status, error);
-                $('#credits-value').text('--');
-                $('#kc-balance-amount').text('--');
-                $('#kc-progress-balance').text('--');
+
+        var showCredits = function (value) {
+            $('#credits-value').text(value);
+            $('#kc-balance-amount').text(value);
+            $('#kc-progress-balance').text(value);
+        };
+
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.144): first endpoint moved off ajax.php. Moodle
+        // validates the arguments against the service declaration before the PHP runs, and
+        // handles the sesskey itself, so neither is passed here.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_get_credits',
+            args: { cmid: parseInt(config.cmid, 10) }
+        }])[0].done(function (response) {
+            if (response && response.ok) {
+                showCredits(Number(response.credits).toLocaleString());
+            } else {
+                console.log('[KC] credits error:', (response && response.error) || 'Unknown error');
+                showCredits('--');
             }
+        }).fail(function (err) {
+            console.log('[KC] credits service error:', err && err.message ? err.message : err);
+            showCredits('--');
         });
     }
 
@@ -1130,11 +1140,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         $('#progress-message').text('Starting generation...');
         
         var data = {
-            action: 'generate',
-            sesskey: config.sesskey,
-            cmid: config.cmid,
+            cmid: parseInt(config.cmid, 10),
             topics: topics,
-            questionsPerTopic: useOwnQuestions ? 1 : $('#questions-per-topic').val(),
+            questionsPerTopic: useOwnQuestions ? 1 : (parseInt($('#questions-per-topic').val(), 10) || 5),
             useOwnQuestions: useOwnQuestions ? 1 : 0,
             userQuestions: userQuestions,
             useTextSources: useTextSources ? 1 : 0,
@@ -1151,10 +1159,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             academicLevel: academicLevel,
             extraInstructions: $('#extra-instructions').val() || '',
             voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
-            voiceLanguage: $('#voice-language').val(),
-            voiceGender: $('#voice-gender').val(),
-            voiceId: $('#voice-style').val(),
-            // ADD-SURVEY-MODE (v1.5.126): Forward survey params to SaaS via ajax.php.
+            voiceLanguage: $('#voice-language').val() || 'en-AU',
+            voiceGender: $('#voice-gender').val() || 'female',
+            voiceId: $('#voice-style').val() || 'Zephyr',
+            // ADD-SURVEY-MODE (v1.5.126): Forward survey params to the generation service.
             surveyMode: config.surveyMode ? 1 : 0,
             // FIX-KC-SURVEY-SCALE (v1.5.140): read the scale from the activity config, not from
             // a '#survey-scale' element. The teacher picks the Response Scale in the activity
@@ -1174,25 +1182,25 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             data.textSources = JSON.stringify(validSources.map(function (s) {
                 return { text: s.text.trim().substring(0, 50000), questionCount: s.questionCount };
             }));
-            console.log('[KC] Text sources mode - sending through Moodle ajax.php');
+            console.log('[KC] Text sources mode - sending through the generate service');
             console.log('[KC] Text sources:', validSources.length);
             validSources.forEach(function (s, i) {
                 console.log('[KC] Source ' + (i+1) + ': ' + s.text.length + ' chars, questions: ' + s.questionCount);
             });
         } else {
-            console.log('[KC] Topics mode - sending through Moodle ajax.php');
+            console.log('[KC] Topics mode - sending through the generate service');
             console.log('[KC] Topics: "' + topics.substring(0, 100) + '", questionsPerTopic: ' + (useOwnQuestions ? 1 : $('#questions-per-topic').val()));
         }
 
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: data,
-            timeout: useTextSources ? 120000 : 60000,
-            success: handleGenerateSuccess,
-            error: handleGenerateError
-        });
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): generate now runs through the declared
+        // mod_aiknowledgecheck_generate service. unwrapService() restores the generation
+        // service's own document, so handleGenerateSuccess is unchanged.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_generate',
+            args: data
+        }])[0].done(function (response) {
+            handleGenerateSuccess(unwrapService(response));
+        }).fail(handleGenerateError);
     }
     
     function handleGenerateSuccess(response) {
@@ -1214,24 +1222,27 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         }
     }
     
-    function handleGenerateError(xhr, status, error) {
-        console.error('[KC] AJAX error - status:', status, 'error:', error, 'HTTP:', xhr.status, 'response:', xhr.responseText);
+    /**
+     * Failure handler for the generate call.
+     *
+     * MIGRATE-EXTERNAL-SERVICES (v1.5.152): this took jQuery's (xhr, status, error) triple.
+     * A core/ajax rejection passes ONE Moodle exception object instead — {message, errorcode,
+     * ...} — so every branch that read `status` or `xhr.responseText` was unreachable and the
+     * user always saw the generic fallback, with the server's own message discarded. It now
+     * reads that object, and keeps the timeout and connection cases by matching on errorcode.
+     *
+     * @param {Object} err the Moodle exception object from core/ajax.
+     */
+    function handleGenerateError(err) {
+        console.error('[KC] Generate request failed:', err);
         var msg = 'Request failed. Please try again.';
-        if (status === 'timeout') {
-            msg = 'Request timed out. The PDF may be too large. Please try a smaller file.';
-        } else if (xhr.status === 413) {
-            msg = 'The PDF file is too large for the server to process. Please try a smaller file.';
-        } else if (xhr.status === 0) {
-            msg = 'Could not connect to the server. Please check your internet connection.';
-        } else if (xhr.responseText) {
-            try {
-                var errResp = JSON.parse(xhr.responseText);
-                if (errResp.error) {
-                    msg = errResp.error;
-                }
-            } catch(e) {
-                console.error('[KC] Could not parse error response:', xhr.responseText.substring(0, 500));
-            }
+        var code = (err && err.errorcode) ? String(err.errorcode) : '';
+        if (code === 'servicerequirestimeout' || code.indexOf('timeout') !== -1) {
+            msg = 'Request timed out. The source content may be too large. Please try a smaller file.';
+        } else if (code === 'servicerequireslogin' || code === 'sessionerror' || code === 'requireloginerror') {
+            msg = 'Your session has expired. Please reload the page and sign in again.';
+        } else if (err && err.message) {
+            msg = err.message;
         }
         if (isAddingMore && existingQuizData) {
             quizData = existingQuizData;
@@ -1253,18 +1264,42 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         statusPollingInterval = setInterval(checkStatus, 2000);
     }
 
+    /**
+     * MIGRATE-EXTERNAL-SERVICES (v1.5.148): poll a generation job via the declared
+     * External Service. The service returns the upstream document untouched as a JSON
+     * string (see the design note in classes/external/get_generation_status.php), so it
+     * is parsed here. onOk receives the parsed status document exactly as the legacy
+     * ajax.php endpoint delivered it, keeping both callers unchanged in shape.
+     *
+     * @param {string} jobId Generation job identifier.
+     * @param {Function} onOk Called with the parsed status document.
+     * @param {Function} onErr Called with an Error on transport or parse failure.
+     */
+    function pollGenerationStatus(jobId, onOk, onErr) {
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_get_generation_status',
+            args: { cmid: parseInt(config.cmid, 10), jobid: jobId }
+        }])[0].done(function (res) {
+            if (!res || !res.ok) {
+                onErr(new Error((res && res.error) || 'Status check failed'));
+                return;
+            }
+            var parsed;
+            try {
+                parsed = JSON.parse(res.payload);
+            } catch (e) {
+                onErr(new Error('Could not parse the generation status response'));
+                return;
+            }
+            onOk(parsed || {});
+        }).fail(function (err) {
+            onErr(new Error((err && err.message) ? err.message : 'Status check failed'));
+        });
+    }
+
     function checkStatus() {
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'status',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
-                jobId: currentJobId
-            },
-            success: function (response) {
+        pollGenerationStatus(currentJobId, function (response) {
+            {
                 statusPollFailures = 0;
                 if (response.ok) {
                     $('#progress-fill').css('width', response.progress + '%');
@@ -1335,10 +1370,11 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                         }
                     }
                 }
-            },
-            error: function (xhr, status, error) {
+            }
+        }, function (err) {
+            {
                 statusPollFailures++;
-                console.error('Status check failed (attempt ' + statusPollFailures + '/' + MAX_POLL_FAILURES + '):', status, error);
+                console.error('Status check failed (attempt ' + statusPollFailures + '/' + MAX_POLL_FAILURES + '):', err && err.message ? err.message : err);
                 if (statusPollFailures >= MAX_POLL_FAILURES) {
                     clearInterval(statusPollingInterval);
                     console.error('[KC] Status polling stopped after ' + MAX_POLL_FAILURES + ' consecutive failures');
@@ -1489,32 +1525,28 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             };
         });
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'savequestions',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): savequestions now runs through the declared
+        // mod_aiknowledgecheck_save_questions service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_save_questions',
+            args: {
+                cmid: parseInt(config.cmid, 10),
                 questions: JSON.stringify(questionsForDb),
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
                 voiceStyle: $('#voice-style').val() || ''
-            },
-            success: function (response) {
+            }
+        }])[0].done(function (response) {
                 if (response.ok) {
                     console.log('[KC] Questions saved to database:', response.saved);
                 } else {
                     console.error('[KC] Failed to save questions:', response.error);
                     alert('Warning: Questions could not be saved to Moodle. Students will not be able to see this quiz until the save succeeds.\n\nReason: ' + (response.error || 'Unknown error') + '\n\nPlease refresh the page and try generating again, or contact your administrator.');
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Save questions request failed:', status, error);
-                alert('Warning: The connection to Moodle was lost while saving questions. Students will not be able to see this quiz.\n\nPlease refresh the page and regenerate your questions, or check your network connection.');
-            }
+        }).fail(function (err) {
+            console.error('[KC] Save questions request failed:', err);
+            alert('Warning: The connection to Moodle was lost while saving questions. Students will not be able to see this quiz.\n\nPlease refresh the page and regenerate your questions, or check your network connection.');
         });
     }
     
@@ -1540,20 +1572,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             };
         });
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'regenerateaudio',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): regenerateaudio now runs through the declared
+        // mod_aiknowledgecheck_regenerate_audio service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_regenerate_audio',
+            args: {
+                cmid: parseInt(config.cmid, 10),
                 questions: JSON.stringify(questionsForApi),
                 voiceLanguage: voiceLanguage,
                 voiceId: voiceId
-            },
-            timeout: 120000,
-            success: function (response) {
+            }
+        }])[0].done(function (envelope) {
+            var response = unwrapService(envelope);
                 if (response.ok && response.questions) {
                     console.log('[KC] Audio regenerated successfully for', response.questions.length, 'questions');
                     
@@ -1577,12 +1607,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     alert('Failed to generate audio: ' + (response.error || 'Unknown error'));
                     $('#regenerate-audio-btn').prop('disabled', false).text('Generate Audio');
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Audio regeneration request failed:', status, error);
-                alert('Failed to generate audio. Please try again.');
-                $('#regenerate-audio-btn').prop('disabled', false).text('Generate Audio');
-            }
+        }).fail(function (err) {
+            console.error('[KC] Audio regeneration request failed:', err);
+            alert('Failed to generate audio. Please try again.');
+            $('#regenerate-audio-btn').prop('disabled', false).text('Generate Audio');
         });
     }
     
@@ -1595,31 +1623,25 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         pendingSaves = 0;
         pendingFinishAttempt = false;
         $('#start-attempt-btn').prop('disabled', true).text('Loading...');
-        
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'startattempt',
-                sesskey: config.sesskey,
-                cmid: config.cmid
-            },
-            success: function (response) {
-                if (response.ok) {
-                    currentAttemptId = response.attemptid;
-                    console.log('[KC] Attempt started:', currentAttemptId);
-                    loadQuestionsFromDatabase();
-                } else {
-                    alert(response.error || 'Failed to start attempt');
-                    $('#start-attempt-btn').prop('disabled', false).text('Start Quiz');
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Start attempt failed:', status, error);
-                alert('Failed to start quiz. Please try again.');
+
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): startattempt now runs through the declared
+        // mod_aiknowledgecheck_start_attempt service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_start_attempt',
+            args: { cmid: parseInt(config.cmid, 10) }
+        }])[0].done(function (response) {
+            if (response.ok) {
+                currentAttemptId = response.attemptid;
+                console.log('[KC] Attempt started:', currentAttemptId);
+                loadQuestionsFromDatabase();
+            } else {
+                alert(response.error || 'Failed to start attempt');
                 $('#start-attempt-btn').prop('disabled', false).text('Start Quiz');
             }
+        }).fail(function (err) {
+            console.error('[KC] Start attempt failed:', err);
+            alert('Failed to start quiz. Please try again.');
+            $('#start-attempt-btn').prop('disabled', false).text('Start Quiz');
         });
     }
     
@@ -1632,24 +1654,24 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         // This returns the existing in-progress attempt with the answers dict.
         // We derive resumeFromIndex from the number of answered questions, which
         // correctly reflects shuffled position regardless of original questionnumber.
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'startattempt',
-                sesskey: config.sesskey,
-                cmid: config.cmid
-            },
-            success: function (response) {
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): startattempt now runs through the declared
+        // mod_aiknowledgecheck_start_attempt service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_start_attempt',
+            args: { cmid: parseInt(config.cmid, 10) }
+        }])[0].done(function (response) {
                 if (response.ok) {
                     currentAttemptId = response.attemptid;
                     console.log('[KC] Continue attempt ID confirmed:', currentAttemptId, 'resumed:', response.resumed);
 
+                    // MIGRATE-EXTERNAL-SERVICES (v1.5.152): the answers map is keyed by
+                    // question ID, which no external_*_structure can describe, so it crosses
+                    // as a JSON string and is parsed here.
+                    var serverAnswers = parseAnswersJson(response.answersjson);
+
                     // Determine resume position: answers.length = number of questions
                     // already answered, which is the correct 0-based index to restart from.
-                    var serverAnswerCount = (response.answers && typeof response.answers === 'object')
-                        ? Object.keys(response.answers).length : 0;
+                    var serverAnswerCount = Object.keys(serverAnswers).length;
 
                     // Also check localStorage in case the student advanced past the last save point.
                     var storageKey = 'kc_progress_' + config.cmid + '_' + currentAttemptId;
@@ -1664,8 +1686,7 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     // BUG-SCORE-RESUME fix: save the server's answers dict so
                     // startStudentQuiz() can reconstruct the score from previously
                     // answered questions instead of always resetting score to 0.
-                    resumeAnswers = (response.answers && typeof response.answers === 'object')
-                        ? response.answers : null;
+                    resumeAnswers = (Object.keys(serverAnswers).length > 0) ? serverAnswers : null;
 
                     loadQuestionsFromDatabase();
                 } else {
@@ -1673,13 +1694,62 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     alert(response.error || 'Failed to continue attempt. Please reload the page.');
                     $('#continue-attempt-btn').prop('disabled', false).text('Continue Attempt');
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Continue attempt AJAX failed:', status, error);
-                alert('Failed to continue attempt. Please try again.');
-                $('#continue-attempt-btn').prop('disabled', false).text('Continue Attempt');
-            }
+        }).fail(function (err) {
+            console.error('[KC] Continue attempt request failed:', err);
+            alert('Failed to continue attempt. Please try again.');
+            $('#continue-attempt-btn').prop('disabled', false).text('Continue Attempt');
         });
+    }
+
+    /**
+     * Parse the answers map returned by mod_aiknowledgecheck_start_attempt.
+     *
+     * MIGRATE-EXTERNAL-SERVICES (v1.5.152): the map is keyed by question ID, so its keys vary
+     * per activity and no external_*_structure can describe it — external_single_structure
+     * needs a fixed key set and external_multiple_structure would throw the keys away. It
+     * therefore crosses as a JSON string. PHP encodes an empty map as '[]' rather than '{}';
+     * both parse to something Object.keys() reports as empty, so callers see no difference.
+     *
+     * @param {string} raw the JSON string from the service.
+     * @returns {Object} the answers map, or an empty object if absent or malformed.
+     */
+    function parseAnswersJson(raw) {
+        if (typeof raw !== 'string' || raw === '') {
+            return {};
+        }
+        try {
+            var parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object') ? parsed : {};
+        } catch (e) {
+            console.error('[KC] Could not parse answers payload:', e);
+            return {};
+        }
+    }
+
+    /**
+     * Unwrap the {ok, error, resultjson} envelope the generation-proxy services return.
+     *
+     * MIGRATE-EXTERNAL-SERVICES (v1.5.152): the generation service's own responses are
+     * free-form documents whose shape it owns and can extend, so no external_*_structure can
+     * describe them without pinning a shape the plugin does not control. They cross verbatim
+     * as a JSON string, which also preserves the FIX-KC-REGEN-STREAM (v1.5.90) property that
+     * a large base64 audioData array is never decoded and re-encoded on the way through.
+     * This restores the inner document, so every handler downstream is unchanged.
+     *
+     * @param {Object} response the service envelope.
+     * @returns {Object} the generation service's own response document.
+     */
+    function unwrapService(response) {
+        if (!response || !response.ok) {
+            return { ok: false, error: (response && response.error) || 'Request failed' };
+        }
+        try {
+            var parsed = JSON.parse(response.resultjson);
+            return (parsed && typeof parsed === 'object') ? parsed : { ok: false, error: 'Invalid response' };
+        } catch (e) {
+            console.error('[KC] Could not parse service payload:', e);
+            return { ok: false, error: 'Invalid response' };
+        }
     }
     
     // Fisher-Yates shuffle algorithm - returns shuffled indices
@@ -1701,16 +1771,13 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
     function loadQuestionsFromDatabase() {
         console.log('[KC] Loading questions from database');
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'getquestions',
-                sesskey: config.sesskey,
-                cmid: config.cmid
-            },
-            success: function (response) {
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.148): getquestions now runs through the declared
+        // mod_aiknowledgecheck_get_questions service. Ajax.call resolves with the payload
+        // directly, so the old jQuery success/error pair becomes done/fail.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_get_questions',
+            args: { cmid: parseInt(config.cmid, 10) }
+        }])[0].done(function (response) {
                 if (response.ok && response.questions && response.questions.length > 0) {
                     console.log('[KC] Loaded questions:', response.questions.length);
                     
@@ -1811,16 +1878,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     // Start the quiz
                     startStudentQuiz();
                 } else {
-                    console.error('[KC] No questions found:', response.error);
+                    console.error('[KC] No questions found');
                     alert('No questions available. Please contact your teacher.');
                     location.reload();
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Load questions failed:', status, error);
-                alert('Failed to load questions. Please try again.');
-                location.reload();
-            }
+        }).fail(function (err) {
+            console.error('[KC] Load questions failed:', err && err.message ? err.message : err);
+            alert('Failed to load questions. Please try again.');
+            location.reload();
         });
     }
     
@@ -2030,48 +2095,52 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         pendingSaves++;
 
         // ADD-SURVEY-FREETEXT (v1.5.127): Include freetext value when answerIndex === -1.
-        var saveData = {
-            action: 'saveanswer',
-            sesskey: config.sesskey,
-            attemptid: currentAttemptId,
-            questionid: questionId,
+        var saveArgs = {
+            attemptid: parseInt(currentAttemptId, 10),
+            questionid: parseInt(questionId, 10),
             answerindex: answerIndex
         };
         if (answerIndex === -1 && typeof freetextValue === 'string') {
-            saveData.freetextvalue = freetextValue;
+            saveArgs.freetextvalue = freetextValue;
         }
 
         console.log('[KC] Saving answer:', { attemptId: currentAttemptId, questionId: questionId, answerIndex: answerIndex, freetext: answerIndex === -1 });
 
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: saveData,
-            success: function (response) {
-                if (response.ok) {
-                    console.log('[KC] Answer saved successfully');
-                    if (failedSaves[questionId]) { delete failedSaves[questionId]; }
-                } else {
-                    console.error('[KC] Failed to save answer:', response.error);
-                    failedSaves[questionId] = { answerIndex: answerIndex, freetextValue: freetextValue };
-                }
-                if (typeof onResult === 'function') { onResult(response); }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Save answer request failed:', status, error);
-                // M4: record the failed save so finishAttempt can retry it.
-                failedSaves[questionId] = { answerIndex: answerIndex, freetextValue: freetextValue };
-                if (typeof onResult === 'function') { onResult(null); }
-            },
-            complete: function () {
-                pendingSaves--;
-                if (pendingSaves === 0 && pendingFinishAttempt) {
-                    pendingFinishAttempt = false;
-                    console.log('[KC] All saves complete  -  executing deferred finishAttempt');
-                    doFinishAttempt();
-                }
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): saveanswer now runs through the declared
+        // mod_aiknowledgecheck_save_answer service. There is no jQuery `complete` hook on a
+        // core/ajax promise, so the pending-save bookkeeping that releases a deferred
+        // finishAttempt is duplicated into both the done and fail paths via settle().
+        var settled = false;
+        var settle = function () {
+            if (settled) { return; }
+            settled = true;
+            pendingSaves--;
+            if (pendingSaves === 0 && pendingFinishAttempt) {
+                pendingFinishAttempt = false;
+                console.log('[KC] All saves complete  -  executing deferred finishAttempt');
+                doFinishAttempt();
             }
+        };
+
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_save_answer',
+            args: saveArgs
+        }])[0].done(function (response) {
+            if (response.ok) {
+                console.log('[KC] Answer saved successfully');
+                if (failedSaves[questionId]) { delete failedSaves[questionId]; }
+            } else {
+                console.error('[KC] Failed to save answer:', response.error);
+                failedSaves[questionId] = { answerIndex: answerIndex, freetextValue: freetextValue };
+            }
+            if (typeof onResult === 'function') { onResult(response); }
+            settle();
+        }).fail(function (err) {
+            console.error('[KC] Save answer request failed:', err);
+            // M4: record the failed save so finishAttempt can retry it.
+            failedSaves[questionId] = { answerIndex: answerIndex, freetextValue: freetextValue };
+            if (typeof onResult === 'function') { onResult(null); }
+            settle();
         });
     }
 
@@ -2183,16 +2252,12 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
 
         console.log('[KC] Finishing attempt:', attemptBeingFinished);
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'finishattempt',
-                sesskey: config.sesskey,
-                attemptid: attemptBeingFinished
-            },
-            success: function (response) {
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): finishattempt now runs through the declared
+        // mod_aiknowledgecheck_finish_attempt service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_finish_attempt',
+            args: { attemptid: parseInt(attemptBeingFinished, 10) }
+        }])[0].done(function (response) {
                 if (response.ok) {
                     console.log('[KC] Attempt finished successfully:', response);
                     // Clear saved progress for this attempt from localStorage.
@@ -2218,12 +2283,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 // Always enable the retake buttons once the finish round-trip is complete.
                 $('#retake-quiz-btn').prop('disabled', false);
                 $('#retry-wrong-btn').prop('disabled', false);
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Finish attempt request failed:', status, error);
-                $('#retake-quiz-btn').prop('disabled', false);
-                $('#retry-wrong-btn').prop('disabled', false);
-            }
+        }).fail(function (err) {
+            console.error('[KC] Finish attempt request failed:', err);
+            $('#retake-quiz-btn').prop('disabled', false);
+            $('#retry-wrong-btn').prop('disabled', false);
         });
     }
 
@@ -3347,30 +3410,25 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         pendingSaves = 0;
         pendingFinishAttempt = false;
         $('#start-attempt-btn').prop('disabled', true).text('Loading...');
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'startattempt',
-                sesskey: config.sesskey,
-                cmid: config.cmid
-            },
-            success: function (response) {
-                if (response.ok) {
-                    currentAttemptId = response.attemptid;
-                    preSaveCorrectAnswers(function () {
-                        startQuizWrongOnly();
-                    });
-                } else {
-                    alert(response.error || 'Failed to start attempt');
-                    retryWrongOnly = false;
-                }
-            },
-            error: function () {
-                alert('Failed to start quiz. Please try again.');
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): startattempt now runs through the declared
+        // mod_aiknowledgecheck_start_attempt service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_start_attempt',
+            args: { cmid: parseInt(config.cmid, 10) }
+        }])[0].done(function (response) {
+            if (response.ok) {
+                currentAttemptId = response.attemptid;
+                preSaveCorrectAnswers(function () {
+                    startQuizWrongOnly();
+                });
+            } else {
+                alert(response.error || 'Failed to start attempt');
                 retryWrongOnly = false;
             }
+        }).fail(function (err) {
+            console.error('[KC] Start wrong-only attempt failed:', err);
+            alert('Failed to start quiz. Please try again.');
+            retryWrongOnly = false;
         });
     }
 
@@ -3402,20 +3460,21 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             if (q.shuffledToOriginal) {
                 origIdx = q.shuffledToOriginal[q.correctAnswer];
             }
-            $.ajax({
-                url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'saveanswer',
-                    sesskey: config.sesskey,
-                    attemptid: currentAttemptId,
-                    questionid: q.id,
+            // MIGRATE-EXTERNAL-SERVICES (v1.5.152): saveanswer now runs through the declared
+            // mod_aiknowledgecheck_save_answer service. The sequential chain must advance
+            // whether the call succeeds or fails, so both handlers call saveNext — the old
+            // jQuery `complete` hook has no equivalent on a core/ajax promise.
+            var advance = function () { saveNext(i + 1); };
+            Ajax.call([{
+                methodname: 'mod_aiknowledgecheck_save_answer',
+                args: {
+                    attemptid: parseInt(currentAttemptId, 10),
+                    questionid: parseInt(q.id, 10),
                     answerindex: origIdx
-                },
-                complete: function () {
-                    saveNext(i + 1);
                 }
+            }])[0].done(advance).fail(function (err) {
+                console.error('[KC] Carry-forward save failed:', err);
+                advance();
             });
         }
         saveNext(0);
@@ -3881,18 +3940,15 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             var promptText = quizData[qIdx] ? quizData[qIdx].question : ('Question ' + (qIdx + 1));
             $btn.prop('disabled', true).text('Generating...');
             $statusDiv.show().text('Generating image...').css('color', '#6c757d');
-            $.ajax({
-                url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'generateimage',
-                    sesskey: config.sesskey,
-                    cmid: config.cmid,
+            // MIGRATE-EXTERNAL-SERVICES (v1.5.152): generateimage now runs through the
+            // declared mod_aiknowledgecheck_generate_image service.
+            Ajax.call([{
+                methodname: 'mod_aiknowledgecheck_generate_image',
+                args: {
+                    cmid: parseInt(config.cmid, 10),
                     prompt: promptText
-                },
-                timeout: 90000,
-                success: function (resp) {
+                }
+            }])[0].done(function (resp) {
                     $btn.prop('disabled', false).text('Generate (5 credits)');
                     if (resp.ok && resp.imageDataUrl) {
                         $urlInput.val(resp.imageDataUrl);
@@ -3902,11 +3958,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     } else {
                         $statusDiv.text(resp.error || 'Generation failed').css('color', '#dc3545');
                     }
-                },
-                error: function () {
-                    $btn.prop('disabled', false).text('Generate (5 credits)');
-                    $statusDiv.text('Request failed. Please try again.').css('color', '#dc3545');
-                }
+            }).fail(function (err) {
+                $btn.prop('disabled', false).text('Generate (5 credits)');
+                $statusDiv.text('Request failed. Please try again.').css('color', '#dc3545');
             });
         });
 
@@ -4221,21 +4275,19 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             };
         });
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'savequestions',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): savequestions now runs through the declared
+        // mod_aiknowledgecheck_save_questions service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_save_questions',
+            args: {
+                cmid: parseInt(config.cmid, 10),
                 questions: JSON.stringify(questionsForDb),
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
                 voiceStyle: $('#voice-style').val() || ''
-            },
-            success: function (response) {
+            }
+        }])[0].done(function (response) {
                 if (response.ok) {
                     console.log('[KC] Questions saved:', response.saved);
                     callback(true);
@@ -4243,11 +4295,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     console.error('[KC] Save failed:', response.error);
                     callback(false);
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Save request failed:', status, error);
-                callback(false);
-            }
+        }).fail(function (err) {
+            console.error('[KC] Save request failed:', err);
+            callback(false);
         });
     }
     
@@ -4266,20 +4316,18 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
             };
         });
         
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'regenerateaudio',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): regenerateaudio now runs through the declared
+        // mod_aiknowledgecheck_regenerate_audio service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_regenerate_audio',
+            args: {
+                cmid: parseInt(config.cmid, 10),
                 questions: JSON.stringify(questionsForApi),
                 voiceLanguage: voiceLanguage,
                 voiceId: voiceId
-            },
-            timeout: 120000,
-            success: function (response) {
+            }
+        }])[0].done(function (envelope) {
+            var response = unwrapService(envelope);
                 if (response.ok && response.questions) {
                     console.log('[KC] Audio regenerated for', response.questions.length, 'questions');
                     
@@ -4304,11 +4352,9 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     console.error('[KC] Audio regeneration failed:', response.error);
                     callback(false);
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Audio regeneration request failed:', status, error);
-                callback(false);
-            }
+        }).fail(function (err) {
+            console.error('[KC] Audio regeneration request failed:', err);
+            callback(false);
         });
     }
     
@@ -4393,26 +4439,22 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         var voiceoverTurnedOff = (oldVoiceoverEnabled && !newVoiceoverEnabled);
         var voiceoverTurnedOn = (!oldVoiceoverEnabled && newVoiceoverEnabled);
 
-        // Always persist voice settings to database first
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'savevoicesettings',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
-                voiceoverEnabled: newVoiceoverEnabled ? 1 : 0,
-                voiceLanguage: newLanguage,
-                voiceGender: newGender,
-                voiceStyle: newStyle
-            },
-            success: function () {
-                console.log('[KC] Voice settings saved to database');
-            },
-            error: function () {
-                console.error('[KC] Failed to save voice settings to database');
+        // Always persist voice settings to database first.
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.147): second endpoint moved off ajax.php.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_save_voice_settings',
+            args: {
+                cmid: parseInt(config.cmid, 10),
+                voiceoverenabled: !!newVoiceoverEnabled,
+                voicelanguage: newLanguage,
+                voicegender: newGender,
+                voicestyle: newStyle
             }
+        }])[0].done(function () {
+            console.log('[KC] Voice settings saved to database');
+        }).fail(function (err) {
+            console.error('[KC] Failed to save voice settings to database',
+                err && err.message ? err.message : err);
         });
 
         if (voiceoverTurnedOff) {
@@ -4493,22 +4535,20 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 });
             }
 
-            $.ajax({
-                url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'regeneratewithsettings',
-                    sesskey: config.sesskey,
-                    cmid: config.cmid,
+            // MIGRATE-EXTERNAL-SERVICES (v1.5.152): regeneratewithsettings now runs through
+            // the declared mod_aiknowledgecheck_regenerate_with_settings service.
+            Ajax.call([{
+                methodname: 'mod_aiknowledgecheck_regenerate_with_settings',
+                args: {
+                    cmid: parseInt(config.cmid, 10),
                     questions: JSON.stringify(currentQuestions),
                     voiceLanguage: newLanguage,
                     voiceoverEnabled: newVoiceoverEnabled ? 1 : 0,
                     voiceGender: newGender,
                     voiceId: newStyle
-                },
-                timeout: 180000,
-                success: function (response) {
+                }
+            }])[0].done(function (envelope) {
+                var response = unwrapService(envelope);
                     function applySettingsQuestions(questions) {
                         // FIX-KC-REGEN-STORE (v1.5.81): unpack {text,explanation} API format
                         // to KC's flat internal format (same fix as regenerateinstructions).
@@ -4580,12 +4620,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                         enableSettingsButtons(origInfo, editInfoEl);
                         alert('Regeneration failed: ' + (response.error || 'Unknown error'));
                     }
-                },
-                error: function (xhr, status, error) {
-                    console.error('[KC] Settings regeneration request failed:', status, error);
-                    enableSettingsButtons(origInfo, editInfoEl);
-                    alert('Request failed. Please try again.');
-                }
+            }).fail(function (err) {
+                console.error('[KC] Settings regeneration request failed:', err);
+                enableSettingsButtons(origInfo, editInfoEl);
+                alert('Request failed. Please try again.');
             });
         } else if (voiceoverTurnedOn) {
             // Voiceover turned ON: generate audio for existing questions
@@ -4663,38 +4701,28 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                 onError('Timed out waiting for regeneration. Please try again.');
                 return;
             }
-            $.ajax({
-                url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'status',
-                    sesskey: config.sesskey,
-                    cmid: config.cmid,
-                    jobId: jobId
-                },
-                timeout: 15000,
-                success: function (response) {
-                    if (!response.ok) {
-                        clearInterval(regenPollInterval);
-                        onError(response.error || 'Regeneration failed');
-                        return;
-                    }
-                    if ($progressBtn && response.progress !== undefined) {
-                        $progressBtn.html(spinnerSvg + 'Regenerating\u2026 ' + Math.round(response.progress) + '%');
-                    }
-                    if (response.status === 'completed') {
-                        clearInterval(regenPollInterval);
-                        onComplete(response);
-                    } else if (response.status === 'failed') {
-                        clearInterval(regenPollInterval);
-                        onError(response.error || 'Regeneration failed on the server');
-                    }
-                    // 'processing' — keep polling
-                },
-                error: function () {
-                    // Ignore individual poll failures — keep the interval running
+            // MIGRATE-EXTERNAL-SERVICES (v1.5.148): second 'status' caller, now via the
+            // declared service. Individual poll failures are still ignored so a transient
+            // blip does not abort a regeneration that is still running server-side.
+            pollGenerationStatus(jobId, function (response) {
+                if (!response.ok) {
+                    clearInterval(regenPollInterval);
+                    onError(response.error || 'Regeneration failed');
+                    return;
                 }
+                if ($progressBtn && response.progress !== undefined) {
+                    $progressBtn.html(spinnerSvg + 'Regenerating\u2026 ' + Math.round(response.progress) + '%');
+                }
+                if (response.status === 'completed') {
+                    clearInterval(regenPollInterval);
+                    onComplete(response);
+                } else if (response.status === 'failed') {
+                    clearInterval(regenPollInterval);
+                    onError(response.error || 'Regeneration failed on the server');
+                }
+                // 'processing' — keep polling
+            }, function () {
+                // Ignore individual poll failures — keep the interval running
             });
         }, 2000);
     }
@@ -4767,23 +4795,21 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         });
 
         function doBatchRequest(retriesLeft) {
-            $.ajax({
-                url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'regenerateinstructions',
-                    sesskey: config.sesskey,
-                    cmid: config.cmid,
+            // MIGRATE-EXTERNAL-SERVICES (v1.5.152): regenerateinstructions now runs through
+            // the declared mod_aiknowledgecheck_regenerate_instructions service.
+            Ajax.call([{
+                methodname: 'mod_aiknowledgecheck_regenerate_instructions',
+                args: {
+                    cmid: parseInt(config.cmid, 10),
                     questions: JSON.stringify(allQuestions),
                     extraInstructions: extraInstructions || '',
                     voiceLanguage: $('#voice-language').val() || 'en-AU',
                     voiceoverEnabled: voiceoverEnabled ? 1 : 0,
                     voiceGender: $('#voice-gender').val() || 'female',
                     voiceId: $('#voice-style').val() || 'Aoede'
-                },
-                timeout: 180000, // 3 min: server runs Gemini + optional TTS in one shot
-                success: function (response) {
+                }
+            }])[0].done(function (envelope) {
+                var response = unwrapService(envelope);
                     function applyBatchQuestions(questions) {
                         var newQuizData = quizData.slice();
                         for (var i = 0; i < questions.length && i < newQuizData.length; i++) {
@@ -4864,16 +4890,14 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                             alert('Regeneration failed: ' + errorMsg + '\n\nPlease try again.');
                         }
                     }
-                },
-                error: function (xhr, status, err) {
-                    console.warn('[KC] Regen batch request failed (retriesLeft=' + retriesLeft + '):', status, err);
-                    if (retriesLeft > 0) {
-                        $btn.html(spinnerSvg + 'Retrying\u2026');
-                        setTimeout(function () { doBatchRequest(retriesLeft - 1); }, 2000);
-                    } else {
-                        restoreBtn();
-                        alert('Regeneration failed (connection error). Please try again.');
-                    }
+            }).fail(function (err) {
+                console.warn('[KC] Regen batch request failed (retriesLeft=' + retriesLeft + '):', err);
+                if (retriesLeft > 0) {
+                    $btn.html(spinnerSvg + 'Retrying\u2026');
+                    setTimeout(function () { doBatchRequest(retriesLeft - 1); }, 2000);
+                } else {
+                    restoreBtn();
+                    alert('Regeneration failed (connection error). Please try again.');
                 }
             });
         }
@@ -4922,23 +4946,21 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
         var voiceoverEnabled = $('#voiceover-toggle').is(':checked') || !!config.voiceoverEnabled;
         var extraInstructions = $('#edit-extra-instructions').val() || '';
 
-        $.ajax({
-            url: config.wwwroot + '/mod/aiknowledgecheck/ajax.php',
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                action: 'regenerateinstructions',
-                sesskey: config.sesskey,
-                cmid: config.cmid,
+        // MIGRATE-EXTERNAL-SERVICES (v1.5.152): regenerateinstructions now runs through the
+        // declared mod_aiknowledgecheck_regenerate_instructions service.
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_regenerate_instructions',
+            args: {
+                cmid: parseInt(config.cmid, 10),
                 questions: JSON.stringify(singleQuestion),
                 extraInstructions: extraInstructions,
                 voiceLanguage: $('#voice-language').val() || 'en-AU',
                 voiceoverEnabled: voiceoverEnabled ? 1 : 0,
                 voiceGender: $('#voice-gender').val() || 'female',
                 voiceId: $('#voice-style').val() || 'Aoede'
-            },
-            timeout: 120000,
-            success: function (response) {
+            }
+        }])[0].done(function (envelope) {
+            var response = unwrapService(envelope);
                 function applySingleQuestion(rq) {
                     // FIX-KC-SINGLEREGEN-STORE (v1.5.82): Unpack API response from
                     // {text,explanation} object format to KC's flat internal format.
@@ -5004,12 +5026,10 @@ define('mod_aiknowledgecheck/knowledgecheck', ['jquery'], function ($) {
                     alert('Regeneration failed: ' + (response.error || 'Unknown error'));
                     $btn.prop('disabled', false).html(origHtml);
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('[KC] Single-question regeneration request failed:', status, error);
-                alert('Request failed. Please try again.');
-                $btn.prop('disabled', false).html(origHtml);
-            }
+        }).fail(function (err) {
+            console.error('[KC] Single-question regeneration request failed:', err);
+            alert('Request failed. Please try again.');
+            $btn.prop('disabled', false).html(origHtml);
         });
     }
 

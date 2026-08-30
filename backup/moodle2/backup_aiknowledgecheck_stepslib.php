@@ -31,38 +31,42 @@ class backup_aiknowledgecheck_activity_structure_step extends backup_activity_st
     protected function define_structure() {
         $userinfo = $this->get_setting_value('userinfo');
 
-        $knowledgecheck = new backup_nested_element('aiknowledgecheck', ['id'], [
-            'name', 'intro', 'introformat', 'grade', 'maxattempts', 'questioncount',
-            'passinggrade', 'completionallcorrect', 'completionpassgrade', 'ccemail',
-            'voiceoverenabled', 'voicelanguage', 'voicegender', 'voicestyle',
-            'videourl', 'videorequirement', 'videominseconds', 'showvideoduringquiz',
-            'showchapterstamps', 'audiourl', 'audiorequirement', 'audiominseconds',
-            'imageurl', 'aftercompletion', 'sourcecontext', 'surveymode', 'surveyscale',
-            'timecreated', 'timemodified',
-        ]);
+        $knowledgecheck = new backup_nested_element(
+            'aiknowledgecheck', ['id'], [
+                'name', 'intro', 'introformat', 'grade', 'maxattempts', 'questioncount',
+                'passinggrade', 'completionallcorrect', 'completionpassgrade', 'ccemail',
+                'voiceoverenabled', 'voicelanguage', 'voicegender', 'voicestyle',
+                'videourl', 'videorequirement', 'videominseconds', 'showvideoduringquiz',
+                'showchapterstamps', 'audiourl', 'audiorequirement', 'audiominseconds',
+                'imageurl', 'aftercompletion', 'sourcecontext', 'surveymode', 'surveyscale',
+                'timecreated', 'timemodified',
+            ]);
 
         $questions = new backup_nested_element('questions');
-        $question = new backup_nested_element('question', ['id'], [
-            'questionnumber', 'questiontext',
-            'answer1', 'answer2', 'answer3', 'answer4', 'answer5',
-            'correctanswer',
-            'feedback1', 'feedback2', 'feedback3', 'feedback4',
-            'audiodata', 'mappingtopic', 'mappingcriteria', 'timestamp_seconds',
-            'imageurl', 'imageenabled', 'questiontype',
-            'questionvideourl', 'questionvideoenabled', 'questionaudiourl', 'questionaudioenabled',
-        ]);
+        $question = new backup_nested_element(
+            'question', ['id'], [
+                'questionnumber', 'questiontext',
+                'answer1', 'answer2', 'answer3', 'answer4', 'answer5',
+                'correctanswer',
+                'feedback1', 'feedback2', 'feedback3', 'feedback4',
+                'audiodata', 'mappingtopic', 'mappingcriteria', 'timestamp_seconds',
+                'imageurl', 'imageenabled', 'questiontype',
+                'questionvideourl', 'questionvideoenabled', 'questionaudiourl', 'questionaudioenabled',
+            ]);
 
         $attempts = new backup_nested_element('attempts');
-        $attempt = new backup_nested_element('attempt', ['id'], [
-            'userid', 'currentquestion', 'answers',
-            'correctcount', 'totalcount', 'status',
-            'timecreated', 'timemodified', 'timestarted', 'timeended',
-        ]);
+        $attempt = new backup_nested_element(
+            'attempt', ['id'], [
+                'userid', 'currentquestion', 'answers',
+                'correctcount', 'totalcount', 'status',
+                'timecreated', 'timemodified', 'timestarted', 'timeended',
+            ]);
 
         $overrides = new backup_nested_element('overrides');
-        $override = new backup_nested_element('override', ['id'], [
-            'userid', 'extraattempts', 'timecreated', 'timemodified',
-        ]);
+        $override = new backup_nested_element(
+            'override', ['id'], [
+                'userid', 'extraattempts', 'timecreated', 'timemodified',
+            ]);
 
         $knowledgecheck->add_child($questions);
         $questions->add_child($question);

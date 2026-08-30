@@ -159,7 +159,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2025120147, 'aiknowledgecheck');
     }
 
-    // v1.3.61: Add grade column for proper Moodle grade API integration.
+    // Release v1.3.61: Add grade column for proper Moodle grade API integration.
     // Required for modgrade form element and standard grade-to-pass functionality.
     if ($oldversion < 2025120161) {
         $table = new xmldb_table('aiknowledgecheck');
@@ -173,13 +173,14 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         $instances = $DB->get_records('aiknowledgecheck');
         foreach ($instances as $instance) {
             if (!empty($instance->passinggrade) && (int)$instance->passinggrade > 0) {
-                $gradeitem = grade_item::fetch([
-                    'itemtype' => 'mod',
-                    'itemmodule' => 'aiknowledgecheck',
-                    'iteminstance' => $instance->id,
-                    'courseid' => $instance->course,
-                    'itemnumber' => 0,
-                ]);
+                $gradeitem = grade_item::fetch(
+                    [
+                        'itemtype' => 'mod',
+                        'itemmodule' => 'aiknowledgecheck',
+                        'iteminstance' => $instance->id,
+                        'courseid' => $instance->course,
+                        'itemnumber' => 0,
+                    ]);
                 if ($gradeitem) {
                     $gradeitem->gradepass = (float)$instance->passinggrade;
                     $gradeitem->update();
@@ -190,7 +191,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2025120161, 'aiknowledgecheck');
     }
 
-    // v1.3.74: Add voiceover settings fields to activity table for persistent voice preferences.
+    // Release v1.3.74: Add voiceover settings fields to activity table for persistent voice preferences.
     if ($oldversion < 2025120174) {
         $table = new xmldb_table('aiknowledgecheck');
 
@@ -239,18 +240,18 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026072801) {
-        // v1.3.92: Live attempts badge fix — no DB schema changes.
+        // Release v1.3.92: Live attempts badge fix — no DB schema changes.
         upgrade_mod_savepoint(true, 2026072801, 'aiknowledgecheck');
     }
 
     if ($oldversion < 2026072802) {
-        // v1.3.93 through v1.3.97: Continue-attempt resume fix, resume-from-complete
+        // Release v1.3.93 through v1.3.97: Continue-attempt resume fix, resume-from-complete
         // detection, attempts badge on results screen — no DB schema changes.
         upgrade_mod_savepoint(true, 2026072802, 'aiknowledgecheck');
     }
 
     if ($oldversion < 2026072803) {
-        // v1.3.98: AMD build sync — build/knowledgecheck.js and build/knowledgecheck.min.js
+        // Release v1.3.98: AMD build sync — build/knowledgecheck.js and build/knowledgecheck.min.js
         // updated to match src/knowledgecheck.js (resume-from-complete detection and
         // attempts badge on results screen were missing from build files).
         // No DB schema changes.
@@ -258,7 +259,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026072804) {
-        // v1.3.99: Attempts badge icon size fix.
+        // Release v1.3.99: Attempts badge icon size fix.
         // updateAttemptsBadge() was using cloneNode(true) to copy the SVG icon from the
         // existing badge element. If that badge was dynamically rendered by JS (e.g. the
         // results-screen badge at line ~1885), its SVG had no width/height attributes,
@@ -274,7 +275,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026072805) {
-        // v1.5.4: Audio Gate feature.
+        // Release v1.5.4: Audio Gate feature.
         // Add audiourl, audiorequirement, audiominseconds columns to the main table
         // so teachers can optionally require students to listen to an audio file before
         // the quiz start button is enabled — mirroring the existing Video Gate feature.
@@ -299,7 +300,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026072806) {
-        // v1.5.5: Performance Criteria mapping columns.
+        // Release v1.5.5: Performance Criteria mapping columns.
         // Add mappingtopic and mappingcriteria to aiknowledgecheck_questions so that
         // teachers can align topics with performance criteria and have both appear
         // in the downloaded Excel question-mapping export.
@@ -319,51 +320,51 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026072807) {
-        // v1.5.14: ETA BANNERS — Estimated Time to Complete banners for teacher + student views.
+        // Release v1.5.14: ETA BANNERS — Estimated Time to Complete banners for teacher + student views.
         // No DB schema changes.
         upgrade_mod_savepoint(true, 2026072807, 'aiknowledgecheck');
     }
 
     if ($oldversion < 2026072808) {
-        // v1.5.15: RETRY WRONG ANSWERS — Retake shows only incorrectly answered questions.
+        // Release v1.5.15: RETRY WRONG ANSWERS — Retake shows only incorrectly answered questions.
         // No DB schema changes.
         upgrade_mod_savepoint(true, 2026072808, 'aiknowledgecheck');
     }
 
-    // v1.5.16: VERSION BUMP — Maintenance release. No DB changes.
+    // Release v1.5.16: VERSION BUMP — Maintenance release. No DB changes.
     if ($oldversion < 2026072809) {
         upgrade_mod_savepoint(true, 2026072809, 'aiknowledgecheck');
     }
 
     if ($oldversion < 2026072810) {
-        // v1.5.18: Results title/message auto-fades after 3s. Token budget increased
+        // Release v1.5.18: Results title/message auto-fades after 3s. Token budget increased
         // to prevent AI returning fewer questions than requested. No DB changes.
         upgrade_mod_savepoint(true, 2026072810, 'aiknowledgecheck');
     }
 
     if ($oldversion < 2026072811) {
-        // v1.5.19: Token budget tripled (2400 tokens/question) for generous AI
+        // Release v1.5.19: Token budget tripled (2400 tokens/question) for generous AI
         // headroom. Removed retry/over-request complexity. No DB changes.
         upgrade_mod_savepoint(true, 2026072811, 'aiknowledgecheck');
     }
 
-    // v1.5.20: Course info time estimation update — 2 min per question.
+    // Release v1.5.20: Course info time estimation update — 2 min per question.
     if ($oldversion < 2026072812) {
         upgrade_mod_savepoint(true, 2026072812, 'aiknowledgecheck');
     }
 
-    // v1.5.21: Attempt-grouped PDF/Text results — JS-only change; no DB schema changes.
+    // Release v1.5.21: Attempt-grouped PDF/Text results — JS-only change; no DB schema changes.
     if ($oldversion < 2026072813) {
         upgrade_mod_savepoint(true, 2026072813, 'aiknowledgecheck');
     }
 
-    // v1.5.22: Always show "Attempt N" heading in PDF/Text results, even for single-attempt quizzes.
+    // Release v1.5.22: Always show "Attempt N" heading in PDF/Text results, even for single-attempt quizzes.
     //          Removed sub-label "X correct, Y incorrect out of Z questions". JS-only change.
     if ($oldversion < 2026072814) {
         upgrade_mod_savepoint(true, 2026072814, 'aiknowledgecheck');
     }
 
-    // v1.5.23: BUG FIX — Wrong-only retry incorrectly reintroduced already-correct questions
+    // Release v1.5.23: BUG FIX — Wrong-only retry incorrectly reintroduced already-correct questions
     //          from attempt 3 onwards. Root cause: retakeWrongOnly() used the log array index
     //          (idx) when building wrongQuestionIndices, but after the first retry the log is
     //          rebuilt with carry-forward entries prepended so log index ≠ quizData index.
@@ -372,7 +373,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072815, 'aiknowledgecheck');
     }
 
-    // v1.5.24: BUG FIX — Incorrect-answer attempts were silently missing from PDF/text
+    // Release v1.5.24: BUG FIX — Incorrect-answer attempts were silently missing from PDF/text
     //          downloads. Root cause: startQuizWrongOnly() rebuilt quizAnswerLog with only
     //          correct carry-forward entries; any incorrect entry from the previous attempt
     //          (e.g. Q3 wrong in attempt 3) was discarded, leaving a gap in the exported
@@ -386,7 +387,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072816, 'aiknowledgecheck');
     }
 
-    // v1.5.25: NEW SETTING — "After Completion" dropdown. Adds aftercompletion column to
+    // Release v1.5.25: NEW SETTING — "After Completion" dropdown. Adds aftercompletion column to
     //          mdl_aiknowledgecheck. Values: 'restart' (default, student can retake) or
     //          'lock' (activity is locked after first completion, no further attempts).
     //          NOTE: This block was previously placed before v1.5.24 in error, causing a
@@ -401,13 +402,13 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072817, 'aiknowledgecheck');
     }
 
-    // v1.5.26 – v1.5.29: JS-only fixes (retry logic, export, course-info ETA, build sync).
+    // Release v1.5.26 – v1.5.29: JS-only fixes (retry logic, export, course-info ETA, build sync).
     //          No DB schema changes. Savepoint covers all four minor releases.
     if ($oldversion < 2026072818) {
         upgrade_mod_savepoint(true, 2026072818, 'aiknowledgecheck');
     }
 
-    // v1.5.30: CRITICAL FIXES —
+    // Release v1.5.30: CRITICAL FIXES —
     //          (1) Savepoint order corrected: v1.5.24 (2026072816) was listed after
     //              v1.5.25 (2026072817) in upgrade.php causing a "cannot downgrade"
     //              exception on fresh upgrades from v1.5.23 or earlier.
@@ -421,17 +422,17 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072819, 'aiknowledgecheck');
     }
 
-    // v1.5.31: VERSION BUMP — Clean release. No DB schema changes.
+    // Release v1.5.31: VERSION BUMP — Clean release. No DB schema changes.
     if ($oldversion < 2026072820) {
         upgrade_mod_savepoint(true, 2026072820, 'aiknowledgecheck');
     }
 
-    // v1.5.32: Industry & Sector dropdown unification. No DB schema changes.
+    // Release v1.5.32: Industry & Sector dropdown unification. No DB schema changes.
     if ($oldversion < 2026072821) {
         upgrade_mod_savepoint(true, 2026072821, 'aiknowledgecheck');
     }
 
-    // v1.5.33: BUG FIX — Attempts Report score column fix.
+    // Release v1.5.33: BUG FIX — Attempts Report score column fix.
     //          (1) SELECT a.*, u.* caused user table columns (id, timecreated,
     //              timemodified) to silently overwrite attempt table columns,
     //              corrupting timestamps in the report.
@@ -444,7 +445,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072822, 'aiknowledgecheck');
     }
 
-    // v1.5.34: CRITICAL BUG FIX — Two race conditions causing incorrect scores on
+    // Release v1.5.34: CRITICAL BUG FIX — Two race conditions causing incorrect scores on
     //          "Retry Wrong Answers" attempts.
     //          (1) preSaveCorrectAnswers (JS) fired all carry-forward saveanswer
     //              calls in parallel → all read answers='{}' simultaneously →
@@ -463,12 +464,12 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072823, 'aiknowledgecheck');
     }
 
-    // v1.5.35: BUG FIX — ETA timing and resume-from-all-complete score reconstruction. No DB schema changes.
+    // Release v1.5.35: BUG FIX — ETA timing and resume-from-all-complete score reconstruction. No DB schema changes.
     if ($oldversion < 2026072824) {
         upgrade_mod_savepoint(true, 2026072824, 'aiknowledgecheck');
     }
 
-    // v1.5.36: LANG FIX — Added missing $string['industry_sector'] to lang/en/aiknowledgecheck.php.
+    // Release v1.5.36: LANG FIX — Added missing $string['industry_sector'] to lang/en/aiknowledgecheck.php.
     //          Moodle debug mode showed "Invalid get_string() identifier: 'industry_sector'" on the
     //          Knowledge Check view page whenever the Workplace Context section was displayed, because
     //          view.php line 264 called get_string('industry_sector', 'mod_aiknowledgecheck') but the
@@ -477,57 +478,57 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072825, 'aiknowledgecheck');
     }
 
-    // v1.5.37: VERSION BUMP — Clean release increment. No code or DB schema changes.
+    // Release v1.5.37: VERSION BUMP — Clean release increment. No code or DB schema changes.
     if ($oldversion < 2026072826) {
         upgrade_mod_savepoint(true, 2026072826, 'aiknowledgecheck');
     }
 
-    // v1.5.38: BUG-KC-QPT-CAP + BUG-KC-TOKEN-FLOOR — Questions-per-topic dropdown extended
+    // Release v1.5.38: BUG-KC-QPT-CAP + BUG-KC-TOKEN-FLOOR — Questions-per-topic dropdown extended
     //          from 1-5 to 1-20. Token budget raised from Math.max(6000,n*600) to
     //          Math.max(8000,n*900) in both topic and PDF generation modes. No DB schema changes.
     if ($oldversion < 2026072827) {
         upgrade_mod_savepoint(true, 2026072827, 'aiknowledgecheck');
     }
 
-    // v1.5.39: VERSION BUMP — Clean release increment. No code or DB schema changes.
+    // Release v1.5.39: VERSION BUMP — Clean release increment. No code or DB schema changes.
     if ($oldversion < 2026072828) {
         upgrade_mod_savepoint(true, 2026072828, 'aiknowledgecheck');
     }
 
-    // v1.5.40: NEW FEATURE — "Add More Questions" button on the teacher ready screen.
+    // Release v1.5.40: NEW FEATURE — "Add More Questions" button on the teacher ready screen.
     //          No DB schema changes.
     if ($oldversion < 2026072829) {
         upgrade_mod_savepoint(true, 2026072829, 'aiknowledgecheck');
     }
 
-    // v1.5.41: BUG FIX — Regenerate Questions double-request fix + AI parse hardening.
+    // Release v1.5.41: BUG FIX — Regenerate Questions double-request fix + AI parse hardening.
     //          No DB schema changes.
     if ($oldversion < 2026072830) {
         upgrade_mod_savepoint(true, 2026072830, 'aiknowledgecheck');
     }
 
-    // v1.5.42: VERSION BUMP — Clean release increment. No code or DB schema changes.
+    // Release v1.5.42: VERSION BUMP — Clean release increment. No code or DB schema changes.
     if ($oldversion < 2026072831) {
         upgrade_mod_savepoint(true, 2026072831, 'aiknowledgecheck');
     }
 
-    // v1.5.43: BUG FIX — Audio gate fix + Gemini responseMimeType in generationConfig. No DB schema changes.
+    // Release v1.5.43: BUG FIX — Audio gate fix + Gemini responseMimeType in generationConfig. No DB schema changes.
     if ($oldversion < 2026072832) {
         upgrade_mod_savepoint(true, 2026072832, 'aiknowledgecheck');
     }
 
-    // v1.5.44: VERSION BUMP — Clean release increment. No code or DB schema changes.
+    // Release v1.5.44: VERSION BUMP — Clean release increment. No code or DB schema changes.
     if ($oldversion < 2026072833) {
         upgrade_mod_savepoint(true, 2026072833, 'aiknowledgecheck');
     }
 
-    // v1.5.45: BUG FIX — Removed duplicate #regenerate-btn injected by checkExistingQuestions().
+    // Release v1.5.45: BUG FIX — Removed duplicate #regenerate-btn injected by checkExistingQuestions().
     //   The view.php #ready-regenerate-btn is now the sole regenerate button. No DB schema changes.
     if ($oldversion < 2026072834) {
         upgrade_mod_savepoint(true, 2026072834, 'aiknowledgecheck');
     }
 
-    // v1.5.46: BUG FIX — Audio gate not shown to teachers. Gate variable setup moved before the
+    // Release v1.5.46: BUG FIX — Audio gate not shown to teachers. Gate variable setup moved before the
     //   teacher/student split so both views share the same values. Gate HTML and JS coordinator
     //   added to teacher ready section; #take-quiz-btn disabled until gate is satisfied.
     //   No DB schema changes.
@@ -535,17 +536,17 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072835, 'aiknowledgecheck');
     }
 
-    // v1.5.47: VERSION BUMP — Maintenance release. No code or DB schema changes.
+    // Release v1.5.47: VERSION BUMP — Maintenance release. No code or DB schema changes.
     if ($oldversion < 2026072836) {
         upgrade_mod_savepoint(true, 2026072836, 'aiknowledgecheck');
     }
 
-    // v1.5.48: VERSION BUMP — Maintenance release. No code or DB schema changes.
+    // Release v1.5.48: VERSION BUMP — Maintenance release. No code or DB schema changes.
     if ($oldversion < 2026072837) {
         upgrade_mod_savepoint(true, 2026072837, 'aiknowledgecheck');
     }
 
-    // v1.5.49: UPGRADE FIX — Corrected upgrade.php savepoint ordering. v1.5.4 block
+    // Release v1.5.49: UPGRADE FIX — Corrected upgrade.php savepoint ordering. v1.5.4 block
     //   (2026072805) was mistakenly inserted AFTER v1.5.5 block (2026072806) in
     //   db/upgrade.php. Sites upgrading from v1.3.99 or earlier would hit the
     //   2026072806 savepoint first (setting version to 2026072806), then attempt
@@ -556,7 +557,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072838, 'aiknowledgecheck');
     }
 
-    // v1.5.50 FIX-KC-GATE-TEACHER: Review Questions, Continue Attempt, and Start Quiz
+    // Release v1.5.50 FIX-KC-GATE-TEACHER: Review Questions, Continue Attempt, and Start Quiz
     //   buttons were disabled/gated for teachers when any video or audio gate was active
     //   ($anygated unconditional). Teachers (has_capability 'mod/aiknowledgecheck:create')
     //   must never be blocked by student-facing gates. Fix: $takegated = $anygated && !$cancreate.
@@ -565,7 +566,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072839, 'aiknowledgecheck');
     }
 
-    // v1.5.51: FIX-KC-SAVE-AUDIO-SKIP — saveEdits() in knowledgecheck.js now compares the
+    // Release v1.5.51: FIX-KC-SAVE-AUDIO-SKIP — saveEdits() in knowledgecheck.js now compares the
     //   teacher's form edits against originalQuizData before calling regenerateAudioWithCallback.
     //   If no question content changed (question text, options, explanations, correctAnswer all
     //   identical to when the edit form was opened), the audio regeneration step is skipped.
@@ -578,7 +579,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072840, 'aiknowledgecheck');
     }
 
-    // v1.5.52: TWO FIXES. FIX-1 (FIX-KC-OPTION-CAPITALISE): Answer options occasionally started
+    // Release v1.5.52: TWO FIXES. FIX-1 (FIX-KC-OPTION-CAPITALISE): Answer options occasionally started
     //   with a lowercase letter (e.g. 'puck' instead of 'Puck'). Root cause: knowledgecheck.js
     //   rendered raw option text without normalising case. Fix: added charAt(0).toUpperCase() +
     //   slice(1) in both showQuestion() and showQuestionWrongOnly() option-render loops.
@@ -592,7 +593,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072841, 'aiknowledgecheck');
     }
 
-    // v1.5.53: BUG FIX (FIX-KC-VIDEO-GATE-SEQUENTIAL): Two remaining video-gate UX issues.
+    // Release v1.5.53: BUG FIX (FIX-KC-VIDEO-GATE-SEQUENTIAL): Two remaining video-gate UX issues.
     //   FIX-1 (INITIAL DISPLAY): The "Start Quiz" card and Estimated Time banner were always
     //   visible on page load alongside the video, making the gate feel non-sequential. Fix:
     //   view.php now adds style="display:none;" to both elements when $anygated is true.
@@ -610,7 +611,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072842, 'aiknowledgecheck');
     }
 
-    // v1.5.54 - VERSION BUMP: Clean release following full tester-feedback cycle.
+    // Release v1.5.54 - VERSION BUMP: Clean release following full tester-feedback cycle.
     //   All fixes from v1.5.53 (FIX-KC-INITIAL-DISPLAY, FIX-KC-RETAKE-GATE-RESET,
     //   dead kcGate removal, teacher audio IIFE null guard) confirmed in ZIP and all
     //   6 delivery locations. No code changes. AMD MD5 unchanged: bc3877cc4313a56cee7b097742e1b020.
@@ -619,7 +620,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072843, 'aiknowledgecheck');
     }
 
-    // v1.5.55 - BUG FIX (FIX-KC-SEEK-BLOCK): Non-skippable YouTube video gate.
+    // Release v1.5.55 - BUG FIX (FIX-KC-SEEK-BLOCK): Non-skippable YouTube video gate.
     //   Students could seek the YouTube progress bar to the end and bypass the "watch full
     //   video" gate. Fix: a 500 ms polling timer (seekBlockTimer) tracks maxWatchedTime
     //   and seeks the player back if a forward-skip > 1.5 s is detected. The ENDED handler
@@ -635,7 +636,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072844, 'aiknowledgecheck');
     }
 
-    // v1.5.56: NEW FEATURE — "Show video while answering questions" option.
+    // Release v1.5.56: NEW FEATURE — "Show video while answering questions" option.
     //   Adds showvideoduringquiz field (int, default 0). When enabled, the video
     //   player remains visible above the quiz questions while the student answers.
     //   When disabled (default), the video hides when the quiz player takes over.
@@ -653,7 +654,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072845, 'aiknowledgecheck');
     }
 
-    // v1.5.57: NEW FEATURE — "Show chapter timestamp links" option.
+    // Release v1.5.57: NEW FEATURE — "Show chapter timestamp links" option.
     //   Adds showchapterstamps field (int, default 0). When enabled, each question
     //   displays a clickable timestamp link that seeks the video to the point in the
     //   transcript where the question's core concept appears. Timestamps come from
@@ -672,7 +673,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072846, 'aiknowledgecheck');
     }
 
-    // v1.5.58: FIX-KC-NUMERIC-VERSION — Corrects the 12-digit savepoint format used in
+    // Release v1.5.58: FIX-KC-NUMERIC-VERSION — Corrects the 12-digit savepoint format used in
     //   v1.5.55/56/57. Sites upgrading from v1.5.54 (last 13-digit: 2026072843) could
     //   not install v1.5.55-57 because those savepoints (2026072844, 2026072845,
     //   2026072846) are numerically LESS than 2026072843 — Moodle saw them as
@@ -698,7 +699,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072847, 'aiknowledgecheck');
     }
 
-    // v1.5.59 - SERVER FIX (FIX-KC-REGEN-JSON): /api/knowledgecheck-regenerate-settings
+    // Release v1.5.59 - SERVER FIX (FIX-KC-REGEN-JSON): /api/knowledgecheck-regenerate-settings
     //   was returning "Failed to parse AI response" intermittently. Root cause: the Gemini
     //   generateContent call lacked config:{responseMimeType:"application/json"} — Gemini
     //   occasionally wrapped its JSON array in markdown fences or prose, breaking JSON.parse.
@@ -708,7 +709,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072848, 'aiknowledgecheck');
     }
 
-    // v1.5.60 - BUG FIX (FIX-KC-CORRECT-ANSWER + FIX-KC-SEEK-BLOCK + FIX-KC-START-QUIZ-VIDEO):
+    // Release v1.5.60 - BUG FIX (FIX-KC-CORRECT-ANSWER + FIX-KC-SEEK-BLOCK + FIX-KC-START-QUIZ-VIDEO):
     //   (1) Correct answer always position A in regenerated questions — AI prompts hardcoded
     //   "correctAnswer":0 causing AI to always put correct answer at option A. Fix: server/routes.ts
     //   now applies shuffleQuestionAnswers() after parsing regenerated KC questions and always
@@ -720,7 +721,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072849, 'aiknowledgecheck');
     }
 
-    // v1.5.61 - AUTO-TEST CONFIRMATION: Ongoing tester issue (reported at v1.5.54)
+    // Release v1.5.61 - AUTO-TEST CONFIRMATION: Ongoing tester issue (reported at v1.5.54)
     //   confirmed resolved via code audit. Video/quiz simultaneous display: fixed across
     //   multiple releases — v1.5.52 (FIX-VIDEO-GATE: handleStartAttempt() hides video/audio/eta
     //   sections when student quiz starts), v1.5.56 (showvideoduringquiz setting added, default
@@ -732,7 +733,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072850, 'aiknowledgecheck');
     }
 
-    // v1.5.62 - BUG FIX (FIX-KC-VIDEO-SIMULTANEOUS): Video and quiz start section were shown
+    // Release v1.5.62 - BUG FIX (FIX-KC-VIDEO-SIMULTANEOUS): Video and quiz start section were shown
     //   simultaneously when the teacher left videorequirement='none' (the default). Root cause:
     //   $videogated depended on the teacher's videorequirement setting, so an unconfigured
     //   activity had no gate and both sections were visible on page load. Fix (view.php):
@@ -747,7 +748,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072851, 'aiknowledgecheck');
     }
 
-    // v1.5.63 — No DB schema changes.
+    // Release v1.5.63 — No DB schema changes.
     // FIX-KC-SHOWVIDEO: showStart() was unconditionally hiding #kc-video-section when
     // all gates unlocked, even when the teacher had enabled 'Show video during quiz'.
     // PHP-only fix in view.php. version.php → 2026072852.
@@ -755,7 +756,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072852, 'aiknowledgecheck');
     }
 
-    // v1.5.64 — No DB schema changes.
+    // Release v1.5.64 — No DB schema changes.
     // FIX-KC-TIMESTAMP-PRESERVE: /api/knowledgecheck-regenerate-settings was dropping
     // timestamp_seconds from regenerated questions, hiding chapter timestamp links after
     // regeneration. Server-only fix in routes.ts. version.php → 2026072853.
@@ -763,7 +764,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072853, 'aiknowledgecheck');
     }
 
-    // v1.5.65 — No DB schema changes.
+    // Release v1.5.65 — No DB schema changes.
     // FIX-KC-TAKEGATED-UNDEFINED: $takegated was only assigned inside the teacher/creator
     // if ($cancreate) branch in view.php. When a student viewed the activity after watching
     // the video gate, $takegated was undefined, producing a PHP warning on the Start Quiz
@@ -774,7 +775,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072854, 'aiknowledgecheck');
     }
 
-    // v1.5.66 — No DB schema changes.
+    // Release v1.5.66 — No DB schema changes.
     // FIX-KC-LOADING-RETAKE: On activities with a video/audio gate, the Start Quiz
     // button text was left as 'Loading...' by handleStartAttempt() after the first
     // attempt. When the student clicked 'Retake Quiz', gate.reset() re-locked the gate
@@ -791,7 +792,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072855, 'aiknowledgecheck');
     }
 
-    // v1.5.67 — No DB schema changes.
+    // Release v1.5.67 — No DB schema changes.
     // FIX-KC-CORRECT-ANSWER-DIST + FIX-KC-EXPL-SANITISE:
     // Three server-side fixes for "correct answer always option A" and "wrong option
     // shows Correct. explanation" bugs.
@@ -810,7 +811,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072856, 'aiknowledgecheck');
     }
 
-    // v1.5.68 — No DB schema changes.
+    // Release v1.5.68 — No DB schema changes.
     // FIX-KC-SAVE-SILENT + FIX-KC-EXPLANATION-LABEL:
     // (1) saveQuestionsToDatabase() now shows a visible alert() on save failure so
     //     teachers know to refresh and regenerate rather than thinking "Quiz Ready!"
@@ -825,7 +826,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072857, 'aiknowledgecheck');
     }
 
-    // v1.5.69 — No DB schema changes.
+    // Release v1.5.69 — No DB schema changes.
     // FIX-KC-GUARD-EDITMODE + FIX-KC-GUARD-SAVEEDITS + FIX-KC-GUARD-SHOWQUIZREADY + FIX-KC-SERVER-GUARD:
     // Four-layer guard to prevent an empty quizData array from wiping all questions from the DB.
     // (1) showEditMode() aborts if quizData is empty. (2) saveEdits() aborts if 0 questions collected
@@ -836,7 +837,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072858, 'aiknowledgecheck');
     }
 
-    // v1.5.70 — DB schema change: adds timestamp_seconds to aiknowledgecheck_questions.
+    // Release v1.5.70 — DB schema change: adds timestamp_seconds to aiknowledgecheck_questions.
     // FIX-KC-CHAPTER-TIMESTAMP: Chapter stamp links (showchapterstamps) were never shown because
     //   the aiknowledgecheck_questions table had no column to store timestamp_seconds. The AI returns
     //   timestamp_seconds per question during generation, but the savequestions handler silently
@@ -859,7 +860,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072859, 'aiknowledgecheck');
     }
 
-    // v1.5.71 — BUG FIX (FIX-KC-REDISTRIBUTE-REF + FIX-KC-TIMESTAMP-SAVE):
+    // Release v1.5.71 — BUG FIX (FIX-KC-REDISTRIBUTE-REF + FIX-KC-TIMESTAMP-SAVE):
     //   Server: redistributeCorrectAnswers() returned same array reference when already balanced
     //   or < 4 questions; allQuestions.length = 0 cleared both arrays, leaving job.questions = []
     //   and causing "0 questions generated with voiceover!" in the UI. Fix: assign job.questions
@@ -871,7 +872,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072860, 'aiknowledgecheck');
     }
 
-    // v1.5.72 — BUG FIX (FIX-KC-SEEK-BYPASS):
+    // Release v1.5.72 — BUG FIX (FIX-KC-SEEK-BYPASS):
     //   Students with a video gate could bypass the full-watch requirement by seeking forward
     //   to near the end of the video. Root cause: stopSeekBlocking() in the view.php inline
     //   script called player.getCurrentTime() and updated maxWatchedTime on both PAUSED and
@@ -888,7 +889,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072861, 'aiknowledgecheck');
     }
 
-    // v1.5.73 — BUG FIX (FIX-KC-STATUS-STREAM + FIX-KC-DEDUP-NAMES-FLAT +
+    // Release v1.5.73 — BUG FIX (FIX-KC-STATUS-STREAM + FIX-KC-DEDUP-NAMES-FLAT +
     //           FIX-KC-DEDUP-NAMES-EXPLNS + FIX-KC-REDISTRIBUTE-AUDIO + FIX-KC-ZERO-Q-GUARD):
     //   Four server-side + one PHP + one client-side fix addressing the "0 questions generated
     //   with voiceover!" symptom on Simple KC (no video gate).
@@ -926,7 +927,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072862, 'aiknowledgecheck');
     }
 
-    // v1.5.74 — BUG FIX (FIX-KC-SELECTED-AUDIO):
+    // Release v1.5.74 — BUG FIX (FIX-KC-SELECTED-AUDIO):
     //   When a student selected a wrong answer, the voiceover played the CORRECT
     //   answer's audio/explanation ("Correct. Employing the hierarchy of controls…")
     //   while the UI displayed "Incorrect" — jarring and misleading.
@@ -939,12 +940,12 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         // No DB schema changes in this release — bump version only.
         upgrade_mod_savepoint(true, 2026072863, 'aiknowledgecheck');
     }
-    // v1.5.75: AMD ENCODING FIX: All non-ASCII characters (em dashes, arrows, box-drawing chars, ellipsis, bullets, emoji, accented Latin) scrubbed from all AMD JS files (amd/src, amd/build, amd/build/*.min.js). Root cause of Moodle primary/secondary navigation menus disappearing site-wide: non-ASCII bytes in any installed plugin's AMD file cause a SyntaxError inside RequireJS's first.js bundle, throwing "No define call for core/first" and aborting the entire AMD module chain. No PHP, DB schema, or functional changes in this release.
+    // Release v1.5.75: AMD ENCODING FIX: All non-ASCII characters (em dashes, arrows, box-drawing chars, ellipsis, bullets, emoji, accented Latin) scrubbed from all AMD JS files (amd/src, amd/build, amd/build/*.min.js). Root cause of Moodle primary/secondary navigation menus disappearing site-wide: non-ASCII bytes in any installed plugin's AMD file cause a SyntaxError inside RequireJS's first.js bundle, throwing "No define call for core/first" and aborting the entire AMD module chain. No PHP, DB schema, or functional changes in this release.
     if ($oldversion < 2026072864) {
         upgrade_mod_savepoint(true, 2026072864, 'aiknowledgecheck');
     }
 
-    // v1.5.76 - FIX-KC-WCTX-UNDEFINED: Question generation always failed with ReferenceError
+    // Release v1.5.76 - FIX-KC-WCTX-UNDEFINED: Question generation always failed with ReferenceError
     //   'workplaceContextEnabled is not defined' inside the server-side AI prompt builder.
     //   The variable was extracted from the HTTP request body but never passed through the
     //   processKnowledgeCheck params object, its TypeScript type, or either helper function
@@ -958,7 +959,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072865, 'aiknowledgecheck');
     }
 
-    // v1.5.77: JS/CSS fix only - no DB schema change.
+    // Release v1.5.77: JS/CSS fix only - no DB schema change.
     // FIX-KC-PER-QUESTION-REGEN: Per-question "Regenerate" button (refresh icon) added to
     // each question card in the Edit Questions section, to the left of the delete button.
     // Clicking it sends only that one question to the regenerateinstructions endpoint, replaces
@@ -967,7 +968,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072866, 'aiknowledgecheck');
     }
 
-    // v1.5.78 - FIX-KC-TIMESTAMP-SAVE + AMD-TRIPLE-MATCH:
+    // Release v1.5.78 - FIX-KC-TIMESTAMP-SAVE + AMD-TRIPLE-MATCH:
     //   (1) FIX-KC-TIMESTAMP-SAVE: saveEditedQuestions() was missing timestamp_seconds from
     //       its question serialisation allowlist. When a teacher edited and saved questions,
     //       timestamp_seconds was silently stripped, causing "Show chapter timestamp links"
@@ -982,14 +983,14 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072867, 'aiknowledgecheck');
     }
 
-    // v1.5.79 - REBUMP: Version bump only. AMD triple-match re-applied (src=build=min,
+    // Release v1.5.79 - REBUMP: Version bump only. AMD triple-match re-applied (src=build=min,
     //   MD5 9fe7b73f). No JS, PHP, or DB schema changes.
     //   version.php → 2026072868.
     if ($oldversion < 2026072868) {
         upgrade_mod_savepoint(true, 2026072868, 'aiknowledgecheck');
     }
 
-    // v1.5.80 - BUG FIX (BUG-REGEN-RETRY + BUG-REGEN-INSTRUCTIONS-CURL + BUG-REGEN-SETTINGS-CURL
+    // Release v1.5.80 - BUG FIX (BUG-REGEN-RETRY + BUG-REGEN-INSTRUCTIONS-CURL + BUG-REGEN-SETTINGS-CURL
     //   + REMOVE-PER-QUESTION-REGEN-BTN):
     //   (1) handleRegenerateWithInstructions() had zero retry logic — a single transient
     //       "busy" API response immediately aborted with an error alert. Fix: refactored
@@ -1010,7 +1011,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072869, 'aiknowledgecheck');
     }
 
-    // v1.5.81 — FIX-KC-REGEN-PAYLOAD + FIX-KC-REGEN-STORE:
+    // Release v1.5.81 — FIX-KC-REGEN-PAYLOAD + FIX-KC-REGEN-STORE:
     //   "Regenerate Questions" failed silently because currentQuestions was built with
     //   flat string arrays (options:[str,str,str,str], explanations:[str,str,str,str])
     //   and used correctAnswer (display index) instead of correctIndex, and omitted the
@@ -1024,7 +1025,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072870, 'aiknowledgecheck');
     }
 
-    // v1.5.82 — FIX-KC-SINGLEREGEN-PAYLOAD + FIX-KC-SINGLEREGEN-STORE:
+    // Release v1.5.82 — FIX-KC-SINGLEREGEN-PAYLOAD + FIX-KC-SINGLEREGEN-STORE:
     //   handleKCSingleRegenerate() sent the wrong payload to the API (flat string arrays
     //   instead of {text,explanation} object arrays, correctAnswer instead of correctIndex,
     //   missing type field) — same class of bug fixed in handleRegenerateWithInstructions
@@ -1036,7 +1037,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072871, 'aiknowledgecheck');
     }
 
-    // v1.5.83 — FIX-KC-REGEN-SEQUENTIAL:
+    // Release v1.5.83 — FIX-KC-REGEN-SEQUENTIAL:
     //   handleRegenerateWithInstructions replaced single large-batch AJAX with sequential
     //   per-question requests. Sending all questions in one payload caused the AI API to respond
     //   "service busy" or time out — especially with voiceover enabled (base64 audio in one
@@ -1050,7 +1051,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072872, 'aiknowledgecheck');
     }
 
-    // v1.5.84 — BUG-REGEN-TIMEOUT:
+    // Release v1.5.84 — BUG-REGEN-TIMEOUT:
     //   PHP retry loop (3 attempts × CURLOPT_TIMEOUT 150s + sleep(5) between) could run up to
     //   460 seconds. The JS AJAX timeout is only 90 seconds, so JS always fired .fail() long
     //   before PHP returned a response. Also, many Moodle servers enforce max_execution_time=30-60s
@@ -1065,7 +1066,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072873, 'aiknowledgecheck');
     }
 
-    // v1.5.85 — BUG-CURL-RESETOPT:
+    // Release v1.5.85 — BUG-CURL-RESETOPT:
     //   Moodle's \curl::post() calls resetopt() internally before applying the post-specific
     //   options (CURLOPT_POST, CURLOPT_POSTFIELDS, CURLOPT_URL). Any options set via setopt()
     //   BEFORE calling post() are silently discarded. This caused the Content-Type: application/json
@@ -1078,7 +1079,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072874, 'aiknowledgecheck');
     }
 
-    // v1.5.88 — FIX-KC-REGEN-BATCH:
+    // Release v1.5.88 — FIX-KC-REGEN-BATCH:
     //   Replace slow sequential per-question regeneration with a single batch call.
     //   Per-question approach sent N separate AJAX calls with 1.5 s gaps and 10 s
     //   "busy" retry delays, causing "Q{n} busy — retrying…" UI stalls. Batch sends
@@ -1091,7 +1092,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072875, 'aiknowledgecheck');
     }
 
-    // v1.5.89 - FIX-KC-REGEN-ASYNC: "Regenerate Questions" stuck on "Retrying…" or showed
+    // Release v1.5.89 - FIX-KC-REGEN-ASYNC: "Regenerate Questions" stuck on "Retrying…" or showed
     //   "The AI service is temporarily busy." Root cause: external API changed to async job model
     //   returning {ok:true,jobId:"..."} instead of questions synchronously. All three regen
     //   handlers (doBatchRequest, handleKCSingleRegenerate, regeneratewithsettings) only checked
@@ -1104,7 +1105,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072876, 'aiknowledgecheck');
     }
 
-    // v1.5.90 - FIX-REGEN-TTS-PARALLEL + FIX-KC-REGEN-STREAM: "Regenerate Questions" still
+    // Release v1.5.90 - FIX-REGEN-TTS-PARALLEL + FIX-KC-REGEN-STREAM: "Regenerate Questions" still
     //   stuck on "Retrying…" with voiceover enabled after v1.5.89. Root cause 1 (server): TTS
     //   was generated sequentially (N×4×~3s) exceeding the 160s PHP curl timeout. Fix: Promise.all
     //   per-question explanations. Root cause 2 (ajax.php): json_decode→json_encode round-trip
@@ -1148,7 +1149,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072879, 'aiknowledgecheck');
     }
 
-    // v1.5.93 - VERSION BUMP: Clean release. AMD triple-match verified:
+    // Release v1.5.93 - VERSION BUMP: Clean release. AMD triple-match verified:
     //   knowledgecheck.js (src=build=min) MD5: 9eaecb6b9da79fc97c4f892b806af77f.
     //   All 6 delivery locations confirmed in sync. No code changes. No DB schema changes.
     //   version.php → 2026072880.
@@ -1156,7 +1157,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072880, 'aiknowledgecheck');
     }
 
-    // v1.5.94 - FIX-REGEN-SETTINGS-429: knowledgecheck-regenerate-settings route
+    // Release v1.5.94 - FIX-REGEN-SETTINGS-429: knowledgecheck-regenerate-settings route
     //   called generateContent() directly with zero retry or fallback — a single Gemini
     //   429 would immediately surface "Failed to parse AI response".  Wrapped with
     //   generateWithRetry() (exponential back-off + gemini-1.5-flash fallback chain).
@@ -1257,13 +1258,13 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072886, 'aiknowledgecheck');
     }
 
-    // v1.5.114: FIX-CURL-BATCH — ajax.php switched all raw curl_init() calls to Moodle \curl
+    // Release v1.5.114: FIX-CURL-BATCH — ajax.php switched all raw curl_init() calls to Moodle \curl
     //   wrapper. No DB schema changes.
     if ($oldversion < 2026072887) {
         upgrade_mod_savepoint(true, 2026072887, 'aiknowledgecheck');
     }
 
-    // v1.5.115: ADD-KC-IMAGEGATE — Image Gate feature.
+    // Release v1.5.115: ADD-KC-IMAGEGATE — Image Gate feature.
     //   (1) aiknowledgecheck.imageurl (TEXT): activity-level image gate. Teacher pastes a URL
     //       or stores a base64 data URL generated by Imagen 4 Ultra. When non-empty, students
     //       must click "I've seen this image" before the start button unlocks.
@@ -1294,14 +1295,14 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072888, 'aiknowledgecheck');
     }
 
-    // v1.5.117: IMAGEGATE-FILEMANAGER — Image Gate switched from URL text field to Moodle
+    // Release v1.5.117: IMAGEGATE-FILEMANAGER — Image Gate switched from URL text field to Moodle
     //   filemanager upload. Files stored in 'imagegate' filearea; imageurl column is now
     //   populated with the served pluginfile.php URL after upload. No DB schema changes.
     if ($oldversion < 2026072889) {
         upgrade_mod_savepoint(true, 2026072889, 'aiknowledgecheck');
     }
 
-    // v1.5.118: GENERAL-TRAINING-OPTION — Added 'General Training' as a third Education Type
+    // Release v1.5.118: GENERAL-TRAINING-OPTION — Added 'General Training' as a third Education Type
     //   option in the knowledge check activity (alongside VET and Academic). PHP-only:
     //   view.php dropdown + info card, lang strings, AMD JS change handler updated.
     //   No DB schema changes.
@@ -1309,7 +1310,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026072890, 'aiknowledgecheck');
     }
 
-    // v1.5.120: ADD-KC-MEDIAPER-Q — Per-question video and audio media.
+    // Release v1.5.120: ADD-KC-MEDIAPER-Q — Per-question video and audio media.
     //   Adds four columns to aiknowledgecheck_questions:
     //   (1) questionvideourl (CHAR 512): YouTube URL for a per-question video shown above
     //       the question text. When questionvideoenabled=1 the video is displayed and
@@ -1390,9 +1391,13 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             $_pluginDir = realpath(__DIR__ . '/..');
             foreach (['version.php', 'db/upgrade.php'] as $_f) {
                 $_full = $_pluginDir . '/' . $_f;
-                if (file_exists($_full)) { opcache_invalidate($_full, true); }
+                if (file_exists($_full)) {
+                    opcache_invalidate($_full, true);
+                }
             }
-        } elseif (function_exists('opcache_reset')) { opcache_reset(); }
+        } elseif (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
         upgrade_mod_savepoint(true, 2026072894, 'aiknowledgecheck');
     }
 
@@ -1402,14 +1407,18 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             $_pluginDir = realpath(__DIR__ . '/..');
             foreach (['version.php', 'lib.php', 'db/upgrade.php'] as $_f) {
                 $_full = $_pluginDir . '/' . $_f;
-                if (file_exists($_full)) { opcache_invalidate($_full, true); }
+                if (file_exists($_full)) {
+                    opcache_invalidate($_full, true);
+                }
             }
-        } elseif (function_exists('opcache_reset')) { opcache_reset(); }
+        } elseif (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
         upgrade_mod_savepoint(true, 2026072895, 'aiknowledgecheck');
     }
 
     if ($oldversion < 2026072896) {
-        // v1.5.126: Survey Mode — AI Knowledge Check can now operate as a survey tool.
+        // Release v1.5.126: Survey Mode — AI Knowledge Check can now operate as a survey tool.
         // Teachers enable survey mode in the activity settings, choose a response scale
         // (Likert 5-point agreement, satisfaction, frequency, quality, importance; 4-point
         // agreement; Yes/No; Yes/No/Unsure; NPS 5-point), then paste their question list.
@@ -1448,9 +1457,13 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             $_pluginDir = realpath(__DIR__ . '/..');
             foreach (['version.php', 'lib.php', 'ajax.php', 'view.php', 'mod_form.php', 'db/upgrade.php'] as $_f) {
                 $_full = $_pluginDir . '/' . $_f;
-                if (file_exists($_full)) { opcache_invalidate($_full, true); }
+                if (file_exists($_full)) {
+                    opcache_invalidate($_full, true);
+                }
             }
-        } elseif (function_exists('opcache_reset')) { opcache_reset(); }
+        } elseif (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
 
         upgrade_mod_savepoint(true, 2026072896, 'aiknowledgecheck');
     }
@@ -1468,9 +1481,13 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             $_pluginDir = realpath(__DIR__ . '/..');
             foreach (['version.php', 'lib.php', 'ajax.php', 'view.php', 'report.php', 'db/upgrade.php'] as $_f) {
                 $_full = $_pluginDir . '/' . $_f;
-                if (file_exists($_full)) { opcache_invalidate($_full, true); }
+                if (file_exists($_full)) {
+                    opcache_invalidate($_full, true);
+                }
             }
-        } elseif (function_exists('opcache_reset')) { opcache_reset(); }
+        } elseif (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
 
         upgrade_mod_savepoint(true, 2026072897, 'aiknowledgecheck');
     }
@@ -1508,12 +1525,23 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         // No DB schema changes.
         if (function_exists('opcache_invalidate')) {
             $_pluginDir = realpath(__DIR__ . '/..');
-            foreach (['version.php', 'db/upgrade.php', 'view.php', 'styles.css',
-                      'amd/build/knowledgecheck.js', 'amd/build/knowledgecheck.min.js',
-                      'lang/en/aiknowledgecheck.php'] as $_f) {
-                if (file_exists($_pluginDir . '/' . $_f)) opcache_invalidate($_pluginDir . '/' . $_f, true);
+            $_files = [
+                'version.php',
+                'db/upgrade.php',
+                'view.php',
+                'styles.css',
+                'amd/build/knowledgecheck.js',
+                'amd/build/knowledgecheck.min.js',
+                'lang/en/aiknowledgecheck.php',
+            ];
+            foreach ($_files as $_f) {
+                if (file_exists($_pluginDir . '/' . $_f)) {
+                    opcache_invalidate($_pluginDir . '/' . $_f, true);
+                }
             }
-        } elseif (function_exists('opcache_reset')) { opcache_reset(); }
+        } elseif (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
         upgrade_mod_savepoint(true, 2026072898, 'aiknowledgecheck');
     }
 
@@ -1588,6 +1616,43 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         }
 
         upgrade_mod_savepoint(true, 2026082400, 'aiknowledgecheck');
+    }
+
+    // FIX-KC-XMLDB-DEFAULT (v1.5.150): aiknowledgecheck.surveyscale was declared CHAR NOT NULL
+    // with DEFAULT ''. Moodle rejects an empty-string default on a NOT NULL character column,
+    // rewrites it to NULL at install time and emits an XMLDB debugging warning on any page that
+    // loads the schema. An empty string was never a valid scale key: mod_form.php defaults the
+    // field to 'likert5agree' and lib.php/ajax.php both fall back to it, so that is declared as
+    // the real default here. Existing rows holding '' are backfilled to match.
+    if ($oldversion < 2026083006) {
+
+        $table = new xmldb_table('aiknowledgecheck');
+        $field = new xmldb_field(
+            'surveyscale',
+            XMLDB_TYPE_CHAR,
+            '50',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'likert5agree',
+            'surveymode'
+        );
+
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+
+            // Backfill rows that were created while the default was an empty string. Guarded
+            // so the update only touches rows that actually need it.
+            $DB->set_field_select(
+                'aiknowledgecheck',
+                'surveyscale',
+                'likert5agree',
+                "surveyscale IS NULL OR " . $DB->sql_compare_text('surveyscale') . " = :empty",
+                ['empty' => '']
+            );
+        }
+
+        upgrade_mod_savepoint(true, 2026083006, 'aiknowledgecheck');
     }
 
     return true;
