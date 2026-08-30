@@ -2,6 +2,18 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.157] - 2026-08-30
+
+### Removed
+- `.github/workflows/moodle-ci.yml`, added in 1.5.155.
+
+That file was a mistake, and the reason is worth recording. The release pipeline already mirrors this plugin's source into its own GitHub repository (`moodle-mod_aiknowledgecheck`), pushes `main`, creates the immutable `v<version>` tag, and installs a centrally managed Moodle Plugin CI workflow at `.github/workflows/ci.yml`. That managed workflow is what the release gate looks for: it matches on the `ci.yml` path, the exact tag commit, and a run title of `Moodle Plugin CI [tag:v<version>]`, which the managed workflow produces through its `run-name`.
+
+Because the mirror copies the plugin tree verbatim, a workflow shipped inside the plugin lands in that repo *alongside* the managed one. Both were named "Moodle Plugin CI" and both triggered on every push and tag, so every release ran the full matrix twice and produced two sets of identically named runs. The plugin carries no CI configuration of its own; CI belongs to the release repository, which the pipeline owns.
+
+### Version
+- `version.php` → `2026083014` (release `1.5.157`). No DB schema changes; the 1.5.150 savepoint is unchanged. No code, language-string or AMD changes — the only differences from 1.5.156 are the removed workflow file, `version.php` and this file.
+
 ## [1.5.156] - 2026-08-30
 
 Version bump only, to exercise the release pipeline against a fresh artifact.

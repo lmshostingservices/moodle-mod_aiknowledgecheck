@@ -27,11 +27,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026083013;
+$plugin->version = 2026083014;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
-// PIPELINE-TEST (v1.5.156): version bump only, to exercise the release pipeline against a
-// fresh artifact. No code, language-string or AMD changes from 1.5.155 -- the two builds are
-// byte-identical apart from this file and CHANGELOG.md. See CHANGELOG.md.
-$plugin->release = '1.5.156';
+// CI-WORKFLOW-REMOVED (v1.5.157): drops the .github/workflows file added in 1.5.155. The
+// release pipeline mirrors this source into its own GitHub repository and injects its own
+// managed Moodle Plugin CI workflow at .github/workflows/ci.yml. Shipping one here produced a
+// second workflow in that repo under the same name, running on every push and tag -- double
+// the CI minutes and two sets of identically named runs for the release gate to match against.
+// The plugin should not carry CI configuration of its own. See CHANGELOG.md.
+$plugin->release = '1.5.157';
