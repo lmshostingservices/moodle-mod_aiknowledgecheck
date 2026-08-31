@@ -1,5 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -96,7 +95,12 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
             'restart' => get_string('aftercompletion_restart', 'mod_aiknowledgecheck'),
             'lock'    => get_string('aftercompletion_lock', 'mod_aiknowledgecheck'),
         ];
-        $mform->addElement('select', 'aftercompletion', get_string('aftercompletion', 'mod_aiknowledgecheck'), $aftercompletionoptions);
+        $mform->addElement(
+            'select',
+            'aftercompletion',
+            get_string('aftercompletion', 'mod_aiknowledgecheck'),
+            $aftercompletionoptions
+        );
         $mform->setDefault('aftercompletion', 'restart');
         $mform->addHelpButton('aftercompletion', 'aftercompletion', 'mod_aiknowledgecheck');
 
@@ -128,7 +132,12 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
             'seconds' => get_string('videoreq_seconds', 'mod_aiknowledgecheck'),
             'full'    => get_string('videoreq_full', 'mod_aiknowledgecheck'),
         ];
-        $mform->addElement('select', 'videorequirement', get_string('videorequirement', 'mod_aiknowledgecheck'), $requirementoptions);
+        $mform->addElement(
+            'select',
+            'videorequirement',
+            get_string('videorequirement', 'mod_aiknowledgecheck'),
+            $requirementoptions
+        );
         $mform->setDefault('videorequirement', 'none');
         $mform->addHelpButton('videorequirement', 'videorequirement', 'mod_aiknowledgecheck');
 
@@ -138,13 +147,27 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $mform->hideIf('videominseconds', 'videorequirement', 'neq', 'seconds');
         $mform->addHelpButton('videominseconds', 'videominseconds', 'mod_aiknowledgecheck');
 
-        $mform->addElement('advcheckbox', 'showvideoduringquiz', get_string('showvideoduringquiz', 'mod_aiknowledgecheck'), '', [], [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'showvideoduringquiz',
+            get_string('showvideoduringquiz', 'mod_aiknowledgecheck'),
+            '',
+            [],
+            [0, 1]
+        );
         $mform->setDefault('showvideoduringquiz', 0);
         $mform->addHelpButton('showvideoduringquiz', 'showvideoduringquiz', 'mod_aiknowledgecheck');
         $mform->hideIf('showvideoduringquiz', 'videourl', 'eq', '');
 
         // Show clickable chapter timestamp links per question.
-        $mform->addElement('advcheckbox', 'showchapterstamps', get_string('showchapterstamps', 'mod_aiknowledgecheck'), '', [], [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'showchapterstamps',
+            get_string('showchapterstamps', 'mod_aiknowledgecheck'),
+            '',
+            [],
+            [0, 1]
+        );
         $mform->setDefault('showchapterstamps', 0);
         $mform->addHelpButton('showchapterstamps', 'showchapterstamps', 'mod_aiknowledgecheck');
         $mform->hideIf('showchapterstamps', 'videourl', 'eq', '');
@@ -160,7 +183,12 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
             'seconds' => get_string('audioreq_seconds', 'mod_aiknowledgecheck'),
             'full'    => get_string('audioreq_full', 'mod_aiknowledgecheck'),
         ];
-        $mform->addElement('select', 'audiorequirement', get_string('audiorequirement', 'mod_aiknowledgecheck'), $audiorequirementoptions);
+        $mform->addElement(
+            'select',
+            'audiorequirement',
+            get_string('audiorequirement', 'mod_aiknowledgecheck'),
+            $audiorequirementoptions
+        );
         $mform->setDefault('audiorequirement', 'none');
         $mform->addHelpButton('audiorequirement', 'audiorequirement', 'mod_aiknowledgecheck');
 
@@ -264,15 +292,22 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         }
 
         // Load gradepass from the gradebook grade_items table (authoritative source).
-        if (isset($defaultvalues['instance'])) {
+        //
+        // FIX-KC-ADDFORM-PGSQL (v1.5.160): when the form is opened to ADD an activity, Moodle
+        // supplies an empty 'instance', and isset() is true for ''. Passing '' as iteminstance to
+        // a query against an integer column is accepted by MySQL (coerced to 0) but rejected by
+        // PostgreSQL, which threw dml_read_exception and broke the add-activity form outright on
+        // that database. The (int) casts below are what make the query safe; guarding on a
+        // positive ID as well avoids running a lookup that can never match.
+        if (!empty($defaultvalues['instance'])) {
             global $CFG;
             require_once($CFG->libdir . '/gradelib.php');
             $gradeitem = grade_item::fetch(
                 [
                     'itemtype' => 'mod',
                     'itemmodule' => 'aiknowledgecheck',
-                    'iteminstance' => $defaultvalues['instance'],
-                    'courseid' => $defaultvalues['course'],
+                    'iteminstance' => (int)$defaultvalues['instance'],
+                    'courseid' => (int)$defaultvalues['course'],
                     'itemnumber' => 0,
                 ]
             );
@@ -316,7 +351,9 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
 
         if (!empty($data['videourl'])) {
             $url = $data['videourl'];
-            if (!preg_match('/^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)/', $url)) {
+            $youtubepattern = '/^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|' .
+                'youtube\.com\/embed\/|youtube\.com\/shorts\/)/';
+            if (!preg_match($youtubepattern, $url)) {
                 $errors['videourl'] = get_string('error:invalidvideourl', 'mod_aiknowledgecheck');
             }
         }

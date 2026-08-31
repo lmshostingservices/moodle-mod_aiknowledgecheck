@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -204,6 +202,7 @@ class get_questions extends external_api {
                             ),
                             'audioData' => new external_multiple_structure(
                                 new external_value(
+                                    /* phpcs:ignore moodle.Commenting.InlineComment */
                                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — base64 audio payload
                                     'Base64 audio clip for the option at this index'
                                 ),
@@ -216,6 +215,7 @@ class get_questions extends external_api {
                                 'Video position this question relates to, or null'
                             ),
                             'imageUrl' => new external_value(
+                                /* phpcs:ignore moodle.Commenting.InlineComment */
                                 PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL, sanitised on write
                                 'Per-question image URL'
                             ),

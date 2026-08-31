@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -199,6 +197,7 @@ class start_attempt extends external_api {
                 'resumed' => new external_value(PARAM_BOOL, 'True when an existing in-progress attempt was returned'),
                 'currentquestion' => new external_value(PARAM_INT, 'Highest question number reached so far'),
                 'answersjson' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'The attempt answers map, keyed by question ID, as a JSON string'
                 ),

@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -57,6 +55,7 @@ class regenerate_audio extends external_api {
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
                 // See save_questions for why the question documents cross as a JSON string.
                 'questions' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON payload, json_decode()'d below
                     'JSON array of question documents'
                 ),
@@ -134,6 +133,7 @@ class regenerate_audio extends external_api {
                 'ok' => new external_value(PARAM_BOOL, 'True when audio was regenerated'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty on success'),
                 'resultjson' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'The generation service response verbatim, as a JSON string'
                 ),

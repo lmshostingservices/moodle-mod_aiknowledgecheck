@@ -7,13 +7,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/*
- * Moodle themes frequently apply highly specific button rules. The important
- * declarations below are intentional compatibility overrides.
- */
-/* stylelint-disable declaration-no-important */
-/* stylelint-disable function-url-scheme-disallowed-list */
-
 /* Google Fonts loaded via PHP in view.php - NOT via @import here.
    @import in Moodle plugin styles.css breaks the PHP CSS minifier
    because Moodle concatenates all plugin CSS files together and
@@ -204,10 +197,10 @@ body[data-bs-theme="dark"] .kc-container,
     color: #667eea;
 }
 
-.kc-btn-lg {
-    padding: 14px 28px !important;
-    font-size: 16px !important;
-    border-radius: 12px !important;
+#page .kc-btn-lg {
+    padding: 14px 28px;
+    font-size: 16px;
+    border-radius: 12px;
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -487,109 +480,109 @@ button.kc-btn:disabled {
     cursor: not-allowed;
 }
 
-#kc-app .kc-btn-primary,
-.kc-container .kc-btn-primary,
-button.kc-btn-primary,
-a.kc-btn-primary {
+#page #kc-app .kc-btn-primary,
+#page .kc-container .kc-btn-primary,
+#page button.kc-btn-primary,
+#page a.kc-btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff !important;
+    color: #fff;
 }
 
-#kc-app .kc-btn-primary:hover,
-#kc-app .kc-btn-primary:hover:not(:disabled),
-.kc-container .kc-btn-primary:hover,
-.kc-container .kc-btn-primary:hover:not(:disabled),
-button.kc-btn-primary:hover,
-button.kc-btn-primary:hover:not(:disabled),
-a.kc-btn-primary:hover {
-    color: #fff !important;
+#page #kc-app .kc-btn-primary:hover,
+#page #kc-app .kc-btn-primary:hover:not(:disabled),
+#page .kc-container .kc-btn-primary:hover,
+#page .kc-container .kc-btn-primary:hover:not(:disabled),
+#page button.kc-btn-primary:hover,
+#page button.kc-btn-primary:hover:not(:disabled),
+#page a.kc-btn-primary:hover {
+    color: #fff;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
-#kc-app .kc-btn-primary:focus,
-#kc-app .kc-btn-primary:active,
-#kc-app .kc-btn-primary:visited,
-.kc-container .kc-btn-primary:focus,
-.kc-container .kc-btn-primary:active,
-.kc-container .kc-btn-primary:visited,
-button.kc-btn-primary:focus,
-button.kc-btn-primary:active,
-a.kc-btn-primary:focus,
-a.kc-btn-primary:active,
-a.kc-btn-primary:visited {
-    color: #fff !important;
-    text-decoration: none !important;
+#page #kc-app .kc-btn-primary:focus,
+#page #kc-app .kc-btn-primary:active,
+#page #kc-app .kc-btn-primary:visited,
+#page .kc-container .kc-btn-primary:focus,
+#page .kc-container .kc-btn-primary:active,
+#page .kc-container .kc-btn-primary:visited,
+#page button.kc-btn-primary:focus,
+#page button.kc-btn-primary:active,
+#page a.kc-btn-primary:focus,
+#page a.kc-btn-primary:active,
+#page a.kc-btn-primary:visited {
+    color: #fff;
+    text-decoration: none;
 }
 
-#kc-app .kc-btn-secondary,
-.kc-container .kc-btn-secondary,
-button.kc-btn-secondary,
-a.kc-btn-secondary {
+#page #kc-app .kc-btn-secondary,
+#page .kc-container .kc-btn-secondary,
+#page button.kc-btn-secondary,
+#page a.kc-btn-secondary {
     background: #f3f4f6;
-    color: #374151 !important;
+    color: #374151;
     border: 1px solid #d1d5db;
 }
 
-#kc-app .kc-btn-secondary:hover,
-#kc-app .kc-btn-secondary:hover:not(:disabled),
-.kc-container .kc-btn-secondary:hover,
-.kc-container .kc-btn-secondary:hover:not(:disabled),
-button.kc-btn-secondary:hover,
-button.kc-btn-secondary:hover:not(:disabled),
-a.kc-btn-secondary:hover {
+#page #kc-app .kc-btn-secondary:hover,
+#page #kc-app .kc-btn-secondary:hover:not(:disabled),
+#page .kc-container .kc-btn-secondary:hover,
+#page .kc-container .kc-btn-secondary:hover:not(:disabled),
+#page button.kc-btn-secondary:hover,
+#page button.kc-btn-secondary:hover:not(:disabled),
+#page a.kc-btn-secondary:hover {
     background: #e5e7eb;
-    color: #374151 !important;
-    text-decoration: none !important;
+    color: #374151;
+    text-decoration: none;
 }
 
-#kc-app .kc-btn-secondary:focus,
-#kc-app .kc-btn-secondary:active,
-#kc-app .kc-btn-secondary:visited,
-.kc-container .kc-btn-secondary:focus,
-.kc-container .kc-btn-secondary:active,
-.kc-container .kc-btn-secondary:visited,
-button.kc-btn-secondary:focus,
-button.kc-btn-secondary:active,
-a.kc-btn-secondary:focus,
-a.kc-btn-secondary:active,
-a.kc-btn-secondary:visited {
-    color: #374151 !important;
-    text-decoration: none !important;
+#page #kc-app .kc-btn-secondary:focus,
+#page #kc-app .kc-btn-secondary:active,
+#page #kc-app .kc-btn-secondary:visited,
+#page .kc-container .kc-btn-secondary:focus,
+#page .kc-container .kc-btn-secondary:active,
+#page .kc-container .kc-btn-secondary:visited,
+#page button.kc-btn-secondary:focus,
+#page button.kc-btn-secondary:active,
+#page a.kc-btn-secondary:focus,
+#page a.kc-btn-secondary:active,
+#page a.kc-btn-secondary:visited {
+    color: #374151;
+    text-decoration: none;
 }
 
-#kc-app .kc-btn-success,
-.kc-container .kc-btn-success,
-button.kc-btn-success,
-a.kc-btn-success {
+#page #kc-app .kc-btn-success,
+#page .kc-container .kc-btn-success,
+#page button.kc-btn-success,
+#page a.kc-btn-success {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: #fff !important;
+    color: #fff;
     border: 1px solid #059669;
 }
 
-#kc-app .kc-btn-success:hover,
-#kc-app .kc-btn-success:hover:not(:disabled),
-.kc-container .kc-btn-success:hover,
-.kc-container .kc-btn-success:hover:not(:disabled),
-button.kc-btn-success:hover,
-button.kc-btn-success:hover:not(:disabled),
-a.kc-btn-success:hover {
+#page #kc-app .kc-btn-success:hover,
+#page #kc-app .kc-btn-success:hover:not(:disabled),
+#page .kc-container .kc-btn-success:hover,
+#page .kc-container .kc-btn-success:hover:not(:disabled),
+#page button.kc-btn-success:hover,
+#page button.kc-btn-success:hover:not(:disabled),
+#page a.kc-btn-success:hover {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: #fff !important;
-    text-decoration: none !important;
+    color: #fff;
+    text-decoration: none;
 }
 
-#kc-app .kc-btn-success:focus,
-#kc-app .kc-btn-success:active,
-.kc-container .kc-btn-success:focus,
-.kc-container .kc-btn-success:active,
-button.kc-btn-success:focus,
-button.kc-btn-success:active,
-a.kc-btn-success:focus,
-a.kc-btn-success:active {
-    color: #fff !important;
-    text-decoration: none !important;
+#page #kc-app .kc-btn-success:focus,
+#page #kc-app .kc-btn-success:active,
+#page .kc-container .kc-btn-success:focus,
+#page .kc-container .kc-btn-success:active,
+#page button.kc-btn-success:focus,
+#page button.kc-btn-success:active,
+#page a.kc-btn-success:focus,
+#page a.kc-btn-success:active {
+    color: #fff;
+    text-decoration: none;
 }
 
 .kc-add-more-info {
@@ -879,7 +872,7 @@ a.kc-btn-success:active {
     left: 0;
     right: 0;
     bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    background: url([[pix:mod_aiknowledgecheck|noise]]);
     pointer-events: none;
 }
 
@@ -1072,11 +1065,11 @@ a.kc-btn-success:active {
     border-color: #374151;
 }
 
-#kc-app .kc-btn-retake,
-.kc-container .kc-btn-retake,
-button.kc-btn-retake {
+#page #kc-app .kc-btn-retake,
+#page .kc-container .kc-btn-retake,
+#page button.kc-btn-retake {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff !important;
+    color: #fff;
     padding: 14px 28px;
     font-size: 15px;
     font-weight: 600;
@@ -1090,21 +1083,21 @@ button.kc-btn-retake {
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-#kc-app .kc-btn-retake:hover,
-.kc-container .kc-btn-retake:hover,
-button.kc-btn-retake:hover {
-    color: #fff !important;
+#page #kc-app .kc-btn-retake:hover,
+#page .kc-container .kc-btn-retake:hover,
+#page button.kc-btn-retake:hover {
+    color: #fff;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-#kc-app .kc-btn-retake:focus,
-#kc-app .kc-btn-retake:active,
-.kc-container .kc-btn-retake:focus,
-.kc-container .kc-btn-retake:active,
-button.kc-btn-retake:focus,
-button.kc-btn-retake:active {
-    color: #fff !important;
+#page #kc-app .kc-btn-retake:focus,
+#page #kc-app .kc-btn-retake:active,
+#page .kc-container .kc-btn-retake:focus,
+#page .kc-container .kc-btn-retake:active,
+#page button.kc-btn-retake:focus,
+#page button.kc-btn-retake:active {
+    color: #fff;
 }
 
 .kc-btn-retake svg {
@@ -1112,31 +1105,31 @@ button.kc-btn-retake:active {
     height: 18px;
 }
 
-#kc-app .kc-btn-retake-secondary,
-.kc-container .kc-btn-retake-secondary,
-button.kc-btn-retake-secondary {
-    background: transparent !important;
-    color: #667eea !important;
-    border: 2px solid #667eea !important;
-    box-shadow: none !important;
+#page #kc-app .kc-btn-retake-secondary,
+#page .kc-container .kc-btn-retake-secondary,
+#page button.kc-btn-retake-secondary {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+    box-shadow: none;
     padding: 12px 24px;
     font-size: 14px;
 }
 
-#kc-app .kc-btn-retake-secondary:hover,
-.kc-container .kc-btn-retake-secondary:hover,
-button.kc-btn-retake-secondary:hover {
-    color: #fff !important;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border-color: transparent !important;
+#page #kc-app .kc-btn-retake-secondary:hover,
+#page .kc-container .kc-btn-retake-secondary:hover,
+#page button.kc-btn-retake-secondary:hover {
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
 }
 
-/* Results Download Buttons (PDF / Text) */
+#page /* Results Download Buttons (PDF / Text) */
 #kc-app .kc-btn-download-results,
-.kc-container .kc-btn-download-results,
-button.kc-btn-download-results {
+#page .kc-container .kc-btn-download-results,
+#page button.kc-btn-download-results {
     background: #f8fafc;
-    color: #374151 !important;
+    color: #374151;
     padding: 12px 24px;
     font-size: 14px;
     font-weight: 600;
@@ -1150,12 +1143,12 @@ button.kc-btn-download-results {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-#kc-app .kc-btn-download-results:hover,
-.kc-container .kc-btn-download-results:hover,
-button.kc-btn-download-results:hover {
+#page #kc-app .kc-btn-download-results:hover,
+#page .kc-container .kc-btn-download-results:hover,
+#page button.kc-btn-download-results:hover {
     background: #f0f4f8;
     border-color: #9ca3af;
-    color: #111827 !important;
+    color: #111827;
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
 }
@@ -1786,11 +1779,11 @@ button.kc-btn-delete-question:hover {
     color: var(--kc-primary);
 }
 
-.kc-pdf-apply-select {
-    width: auto !important;
+#page .kc-pdf-apply-select {
+    width: auto;
     min-width: 120px;
-    padding: 4px 8px !important;
-    font-size: 13px !important;
+    padding: 4px 8px;
+    font-size: 13px;
 }
 
 .kc-pdf-add-area {
@@ -2090,7 +2083,7 @@ button.kc-add-source-btn:hover {
     vertical-align: middle;
 }
 
-/* ============================================================
+#page /* ============================================================
    MOODLE BOOST THEME OVERRIDES - Nuclear specificity
    Boost/Bootstrap themes apply aggressive hover styles to
    button and a elements. These overrides ensure KC buttons
@@ -2116,8 +2109,8 @@ button.kc-add-source-btn:hover {
 #page button.kc-btn-primary:hover,
 #page button.kc-btn-primary:focus,
 #page button.kc-btn-primary:active {
-    color: #fff !important;
-    text-decoration: none !important;
+    color: #fff;
+    text-decoration: none;
 }
 
 #page #page-content #region-main .kc-btn-secondary,
@@ -2140,8 +2133,8 @@ button.kc-add-source-btn:hover {
 #page button.kc-btn-secondary:hover,
 #page button.kc-btn-secondary:focus,
 #page button.kc-btn-secondary:active {
-    color: #374151 !important;
-    text-decoration: none !important;
+    color: #374151;
+    text-decoration: none;
 }
 
 #page #page-content #region-main .kc-btn-retake,
@@ -2160,25 +2153,25 @@ button.kc-add-source-btn:hover {
 #page button.kc-btn-retake:hover,
 #page button.kc-btn-retake:focus,
 #page button.kc-btn-retake:active {
-    color: #fff !important;
-    text-decoration: none !important;
+    color: #fff;
+    text-decoration: none;
 }
 
 #page #page-content #region-main .kc-btn-retake-secondary,
 #page #page-content #region-main button.kc-btn-retake-secondary,
 #page .kc-btn-retake-secondary,
 #page button.kc-btn-retake-secondary {
-    color: #667eea !important;
-    background: transparent !important;
-    text-decoration: none !important;
+    color: #667eea;
+    background: transparent;
+    text-decoration: none;
 }
 
 #page #page-content #region-main .kc-btn-retake-secondary:hover,
 #page #page-content #region-main button.kc-btn-retake-secondary:hover,
 #page .kc-btn-retake-secondary:hover,
 #page button.kc-btn-retake-secondary:hover {
-    color: #fff !important;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 #page #page-content #region-main .kc-btn-lg,
@@ -2189,8 +2182,8 @@ button.kc-add-source-btn:hover {
 #page .kc-btn-lg:hover,
 #page .kc-btn-lg:focus,
 #page .kc-btn-lg:active {
-    color: #fff !important;
-    text-decoration: none !important;
+    color: #fff;
+    text-decoration: none;
 }
 
 /* Outline Button */
@@ -2357,7 +2350,7 @@ button.kc-btn-outline:hover {
     font-weight: 600;
 }
 
-/* Moodle overrides for outline and settings buttons */
+#page /* Moodle overrides for outline and settings buttons */
 #page #page-content #region-main .kc-btn-outline,
 #page #page-content #region-main .kc-btn-outline:hover,
 #page #page-content #region-main .kc-btn-outline:focus,
@@ -2366,12 +2359,12 @@ button.kc-btn-outline:hover {
 #page .kc-btn-outline:hover,
 #page .kc-btn-outline:focus,
 #page .kc-btn-outline:active {
-    text-decoration: none !important;
+    text-decoration: none;
 }
 #page .kc-settings-close,
 #page .kc-settings-close:hover,
 #page .kc-settings-close:focus {
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
 /* ── Job Level Pills ─────────────────────────────────────────────────── */
@@ -2381,36 +2374,36 @@ button.kc-btn-outline:hover {
     gap: 8px;
     margin-top: 4px;
 }
-button.kc-level-pill,
-.kc-level-pill {
-    display: inline-flex !important;
-    align-items: center !important;
-    padding: 6px 14px !important;
-    border: 1px solid hsl(0, 0%, 82%) !important;
-    border-radius: 999px !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    color: hsl(217, 8%, 35%) !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-    line-height: 1.4 !important;
-    white-space: nowrap !important;
-    text-decoration: none !important;
+#page button.kc-level-pill,
+#page .kc-level-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border: 1px solid hsl(0, 0%, 82%);
+    border-radius: 999px;
+    background: transparent;
+    background-color: transparent;
+    color: hsl(217, 8%, 35%);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    line-height: 1.4;
+    white-space: nowrap;
+    text-decoration: none;
 }
-button.kc-level-pill:hover,
-.kc-level-pill:hover {
-    border-color: hsl(217, 91%, 60%) !important;
-    color: hsl(217, 91%, 50%) !important;
-    background: hsl(217, 91%, 95%) !important;
-    background-color: hsl(217, 91%, 95%) !important;
+#page button.kc-level-pill:hover,
+#page .kc-level-pill:hover {
+    border-color: hsl(217, 91%, 60%);
+    color: hsl(217, 91%, 50%);
+    background: hsl(217, 91%, 95%);
+    background-color: hsl(217, 91%, 95%);
 }
-button.kc-level-pill.kc-level-active,
-.kc-level-pill.kc-level-active {
-    background: hsl(217, 91%, 60%) !important;
-    background-color: hsl(217, 91%, 60%) !important;
-    border-color: hsl(217, 91%, 60%) !important;
-    color: hsl(0, 0%, 100%) !important;
+#page button.kc-level-pill.kc-level-active,
+#page .kc-level-pill.kc-level-active {
+    background: hsl(217, 91%, 60%);
+    background-color: hsl(217, 91%, 60%);
+    border-color: hsl(217, 91%, 60%);
+    color: hsl(0, 0%, 100%);
 }
 
 /* ── Job Role Chips ──────────────────────────────────────────────────── */
@@ -2421,27 +2414,27 @@ button.kc-level-pill.kc-level-active,
     margin-bottom: 6px;
     min-height: 28px;
 }
-.kc-role-chip {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    background: hsl(217, 91%, 95%) !important;
-    background-color: hsl(217, 91%, 95%) !important;
-    color: hsl(217, 91%, 45%) !important;
-    border-radius: 999px !important;
-    padding: 3px 10px !important;
-    font-size: 13px !important;
+#page .kc-role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: hsl(217, 91%, 95%);
+    background-color: hsl(217, 91%, 95%);
+    color: hsl(217, 91%, 45%);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 13px;
 }
-button.kc-chip-remove,
-.kc-chip-remove {
-    border: none !important;
-    background: none !important;
-    background-color: transparent !important;
-    color: inherit !important;
-    cursor: pointer !important;
-    font-size: 15px !important;
-    line-height: 1 !important;
-    padding: 0 0 0 2px !important;
+#page button.kc-chip-remove,
+#page .kc-chip-remove {
+    border: none;
+    background: none;
+    background-color: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 0 0 2px;
     opacity: 0.7;
 }
 .kc-chip-remove:hover {
@@ -2453,12 +2446,12 @@ button.kc-chip-remove,
     font-weight: 400;
 }
 
-/* ==================== ESTIMATED TIME BANNER ==================== */
+#page /* ==================== ESTIMATED TIME BANNER ==================== */
 .kc-eta-banner {
-    display: flex !important;
-    align-items: center !important;
-    gap: 16px !important;
-    padding: 16px 20px !important;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
     border-radius: 12px;
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%);
     border: 1px solid rgba(99, 102, 241, 0.12);
@@ -2476,10 +2469,10 @@ button.kc-chip-remove,
         transform: translateY(0);
     }
 }
-.kc-eta-icon-wrap {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+#page .kc-eta-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 48px;
     height: 48px;
     border-radius: 12px;
@@ -2492,10 +2485,10 @@ button.kc-chip-remove,
     width: 24px;
     height: 24px;
 }
-.kc-eta-body {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
+#page .kc-eta-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     flex: 1;
     min-width: 0;
 }
@@ -2606,4 +2599,207 @@ body.dark .kc-survey-notice-body strong {
 body[data-bs-theme="dark"] .kc-survey-notice-body span,
 body.dark .kc-survey-notice-body span {
     color: #fed7aa;
+}
+
+/* ============================================================
+   INLINE-STYLE EXTRACTION (v1.5.161)
+   These declarations were style="" attributes in view.php. They are here so the markup
+   carries no presentation and a theme can override them. The remaining inline styles in
+   view.php are display:none only, which jQuery show()/hide() reads and writes directly.
+   ============================================================ */
+
+#page .kc-icon-inline {
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+#page .kc-icon-baseline {
+    vertical-align: -2px;
+    margin-right: 4px;
+}
+
+#page .kc-icon-heading {
+    vertical-align: -3px;
+    margin-right: 6px;
+}
+
+#page .kc-media-panel {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+#page .kc-panel-title {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+#page .kc-audio-player {
+    width: 100%;
+    border-radius: 6px;
+    display: block;
+}
+
+#page .kc-gate-status {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    font-size: 13px;
+}
+
+#page .kc-gate-status-lg {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    font-size: 14px;
+}
+
+#page .kc-gate-status-centre {
+    margin-top: 8px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    font-size: 14px;
+    text-align: center;
+}
+
+#page .kc-hint-sm {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+#page .kc-cost-hint {
+    font-size: 11px;
+    font-weight: normal;
+    color: #6c757d;
+    margin-left: 6px;
+}
+
+#page .kc-button-row {
+    margin-bottom: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#page .kc-button-row-top {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#page .kc-imagegen-prompt {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+#page .kc-btn-sm {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+#page .kc-btn-xs {
+    font-size: 12px;
+}
+
+#page .kc-preview-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 6px;
+    display: block;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+#page .kc-imagegen-caption {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 6px;
+}
+
+#page .kc-imagegen-url {
+    width: 100%;
+    font-size: 11px;
+    font-family: monospace;
+    padding: 6px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    word-break: break-all;
+    resize: vertical;
+}
+
+#page .kc-imagegen-save-status {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+}
+
+#page .kc-flush-bottom {
+    margin-bottom: 0;
+}
+
+#page .kc-spaced-bottom-sm {
+    margin-bottom: 12px;
+}
+
+#page .kc-spaced-bottom {
+    margin-bottom: 16px;
+}
+
+#page .kc-section-title {
+    margin: 0 0 12px 0;
+    font-weight: 600;
+}
+
+#page .kc-video-frame {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #000;
+}
+
+#page .kc-video-frame-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#page .kc-activity-image {
+    max-width: 100%;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto 12px;
+    max-height: 500px;
+    object-fit: contain;
+}
+
+#page .kc-imagegen-status {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+#page .kc-survey-ft-noresp {
+    padding: 12px 16px;
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 0.88em;
 }

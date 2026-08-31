@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -206,7 +204,7 @@ foreach ($users as $u) {
     $basecell = ($basemax === 0) ? get_string('unlimited', 'mod_aiknowledgecheck') : $basemax;
     $effcell = ($effective === 0) ? get_string('unlimited', 'mod_aiknowledgecheck') : $effective;
 
-    // "User attempts" column → link to the report filtered by this user.
+    // The "User attempts" column → link to the report filtered by this user.
     $reporturl = new moodle_url(
         '/mod/aiknowledgecheck/report.php',
         [

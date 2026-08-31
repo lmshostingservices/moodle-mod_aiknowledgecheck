@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -157,6 +155,7 @@ class generate_image extends external_api {
                 'ok' => new external_value(PARAM_BOOL, 'True when an image was generated'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty on success'),
                 'imageDataUrl' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL; PARAM_URL rejects it. Sanitised on write
                     'The generated image as a data URL, empty on failure'
                 ),

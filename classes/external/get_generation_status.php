@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -149,6 +147,7 @@ class get_generation_status extends external_api {
             [
                 'ok' => new external_value(PARAM_BOOL, 'True if the status was retrieved'),
                 'payload' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'Raw JSON status document from the generation service, empty string on failure'
                 ),

@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -62,6 +60,7 @@ class save_image_url extends external_api {
                 // mod_aiknowledgecheck_sanitize_image_url() below, which accepts only http(s)
                 // URLs and safe raster data URLs.
                 'imageurl' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — data:image URL; PARAM_URL rejects it. Sanitised on write
                     'An http(s) URL or a data:image URL'
                 ),

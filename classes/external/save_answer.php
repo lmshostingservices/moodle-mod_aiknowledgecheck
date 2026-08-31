@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -68,6 +66,7 @@ class save_answer extends external_api {
                 // typed survey answer, so a '<' in it ("a < b", "<3") would have aborted the save
                 // and silently lost the response.
                 'freetextvalue' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Typed response for a free-text question',
                     VALUE_DEFAULT,

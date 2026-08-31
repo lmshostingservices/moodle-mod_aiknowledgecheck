@@ -2,24 +2,386 @@
 
 All notable changes to this plugin will be documented in this file.
 
-## [1.5.158] - 2026-08-30
+## [1.5.164] - 2026-08-31
 
-### Fixed — Moodle Plugin CI
+Fixes three release-pipeline findings that were entirely self-inflicted: the 1.5.163 note in
+`version.php` quoted the exact tokens the pipeline's scanner looks for.
 
-- Applied Moodle's CSS auto-formatting and documented the theme-specific
-  declarations that intentionally require stronger overrides.
-- Scoped the legacy AMD module's existing lint debt so strict CI can validate
-  new violations without changing the student attempt flow in a lint-only release.
-- Rebuilt the generated AMD minified asset and source map from the release source.
-- Corrected the two module callback PHPDoc parameter types.
-- Scoped pre-existing PHPCS exceptions to language ordering, literal-template
-  line lengths, and historical inline release comments; the managed CI command
-  remains strict with `--max-warnings 0`.
+### Fixed — version.php prose tripped two blockers and an error
+`version.php` contains no executable code beyond the version constants; everything else is a
+release note. The scanner reads comments, and the 1.5.163 note named a request superglobal, a raw
+parameter constant, and an anonymous-function spelling while explaining how each had been dealt
+with. Each mention was reported as a finding in its own right:
+
+- "No unsafe raw parameter usage" — blocker
+- "No direct request superglobal access" — blocker
+- Anonymous-function spacing — error
+
+The note now describes those rules in words instead of reproducing them. **This is the second
+time it has happened** — v1.5.155 hit the same trap — so the note itself now carries a warning
+for whoever writes the next one.
+
+A local pre-check script was added to the project notes that scans the plugin the same way, so
+this class of finding surfaces before staging rather than after a round trip.
+
+### Unchanged
+Everything 1.5.163 actually fixed is still in place: no request superglobal in the tests, no two
+PHP statements on one line in `view.php`, and the 26 phpcs annotations in block-comment form.
+
+### Still open, deliberately
+Two pipeline warnings remain because satisfying either would break Moodle Plugin CI, which is the
+gate that blocks the release:
+
+- **Anonymous-function spacing in the AMD modules.** Moodle's own `.eslintrc` requires no space
+  before the parenthesis and Plugin CI runs grunt with `--max-lint-warnings 0`.
+- **The `pipeline-ignore` markers.** They must stay lowercase and unpunctuated for the pipeline's
+  own scanner to match them; capitalising them risks reintroducing a security blocker. This
+  release confirms the diagnosis: the comment-style warning still names exactly the eleven files
+  that carry those markers, after the phpcs annotations in them were converted in 1.5.163.
 
 ### Version
+- `version.php` → `2026083021` (release `1.5.164`). No DB schema changes; the 1.5.150 savepoint is
+  unchanged. `v1.5.157` remains untouched.
 
-- `version.php` → `2026083015` (release `1.5.158`). No DB schema changes; the
-  1.5.150 savepoint is unchanged.
+## [1.5.163] - 2026-08-31
+
+Clears the release pipeline's approval blocker and two of its four warnings.
+
+### Fixed — blocker: superglobal access in a test
+`tests/permissions_test.php` set `$_POST['sesskey']`. It drove every service through
+`external_api::call_external_function()`, which finishes with `require_sesskey()` and therefore
+needs a request to exist.
+
+The test now calls each service's `execute()` directly, with placeholder arguments built from
+`execute_parameters()` in declaration order. `execute()` performs the same
+`validate_parameters()` and `require_capability()` work, so the behaviour under test is reached
+by the same path — there is simply no request to fake. Re-checked by mutation: removing the
+capability check from `save_questions` still fails the test.
+
+### Fixed — warning: two PHP statements on one line
+`view.php` emitted the gated button's class and disabled attributes as two `<?php ?>` islands on
+one physical line. They are now built together as `$gatedattrs`.
+
+### Fixed — warning: multi-line calls with code after the opening parenthesis
+`tests/external_test.php`, `tests/generator/lib.php` and `tests/privacy_provider_test.php` now
+put the first argument on its own line. Where that would have produced deeply nested calls the
+code was restructured instead: the privacy test gained a `count_rows()` helper and the external
+test an `attempt_count()` helper, which is clearer than either formatting. Verified that Moodle's
+own phpcs accepts this style before applying it.
+
+### Fixed — warning: comment blocks beginning with a lowercase letter
+The 26 `// phpcs:ignore moodle.Commenting.InlineComment` annotations are now written as
+`/* phpcs:ignore ... */`. Confirmed against phpcs that the block form still suppresses the sniff.
+
+### Not fixed, deliberately — two warnings that conflict with Moodle Plugin CI
+- **`function(` → `function (`.** Moodle's own `.eslintrc` sets
+  `'space-before-function-paren': ['warn', 'never']`, and Plugin CI runs grunt with
+  `--max-lint-warnings 0`. Adding the space would fail the gate that actually blocks the release.
+- **The `pipeline-ignore` markers.** They must stay lowercase and unpunctuated for the pipeline's
+  own PARAM_RAW scanner to match them. Capitalising them to satisfy the comment-style warning
+  risks reintroducing the PARAM_RAW blocker, which is a worse trade.
+
+### Version
+- `version.php` → `2026083020` (release `1.5.163`). No DB schema changes; the 1.5.150 savepoint is
+  unchanged. `v1.5.157` remains untouched.
+
+## [1.5.162] - 2026-08-31
+
+Removes the last hardcoded English from the PHP, so the plugin meets the contribution
+checklist's requirement that text always come from `get_string()`.
+
+### Fixed — 95 hardcoded strings in view.php and report.php
+1.5.161 internationalised the JavaScript; this does the same for the server side. Buttons
+("Edit Questions", "Save Changes", "Add More Questions"), headings ("Quiz Settings",
+"Student Completions"), the settings modal, country and state names, and the report's empty
+states all now come from the language pack. `view.php` and `report.php` contain no user-visible
+English at all.
+
+Two of these were the same drift the voice list had in 1.5.161: **51 `lang_*` strings and the
+`voice_*` strings already existed in the language file and the markup was ignoring them.** The
+two language dropdowns therefore disagreed with each other — the generate form read
+"Spanish (Latin America)" from the language pack while the settings modal had "Spanish (US)"
+baked into the HTML. Both now read the same string.
+
+The settings modal's "Voice Settings" heading was briefly mapped to `voice_settings`, which is
+"Language & Voice Settings" and belongs to the generate form. It has its own string now.
+
+### Verified
+The page was rendered under 1.5.161 and 1.5.162 across six activity configurations for both a
+teacher and a student, and the parsed DOM compared. The single rendered difference is the
+deliberate "Spanish (US)" → "Spanish (Latin America)" consistency fix.
+
+### Marketplace review
+With this release the plugin clears every item on the plugin contribution checklist's approval
+blocker list that is answerable in code: PostgreSQL compatibility (fixed in 1.5.160), privacy API
+for the external service, backup and restore, namespace collisions, security, and hardcoded
+English. The two remaining items are not code: a public issue tracker, and the reviewer's
+judgement on overlap with Moodle commercial products.
+
+### Version
+- `version.php` → `2026083019` (release `1.5.162`). No DB schema changes; the 1.5.150 savepoint is
+  unchanged. `v1.5.157` remains untouched.
+
+## [1.5.161] - 2026-08-31
+
+Makes the interface translatable, accessible and free of inline JavaScript. No behavioural change
+was intended, and each part was verified rather than assumed.
+
+### Added — internationalisation (113 strings)
+The AMD module contained **no language strings at all** across 5,751 lines: every message,
+button and status readout was hardcoded English. The plugin offered voiceover in 52 languages
+while its own interface could not be translated at all.
+
+All of it now loads through `core/str` in a single request, read synchronously from one map, with
+a small `fmt()` helper that substitutes `{$a}` and `{$a->name}` client-side exactly as the server
+does. Two things surfaced while doing it:
+
+- The narrator voice list was written out in **three** places and had drifted out of step with
+  the labels `view.php` renders — teachers saw "Zephyr (energetic, youthful)" in one dropdown and
+  "Zephyr (Gentle)" in another. One helper now feeds both, from the language pack.
+- Another hardcoded `alert()` was hiding in an inline script in `view.php`, which the first sweep
+  of the AMD module could not have found.
+
+Country, state and industry names are deliberately left as data: their values are sent to the AI
+service, so they are not interface text.
+
+### Changed — 56 native dialogs became Moodle modals
+`window.alert()` and `window.confirm()` block the whole page, cannot be themed, are unreachable
+to assistive technology, and are suppressed outright in some embedded contexts. Every call now
+goes through `core/notification`. The four `confirm()` sites needed real restructuring, because a
+modal is asynchronous and the old code branched on a boolean inline — `showEditMode()` and
+`handleRegenerateWithInstructions()` were each split so the work continues in a callback.
+
+Moodle 4.3 and later ignore the decline-button label and always show "Cancel"; the argument is
+still passed because this plugin supports Moodle 4.0, where it is honoured.
+
+### Added — accessibility
+The answer options were mouse-only, and the whole module carried a single ARIA attribute.
+
+- The options are a proper radio group: `role="radiogroup"` labelled by the question, each option
+  `role="radio"` with `aria-checked`, and a roving `tabindex` so the group is one tab stop.
+- Arrow keys move and select, Space and Enter select. The handler reads both `KeyboardEvent.key`
+  and the numeric code, so synthetic and older events work.
+- Answered options publish `aria-disabled`.
+- The result, question counter and score are live regions, so a screen reader announces grading —
+  focus does not move, so nothing was announced before.
+- Focus moves to the question heading on each new question.
+- The free-text answer box has a label; its placeholder is translatable.
+
+A Behat scenario tabs from the question into the options and selects an answer **using the
+keyboard alone**. That path did not previously exist.
+
+### Changed — no inline JavaScript left
+All six inline `<script>` blocks, about 520 lines, moved into three AMD modules:
+`mod_aiknowledgecheck/mediagates` (video, audio and image gates plus the gate coordinator),
+`mod_aiknowledgecheck/imagegen` (the teacher's image generator) and `mod_aiknowledgecheck/util`
+(a shared placeholder formatter). `view.php` now contains no `<script>` tag at all, which also
+makes the page compatible with a strict Content-Security-Policy.
+
+This removed a real bug: the retake button label was produced by `get_string()` interpolated into
+a **single-quoted JavaScript string literal**. Any translation containing an apostrophe — French,
+Italian, and others — would have ended the string early and thrown a syntax error, breaking the
+entire gate script and leaving the quiz permanently locked.
+
+The gate coordinator was a `window.kcGate` global; it is now a module dependency.
+
+### Fixed — JavaScript string escaping
+Fourteen places used `addslashes()` to inject PHP values into inline scripts. `addslashes` escapes
+quotes and backslashes but **not** newlines or a literal `</script>`, either of which ends the
+script early. All now use `json_encode()` with `JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT`,
+so no translated string can escape its context.
+
+### Changed — presentation moved out of the markup
+The 53 presentational `style=""` attributes in `view.php` are now 28 CSS classes in `styles.css`.
+The only inline styles left are `display: none`, which jQuery's `show()`/`hide()` reads and writes
+directly — replacing those with a class would break the toggles.
+
+Verified rather than assumed: the page was loaded in a real browser before and after and
+`getComputedStyle` compared property by property for every affected element, across the teacher
+and student views. All 28 classes produce identical computed values.
+
+### Version
+- `version.php` → `2026083018` (release `1.5.161`). No DB schema changes; the 1.5.150 savepoint is
+  unchanged. `v1.5.157` remains untouched.
+
+## [1.5.160] - 2026-08-31
+
+Adds Behat coverage, and fixes a crash it immediately found.
+
+### Fixed — adding an activity crashed on PostgreSQL
+`mod_form.php` guarded a gradebook lookup with `isset($defaultvalues['instance'])`. When the form
+is opened to *add* an activity Moodle supplies an empty string for `instance`, and `isset('')` is
+true, so the lookup ran with `''` where an integer was expected.
+
+- MySQL and MariaDB coerce `''` to `0` and return no rows, so nothing appeared wrong.
+- PostgreSQL rejects it and throws `dml_read_exception`, so **the add-activity form failed
+  outright** on that database, and had done since the lookup was added.
+
+The `(int)` casts on `iteminstance` and `courseid` are what make the query safe; the guard now
+also tests for a positive ID so a lookup that can never match is not run at all. This was found by
+the first Behat scenario that opened the add-activity form — no amount of manual testing on a
+MariaDB site would ever have shown it.
+
+### Added — Behat suite (18 scenarios, 189 steps)
+- `student_journey.feature` — answering every question through to the results screen, a wrong
+  answer scoring 50%, resuming an in-progress attempt after a reload, being blocked at the attempt
+  limit, and an override unblocking a student. Runs the real JavaScript in Chrome.
+- `survey_mode.feature` — a survey has no Check Answer step, accepts a typed free-text response
+  containing `<`, and ends on a completion message with no score.
+- `teacher_report.feature` — the attempts report and the extra-attempts screen, and that a student
+  sees neither.
+- `settings.feature` — creating an activity, the attempt limit round-tripping, unlimited attempts,
+  survey mode round-tripping, and validation rejecting a negative limit.
+- `permissions.feature` — teacher, student and guest access to the activity page.
+- `tests/generator/behat_mod_aiknowledgecheck_generator.php` — lets feature files seed questions,
+  attempts and overrides without calling the AI service.
+
+### Fixed — a real weakness in the 1.5.159 tests
+Mutation testing the new suites exposed a defect that **both** suites missed: making
+`start_attempt` insert a new row on every call while still returning the existing attempt ID. The
+PHPUnit test asserted the response and the Behat scenario asserted the visible page, and neither
+looks at the stored rows, so a silent duplication of every student's attempts passed clean.
+`test_start_attempt_creates_then_resumes` now asserts the attempt count, and a new
+`test_start_attempt_is_idempotent_while_an_attempt_is_open` calls start five times and asserts one
+row. Both fail against that mutant.
+
+Two other mutations were run and caught: survey mode exposing the quiz Check Answer step (caught by
+`survey_mode.feature`), and the PostgreSQL crash above reintroduced in full (caught by all four
+`settings.feature` scenarios).
+
+### Note — Behat runs the built AMD bundle
+`javascript.php` serves `amd/build/knowledgecheck.min.js`, not `amd/src`. A change to the source
+that has not been through `grunt amd` is not what the Behat tests exercise.
+
+### Version
+- `version.php` → `2026083017` (release `1.5.160`). No DB schema changes; the 1.5.150 savepoint is
+  unchanged. `v1.5.157` remains untouched.
+
+## [1.5.159] - 2026-08-31
+
+Adds the plugin's first automated tests, and fixes two rendering regressions that 1.5.158's
+line-wrapping introduced.
+
+### Added — PHPUnit suite (41 tests, 162 assertions)
+- `tests/generator/lib.php` — a data generator that seeds activities, questions, attempts and
+  overrides directly, so tests never call the remote AI service.
+- `tests/lib_test.php` — attempt limits and overrides: unlimited (`maxattempts = 0`), only
+  completed attempts counting, blocking exactly at the boundary, overrides extending rather than
+  replacing the base limit, negative overrides clamped, overrides scoped per user, attempts
+  scoped per activity, and cascade deletion of child records.
+- `tests/external_test.php` — the attempt lifecycle: start/resume without duplicating an attempt,
+  `answersjson` always parseable, grading of correct and incorrect choices, refusal to write into
+  another user's attempt, refusal of a question belonging to another activity, refusal of a
+  free-text index on a scale question, free text containing `<` accepted and capped at 2000
+  characters, no writes to a finished attempt, and return values validated through
+  `clean_returnvalue()`.
+- `tests/permissions_test.php` — drives **every** service in `db/services.php`, so a new one
+  cannot ship without a capability. Asserts each teacher-only service refuses a student with
+  `nopermissions`, that the view services accept an enrolled student, and that an unenrolled user
+  is refused. The capability check runs before any outbound HTTP call, so this needs no network.
+- `tests/privacy_provider_test.php` — metadata coverage, context and user discovery, export, and
+  the three deletion paths, each asserting that other users and other activities are untouched.
+
+These tests run in isolated processes. The plugin's external classes extend the legacy global
+`external_api`, which `lib/externallib.php` provides via `class_alias()`; Moodle's
+`require_phpunit_isolation()` requires isolation for any test that loads that file. The legacy
+names are deliberate — the namespaced `core_external` classes only exist from Moodle 4.2, and
+`version.php` declares support from 4.0.
+
+### Verified — the tests were checked against deliberate defects
+Nine defects were introduced one at a time and the suite re-run each time. All nine were caught:
+the attempt-limit comparison off by one; the negative-override clamp removed; the attempt
+ownership check removed; the free-text parameter narrowed from raw to `PARAM_TEXT`; a capability
+check removed from `save_questions`; `delete_data_for_user` ignoring the user id;
+`get_users_in_context` returning nobody; `save_answer` accepting a question from another activity;
+and `finish_attempt` not marking the attempt complete.
+
+### Fixed — two regressions from 1.5.158
+Both were found by rendering `view.php` under 1.5.157 and 1.5.158 on a real Moodle install and
+comparing the parsed DOM — element tree, attributes and text nodes — across seven activity
+configurations for both a teacher and a student.
+
+- **The free-text placeholder was broken.** The line-wrapper split the `placeholder` attribute
+  across lines, putting a newline and 28 spaces into the middle of text students read. The
+  language string for it (`freetext_questions_placeholder`) already existed and the markup had
+  been ignoring it, so the fix uses the string and removes the hardcoded English.
+- **15 elements gained a leading space.** Wrapping had moved element content onto its own line.
+  The `>` now sits against the content instead, which emits no text node.
+
+After both fixes, all 14 render comparisons are DOM-identical to 1.5.157.
+
+### Version
+- `version.php` → `2026083016` (release `1.5.159`). No DB schema changes; the 1.5.150 savepoint is
+  unchanged. `v1.5.157` remains untouched.
+
+## [1.5.158] - 2026-08-30
+
+Clears every Moodle Plugin CI finding. The public release has been stuck at 1.5.142 because
+CI genuinely failed at three steps — phpcs, phpdoc and grunt — in all six matrix jobs.
+All three are now green, with no behavioural change to the plugin.
+
+### Fixed — ESLint (599 findings → 0)
+- Added JSDoc blocks for 72 functions, and real `@param`/`@return` types for the three that
+  had a description but no types.
+- Braces added to 17 single-statement `if`/`for` bodies.
+- 151 over-length lines wrapped. Every wrap was verified mechanically: the file was minified
+  with terser before and after, and the output compared byte for byte. The only intentional
+  difference is one hoisted `Math.floor(kcMin / 60)` in the ETA string, which the wrap made
+  unavoidable and which is arithmetically identical.
+- Restored a `var $sectorSelect` declaration that a previous edit had removed while its three
+  uses remained — the industry-change handler had been throwing a ReferenceError.
+- Hoisted the text-source question-count `<option>` builder out of its loop (`no-loop-func`),
+  converted an inner `animateCount` declaration to a function expression, and dropped the
+  last unused variables.
+
+### Removed — orphaned code
+- `jobLevels` (9 lines) and `jobTitlesByIndustry` (170 lines): data tables with no remaining
+  readers, superseded by the free-text job-role chips.
+- `handleKCSingleRegenerate` (124 lines): the per-question regenerate handler added in 1.5.77.
+  Its button was lost in a later edit, so the feature was unreachable from the UI. A comment
+  marks where it was; git history has the implementation if it is rebuilt properly.
+
+### Fixed — stylelint (226 findings → 0)
+Carried forward from the CSS work: 97 `!important` declarations replaced by a `#page` selector
+prefix across 34 rule blocks, and the inline `data:image/svg+xml` noise texture moved to
+`pix/noise.svg`. Rule-block count is unchanged at 350.
+
+### Fixed — phpcs (13,535 errors and 15,821 warnings → 0)
+The raw count is inflated: the line-length and docblock sniffs fire once per token, so the
+honest figure was 1,505 unique findings.
+
+- `view.php` accounted for nearly all of it. Two sniffs — `MissingDocblock.File` and
+  `FileExpectedTags` — fire once for every re-opened `<?php` tag, and this page interleaves
+  markup with 218 short PHP interludes, so they fired ~245 times each against a file whose
+  docblock is correct. Both are suppressed at the top of that file with the reason recorded
+  inline. The proper fix is Mustache templates rendered from a renderer class; that refactor
+  is noted where the suppression sits.
+- A `$str()` shorthand for `get_string($key, 'mod_aiknowledgecheck', $a)` replaced 183 call
+  sites in `view.php`, which removed most of its over-length lines outright.
+- Long lines wrapped across `report.php`, `db/upgrade.php`, `mod_form.php`, `settings.php` and
+  `classes/privacy/provider.php`.
+- Comment style: box-drawing section banners rewritten as plain sentences, and the 26
+  `pipeline-ignore` markers — which must stay verbatim for the release scanner — annotated with
+  `// phpcs:ignore moodle.Commenting.InlineComment` so both checkers are satisfied.
+- `lang/en/aiknowledgecheck.php` sorted alphabetically as `LangFilesOrdering` requires. The
+  resulting array was compared key by key and value by value against the original: 404 strings,
+  no additions, no removals, no value changes. Sorting surfaced one genuine bug — a duplicated
+  `error:invalidimageurl` key. The later definition was the one taking effect, so it is the one
+  kept.
+
+### Fixed — phpdoc
+`aiknowledgecheck_add_instance` and `aiknowledgecheck_update_instance` documented `$mform` as
+`mod_aiknowledgecheck_mod_form|null` while the signature declares `?object`. local_moodlecheck
+read that as an incomplete parameter list. The docblocks now say `object|null`.
+
+### Changed — AMD build
+`amd/build/knowledgecheck.min.js` and its source map rebuilt with Moodle's own `grunt amd`
+(rollup) rather than a hand-run terser. The stale unminified `amd/build/knowledgecheck.js` was
+deleted; Moodle's build directory holds only `.min.js` and `.min.js.map`.
+
+### Version
+- `version.php` → `2026083015` (release `1.5.158`). No DB schema changes; the 1.5.150 savepoint
+  is unchanged. `v1.5.157` is untouched — this is a new immutable release.
 
 ## [1.5.157] - 2026-08-30
 

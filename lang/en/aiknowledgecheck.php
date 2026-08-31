@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LangFilesOrdering
-// phpcs:disable moodle.Files.LineLength
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -26,9 +24,353 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Module info.
+$string['academic_level'] = 'Academic Level';
+$string['academic_masters'] = 'Masters';
+$string['academic_phd'] = 'PhD/Doctorate';
+$string['academic_postgraduate'] = 'Postgraduate';
+$string['academic_tooltip'] = 'Questions aligned to higher education standards with theoretical depth and critical analysis focus.';
+$string['academic_tooltip_title'] = 'Academic Education';
+$string['academic_undergraduate'] = 'Undergraduate';
+$string['actions'] = 'Actions';
+$string['activity_locked_notice'] = 'This activity is now locked. No further attempts are permitted.';
+$string['add_more_questions'] = 'Add More Questions';
+$string['add_text_source'] = 'Add another text source';
+$string['add_workplace_context'] = 'Add Workplace Context';
+$string['additionalattempts'] = 'Additional Attempts';
+$string['aftercompletion'] = 'After Completion';
+$string['aftercompletion_help'] = 'Choose what happens once a student reaches a terminal state — either 100% correct answers or the attempt limit is reached. "Lock this activity" prevents any further attempts (the student can still view and download their results). "Restart" shows a Start Again button that resets progress and begins a fresh attempt.';
+$string['aftercompletion_lock'] = 'Lock this activity';
+$string['aftercompletion_restart'] = 'Restart';
+$string['aiknowledgecheck:addinstance'] = 'Add a new AI Knowledge Check';
+$string['aiknowledgecheck:create'] = 'Generate knowledge checks with AI';
+$string['aiknowledgecheck:manageoverrides'] = 'Manage attempt overrides';
+$string['aiknowledgecheck:view'] = 'View AI Knowledge Check';
+$string['aiknowledgecheck:viewreports'] = 'View AI Knowledge Check reports';
+$string['allattemptsused_body'] = 'User {$a->fullname} has used all {$a->limit} attempts for "{$a->activityname}" in the course "{$a->coursename}". Please review and, if appropriate, grant additional attempts at: {$a->overrideurl}';
+$string['allattemptsused_subject'] = 'All attempts used: {$a->activityname}';
+$string['apikey'] = 'API Key';
+$string['apikey_desc'] = 'Your API key from lms-labs.com. This is used to authenticate requests.';
+$string['apiurl'] = 'API URL';
+$string['apiurl_desc'] = 'The Essay Grader AI API URL. Default: https://lms-labs.com';
+$string['attempt'] = 'Attempt';
+$string['attemptlimit'] = 'Maximum attempts';
+$string['attemptlimit_help'] = 'Set the maximum number of attempts allowed for this knowledge check. Enter 0 to allow unlimited attempts.';
+$string['attemptno'] = 'Attempt #';
+$string['attemptsallowed'] = 'Attempts Allowed';
+$string['attemptsettings'] = 'Attempt Settings';
+$string['attemptslimitreached'] = 'You have reached the attempt limit ({$a}).';
+$string['attemptsreport'] = 'Attempts Report';
+$string['attemptsused'] = 'Attempts Used';
+$string['audiogate_header'] = 'Audio Gate';
+$string['audiogate_listenaudio'] = 'Listen to this audio before starting';
+$string['audiogate_listenfull'] = 'Listen to the entire audio to unlock the quiz';
+$string['audiogate_listenseconds'] = 'Listen for at least {$a} seconds to unlock the quiz';
+$string['audiogate_unlocked'] = 'Audio requirement met — you can now start the quiz';
+$string['audiominseconds'] = 'Minimum seconds to listen';
+$string['audiominseconds_help'] = 'The number of seconds students must listen before the start button becomes available. Only used when the listen requirement is set to "minimum seconds".';
+$string['audioreq_full'] = 'Listen to the entire audio';
+$string['audioreq_none'] = 'No requirement (audio shown but not required)';
+$string['audioreq_seconds'] = 'Listen for a minimum number of seconds';
+$string['audiorequirement'] = 'Listen requirement';
+$string['audiorequirement_help'] = 'Choose how much of the audio students must listen to before they can proceed. "No requirement" shows the player but does not gate the start button.';
+$string['audiourl'] = 'Audio file URL';
+$string['audiourl_help'] = 'Paste a direct URL to an MP3 or other audio file. Students must listen to the audio before they can start the quiz. Leave blank to disable the audio gate.';
+$string['backtocourse'] = 'Back to Course';
+$string['bulkgrantplusone'] = 'Grant +1 to Selected';
+$string['buy_more'] = 'Buy more';
+$string['ccemail'] = 'CC Email for Notifications';
+$string['ccemail_help'] = 'Enter email addresses (comma-separated) to receive notifications when students reach their maximum attempts. This is in addition to teacher notifications.';
+$string['check_answer'] = 'Check Answer';
+$string['completionallcorrect'] = 'All answers must be correct';
+$string['completionallcorrect_help'] = 'When enabled, the activity will only be marked as complete when the student answers all questions correctly in a single attempt.';
+$string['completiondetail:completionallcorrect'] = 'Answer all questions correctly';
+$string['completiondetail:completionpassgrade'] = 'Achieve passing grade';
+$string['completionpassgrade'] = 'Achieve passing grade';
+$string['completionpassgrade_help'] = 'When enabled, the activity will be marked as complete when the student achieves the passing grade percentage set in the Grade settings section. Their best attempt score is used.';
+$string['content_language'] = 'Content Language';
+$string['content_language_help'] = 'Controls the spelling and grammar of generated questions (e.g. colour vs color).';
+$string['context_settings'] = 'Context Settings';
+$string['context_settings_help'] = 'Add workplace context to generate questions with realistic scenarios and industry-specific terminology.';
+$string['continue_attempt'] = 'Continue Attempt';
+$string['copy_url'] = 'Copy URL';
+$string['correct'] = 'Correct!';
+$string['country'] = 'Country';
+$string['country_australia'] = 'Australia';
+$string['country_canada'] = 'Canada';
+$string['country_help'] = 'Select your country for region-specific regulations, terminology, and examples.';
+$string['country_newzealand'] = 'New Zealand';
+$string['country_singapore'] = 'Singapore';
+$string['country_uk'] = 'United Kingdom';
+$string['country_us'] = 'United States';
+$string['credits_heading'] = 'Credits';
+$string['credits_info'] = 'AI Knowledge Check uses 1 credit per question (10¢ each), or 2 credits per question with voiceover enabled. Purchase credits at <a href="https://lms-labs.com" target="_blank">lms-labs.com</a>.';
+$string['credits_label'] = 'Credits Available';
+$string['criteria_help'] = 'Enter one criteria entry per line, aligned with your topics above. Each line will be mapped to the corresponding topic in the Excel export. Leave blank if not required.';
+$string['criteria_label'] = 'Performance Criteria (optional)';
+$string['criteria_placeholder'] = "e.g. HLTWHS001-1.1, 1.2, 1.3\nHLTWHS001-2.1, 2.2\nHLTWHS001-3.1, 3.2, 3.3";
+$string['download_question_mapping'] = 'Download Question Mapping';
+$string['edit_questions'] = 'Edit Questions';
+$string['edit_questions_help'] = 'Edit question text, answer options, correct answer, and explanations.';
+$string['education_academic'] = 'Academic (Higher Education)';
+$string['education_general'] = 'General Training';
+$string['education_type'] = 'Education Type';
+$string['education_vet'] = 'VET (Vocational Education & Training)';
+$string['error:apihttp'] = 'The AI service returned an error (HTTP {$a}).';
+$string['error:audiominseconds'] = 'Minimum seconds must be a positive number when listen requirement is set to seconds.';
+$string['error:connectionfailed'] = 'Could not connect to the AI service. Please try again shortly.';
+$string['error:emptyprompt'] = 'An image prompt is required.';
+$string['error:gradepasstoohigh'] = 'Grade to pass cannot be higher than the maximum grade.';
+$string['error:invalidaudiourl'] = 'Please enter a valid URL starting with https:// (e.g. https://example.com/audio.mp3).';
+$string['error:invalidemail'] = 'Invalid email address format. Use comma-separated valid emails.';
+$string['error:invalidgradepass'] = 'Grade to pass must be a valid number (0 or above).';
+$string['error:invalidimageurl'] = 'Invalid image URL format. Use https:// or a data:image/(png|jpg|gif|webp) URL.';
+$string['error:invalidquestions'] = 'The question data could not be read. Please reload the page and try again.';
+$string['error:invalidresponse'] = 'The AI service returned an unexpected response.';
+$string['error:invalidvideourl'] = 'Please enter a valid YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...).';
+$string['error:negativeattempts'] = 'Maximum attempts cannot be negative.';
+$string['error:notconfigured'] = 'This plugin is not configured. Ask an administrator to set the Site ID and API Key under Site administration → Plugins → Activity modules → AI Knowledge Check.';
+$string['error:statuscheckfailed'] = 'Could not check the generation status. Please try again shortly.';
+$string['error:toomanytextsources'] = 'You can generate from a maximum of 10 text sources at a time.';
+$string['error:topicstoolong'] = 'The topics text is too long. Please keep it under 10,000 characters.';
+$string['error:videominseconds'] = 'Minimum seconds must be a positive number when watch requirement is set to seconds.';
+$string['error:zeroquestions'] = 'Cannot save zero questions — this would delete all existing questions. Reload the page and try again.';
+$string['error_generation'] = 'An error occurred while generating the knowledge check. Please try again.';
+$string['error_invalid_session'] = 'Invalid session. Please refresh the page and try again.';
+$string['error_no_topics'] = 'Please enter at least one topic to generate questions.';
+$string['error_nocredits'] = 'Insufficient credits. Please purchase more credits at lms-labs.com.';
+$string['error_pdf_empty'] = 'Could not extract any text from the PDF. Please try a different document.';
+$string['error_pdf_invalid'] = 'Invalid file type. Please upload a PDF document.';
+$string['error_pdf_too_large'] = 'PDF file is too large. Maximum size is 10 MB.';
+$string['error_text_empty'] = 'Please add at least one text source with content.';
+$string['error_text_too_long'] = 'Text content is too long. Maximum 50,000 characters per source.';
+$string['estimated_completion_time'] = 'Estimated completion time';
+$string['estimated_credits'] = 'Credits Required';
+$string['eventcoursemoduleviewed'] = 'Course module viewed';
+$string['extra_instructions'] = 'Extra AI Instructions';
+$string['extra_instructions_help'] = 'Optional. Add custom instructions to guide how the AI creates questions. Great for adjusting reading level, focusing on specific aspects, or adding special requirements.';
+$string['extra_instructions_placeholder'] = 'e.g., "Use simple language at grade 6 reading level" or "Focus on safety procedures" or "Include specific regulatory references"';
+$string['finish_quiz'] = 'Finish Quiz';
+$string['freetext_questions_help']    = 'These open-ended questions appear after the scale questions. Students type their own response instead of selecting a scale option. Enter one question per line.';
+$string['freetext_questions_label']   = 'Free Text Questions (Optional)';
+$string['freetext_questions_placeholder'] = "What suggestions do you have for improving this training?\nIs there anything else you would like to share?";
+$string['general_tooltip'] = 'Questions suitable for general workplace training, professional development, and non-accredited programs. No AQF level alignment required — practical, accessible questions for any audience.';
+$string['general_tooltip_title'] = 'General Training';
+$string['generate_btn'] = 'Generate Knowledge Check';
+$string['generate_image'] = 'Generate Image';
+$string['generating'] = 'Generating Knowledge Check...';
+$string['gradesettings'] = 'Grade settings';
+$string['gradetopass'] = 'Grade to pass';
+$string['grantplusone'] = 'Grant +1';
+$string['imagegate_acknowledge'] = 'I\'ve seen this image — continue to quiz';
+$string['imagegate_credits_cost'] = '5 credits per image (Imagen 4 Ultra)';
+$string['imagegate_error'] = 'Image generation failed. Please try again or paste a URL.';
+$string['imagegate_generated'] = 'Image generated — save it below or use it in the Image Gate setting.';
+$string['imagegate_generateimage'] = 'Generate Image with AI';
+$string['imagegate_generating'] = 'Generating image...';
+$string['imagegate_header'] = 'Image Gate';
+$string['imagegate_image'] = 'Image';
+$string['imagegate_image_help'] = 'Upload an image (JPG, PNG, GIF, WebP) to enable the Image Gate. Students must click "I\'ve seen this image" before they can start the quiz. Leave empty to disable the image gate. You can also generate an AI image directly on the activity page (5 credits).';
+$string['imagegate_not_configured'] = 'Image generation is not configured. Please set a Google API key in the plugin settings or site-wide AI config.';
+$string['imagegate_question_enable'] = 'Show image with this question';
+$string['imagegate_question_generate'] = 'Generate image (5 credits)';
+$string['imagegate_question_url_placeholder'] = 'https://example.com/image.jpg';
+$string['imagegate_unlocked'] = 'Image acknowledged — you can now start the quiz';
+$string['imagegate_viewimage'] = 'View this image before starting';
+$string['imageurl'] = 'Image URL';
+$string['imageurl_help'] = 'Paste a direct URL to an image file (JPG, PNG, GIF, WebP) or leave blank to disable the image gate. Students must click "I\'ve seen this image" before they can start the quiz. You can also generate an image on the activity page using the AI Image Generator (5 credits). Data URLs from AI generation are also accepted here.';
+$string['incorrect'] = 'Incorrect';
+$string['industry'] = 'Industry';
+$string['industry_details'] = 'Industry Details';
+$string['industry_details_help'] = 'Add specific details about your workplace for more targeted questions.';
+$string['industry_details_placeholder'] = 'e.g., Commercial construction, Aged care facility, Mining site';
+$string['industry_help'] = 'Select your industry. Questions will include scenarios and terminology relevant to your sector.';
+$string['industry_sector'] = 'Sector';
+$string['initializing'] = 'Initializing...';
+$string['inprogress'] = 'In Progress';
+$string['job_level'] = 'Job Level';
+$string['job_level_help'] = 'Select the target job level. Questions will be pitched at the appropriate complexity.';
+$string['job_role'] = 'Job Role';
+$string['job_role_placeholder'] = 'e.g., Construction Worker, Nurse, Office Manager';
+$string['job_title'] = 'Job Title';
+$string['job_title_help'] = 'Select the target job role for questions that reference specific duties and responsibilities.';
+$string['job_title_other'] = 'Other';
+$string['js_addingtoexisting'] = "Adding to your existing <strong>{\$a}</strong>. New questions will be appended to the current set.";
+$string['js_answeroptions_label'] = "Answer options";
+$string['js_attemptsused'] = "Attempts Used";
+$string['js_audioupdatefailed'] = "Audio update failed. You can try again later.";
+$string['js_confirmdeletequestion'] = "Are you sure you want to delete Question {\$a}?";
+$string['js_confirmdiscardchanges'] = "Discard all changes?";
+$string['js_confirmeditinprogress_many'] = "Warning: There are {\$a} students with in-progress attempts. Editing questions while students are taking the quiz may cause inconsistencies.\n\nDo you want to continue?";
+$string['js_confirmeditinprogress_one'] = "Warning: There is 1 student with an in-progress attempt. Editing questions while students are taking the quiz may cause inconsistencies.\n\nDo you want to continue?";
+$string['js_confirmpaidregeneration'] = "You have used all 3 free regenerations.\n\nThis regeneration will cost {\$a} credits.\n\nDo you want to continue?";
+$string['js_continueattempt'] = "Continue Attempt";
+$string['js_correct'] = "Correct!";
+$string['js_error_audiogenfailed'] = "Failed to generate audio. Please try again.";
+$string['js_error_audiogenfaileddetail'] = "Failed to generate audio: {\$a}";
+$string['js_error_cannotdeletelastquestion'] = "Cannot delete the last question. You must have at least one question.";
+$string['js_error_continueattemptfailed'] = "Failed to continue attempt. Please try again.";
+$string['js_error_continueattemptreload'] = "Failed to continue attempt. Please reload the page.";
+$string['js_error_emptyoption'] = "Question {\$a->number}, Option {\$a->letter} cannot be empty.";
+$string['js_error_emptyquestiontext'] = "Question {\$a} text cannot be empty.";
+$string['js_error_existingpreserved'] = "{\$a}\n\nYour existing questions have been preserved.";
+$string['js_error_generationfailed'] = "Generation failed";
+$string['js_error_generationstartfailed'] = "Failed to start generation";
+$string['js_error_insufficientcredits'] = "Insufficient credits. Please purchase more at lms-labs.com";
+$string['js_error_loadquestionsfailed'] = "Failed to load questions. Please try again.";
+$string['js_error_lostconnectiongenerating'] = "Lost connection to the server. Your questions may still be generating - please refresh the page to check.";
+$string['js_error_lostconnectionpreserved'] = "Lost connection to the server. Your existing questions have been preserved.";
+$string['js_error_maxtextsources'] = "Maximum 10 text sources allowed.";
+$string['js_error_nocorrectanswerselected'] = "Question {\$a}: Please select a correct answer.";
+$string['js_error_noeditforms'] = "No questions were found in the edit forms. Please reload the page and try again.";
+$string['js_error_noexistingquestions'] = "No existing questions found. Please generate questions first.";
+$string['js_error_nogeneratedquestions'] = "No questions available. Generate questions first.";
+$string['js_error_noquestionsentered'] = "Please enter at least one question.";
+$string['js_error_noquestionsstudent'] = "No questions available. Please contact your teacher.";
+$string['js_error_noquestionstoedit'] = "No questions to edit. Please generate questions first, or reload the page if questions have already been generated.";
+$string['js_error_noquestionstoregenerate'] = "No questions to regenerate. Please generate questions first.";
+$string['js_error_noresultstodownload'] = "No results to download. Please complete the quiz first.";
+$string['js_error_notextsourcecontent'] = "Please add at least one text source with content.";
+$string['js_error_notopicsentered'] = "Please enter at least one topic.";
+$string['js_error_popupblocked'] = "Please allow pop-ups for this site, then try again.";
+$string['js_error_regenconnectionfailed'] = "Regeneration failed (connection error). Please try again.";
+$string['js_error_regenfaileddetail'] = "Regeneration failed: {\$a}";
+$string['js_error_regenfailedretry'] = "Regeneration failed: {\$a}\n\nPlease try again.";
+$string['js_error_regensavefailed'] = "Questions regenerated but failed to save. Please click Save Changes.";
+$string['js_error_regenzeroquestions'] = "Regeneration completed but returned 0 questions. Please try again.";
+$string['js_error_requestfailed'] = "Request failed. Please try again.";
+$string['js_error_saveclicksavechanges'] = "Failed to save. Please click Save Changes.";
+$string['js_error_saveconnectionlost'] = "Warning: The connection to Moodle was lost while saving questions. Students will not be able to see this quiz.\n\nPlease refresh the page and regenerate your questions, or check your network connection.";
+$string['js_error_savequestionsfailed'] = "Failed to save questions. Please try again.";
+$string['js_error_savetomoodlefailed'] = "Warning: Questions could not be saved to Moodle. Students will not be able to see this quiz until the save succeeds.\n\nReason: {\$a}\n\nPlease refresh the page and try generating again, or contact your administrator.";
+$string['js_error_startattemptfailed'] = "Failed to start attempt";
+$string['js_error_startquizfailed'] = "Failed to start quiz. Please try again.";
+$string['js_error_unknown'] = "Unknown error";
+$string['js_error_zeroquestions'] = "Generation completed but returned 0 questions. Please try again.";
+$string['js_error_zeroquestionspreserved'] = "Generation completed but returned 0 questions. Your existing questions have been preserved. Please try again.";
+$string['js_eta_1min'] = "~1 minute";
+$string['js_eta_detail'] = "{\$a->count} {\$a->questionword}{\$a->audio}";
+$string['js_eta_hoursmins'] = "~{\$a->hours} {\$a->hourunit} {\$a->mins} min";
+$string['js_eta_hourunit_many'] = "hrs";
+$string['js_eta_hourunit_one'] = "hr";
+$string['js_eta_label'] = "Estimated completion time";
+$string['js_eta_minutes'] = "~{\$a} minutes";
+$string['js_eta_under1min'] = "Under 1 minute";
+$string['js_eta_withaudio'] = " with audio explanations";
+$string['js_finishquiz'] = "Finish Quiz";
+$string['js_freetext_label'] = "Your response to this question";
+$string['js_freetext_placeholder'] = "Type your response here...";
+$string['js_generateaudio'] = "Generate Audio";
+$string['js_generateimage_cost'] = "Generate (5 credits)";
+$string['js_generating'] = "Generating...";
+$string['js_generatingaudio'] = "Generating Audio...";
+$string['js_generatingimage'] = "Generating image...";
+$string['js_imagegen_button'] = "Generate Image";
+$string['js_imagegen_copied'] = "Copied!";
+$string['js_imagegen_copyurl'] = "Copy URL";
+$string['js_imagegen_describe'] = "Please describe the image you want to generate.";
+$string['js_imagegen_saved'] = "Saved! Refresh the page to see the image gate.";
+$string['js_imagegen_savefailed'] = "Save failed.";
+$string['js_imagegen_savefaileddetail'] = "Save failed: {\$a}";
+$string['js_imagegen_saving'] = "Saving...";
+$string['js_imagegenerated'] = "Image generated!";
+$string['js_incorrect'] = "Incorrect";
+$string['js_loading'] = "Loading...";
+$string['js_missingaudio_summary'] = " Some questions are missing voiceover audio.";
+$string['js_next'] = "Next";
+$string['js_nextquestion'] = "Next Question";
+$string['js_optionselected'] = "Option {\$a} selected";
+$string['js_questionnumber'] = "Question {\$a}";
+$string['js_questionsready'] = "{\$a} questions ready.";
+$string['js_questionword_many'] = "questions";
+$string['js_questionword_one'] = "question";
+$string['js_regensavedwithsettings'] = "Questions regenerated and saved with new settings!";
+$string['js_regenserverfailed'] = "Regeneration failed on the server";
+$string['js_retakequiz'] = "Retake Quiz";
+$string['js_savingremovingaudio'] = "Saving settings... Removing voiceover audio.";
+$string['js_score'] = "Score: {\$a->correct}/{\$a->total}";
+$string['js_selectsector'] = "Select sector (optional)...";
+$string['js_selectstate'] = "Select state/region...";
+$string['js_settingssaved'] = "Settings saved.";
+$string['js_startingeneration'] = "Starting generation...";
+$string['js_startquiz'] = "Start Quiz";
+$string['js_statuscheckfailed'] = "Status check failed";
+$string['js_submitsurvey'] = "Submit Survey";
+$string['js_success_audiogenerated'] = "Audio generated successfully! Students will now hear voiceover explanations.";
+$string['js_success_regenfree'] = "Questions regenerated successfully! (Free regeneration)";
+$string['js_success_regenpaid'] = "Questions regenerated successfully! Credits have been charged.";
+$string['js_unlimited'] = "Unlimited";
+$string['js_unsavedanswers_message'] = "{\$a} of your answers could not be saved (you may have lost connection). They will not be counted. If possible, reconnect and use \"Retake\" to answer them again.";
+$string['js_unsavedanswers_title'] = "Some answers were not saved";
+$string['js_voiceoverdisabled'] = "Voiceover disabled and audio removed.";
+$string['js_voiceoverdisabled_summary'] = " Voiceover is disabled.";
+$string['js_voiceovergenerated'] = "Voiceover audio generated successfully!";
+$string['js_voiceovergenfailed'] = "Voiceover generation failed. You can try again later.";
+$string['js_voicesettingsupdated'] = "Voice settings updated!";
+$string['js_warn_languagechange'] = "Changing language will regenerate questions and uses credits.";
+$string['js_warn_novoiceover'] = "Voiceover is disabled. No audio will be generated.";
+$string['js_warn_voicesaved'] = "Voice settings will be saved. Audio will be updated if voice changed.";
+$string['knowledgecheckname'] = 'Name';
+$string['lang_ar_xa'] = 'Arabic';
+$string['lang_bg_bg'] = 'Bulgarian';
+$string['lang_bn_in'] = 'Bengali';
+$string['lang_cmn_cn'] = 'Chinese (Mandarin)';
+$string['lang_cs_cz'] = 'Czech';
+$string['lang_da_dk'] = 'Danish';
+$string['lang_de_de'] = 'German';
+$string['lang_el_gr'] = 'Greek';
+$string['lang_en_au'] = 'English (Australia)';
+$string['lang_en_gb'] = 'English (UK)';
+$string['lang_en_in'] = 'English (India)';
+$string['lang_en_us'] = 'English (US)';
+$string['lang_es_es'] = 'Spanish (Spain)';
+$string['lang_es_us'] = 'Spanish (Latin America)';
+$string['lang_et_ee'] = 'Estonian';
+$string['lang_fi_fi'] = 'Finnish';
+$string['lang_fr_ca'] = 'French (Canada)';
+$string['lang_fr_fr'] = 'French (France)';
+$string['lang_gu_in'] = 'Gujarati';
+$string['lang_he_il'] = 'Hebrew';
+$string['lang_hi_in'] = 'Hindi';
+$string['lang_hr_hr'] = 'Croatian';
+$string['lang_hu_hu'] = 'Hungarian';
+$string['lang_id_id'] = 'Indonesian';
+$string['lang_it_it'] = 'Italian';
+$string['lang_ja_jp'] = 'Japanese';
+$string['lang_kn_in'] = 'Kannada';
+$string['lang_ko_kr'] = 'Korean';
+$string['lang_lt_lt'] = 'Lithuanian';
+$string['lang_lv_lv'] = 'Latvian';
+$string['lang_ml_in'] = 'Malayalam';
+$string['lang_mr_in'] = 'Marathi';
+$string['lang_nb_no'] = 'Norwegian';
+$string['lang_nl_be'] = 'Dutch (Belgium)';
+$string['lang_nl_nl'] = 'Dutch (Netherlands)';
+$string['lang_pl_pl'] = 'Polish';
+$string['lang_pt_br'] = 'Portuguese (Brazil)';
+$string['lang_ro_ro'] = 'Romanian';
+$string['lang_ru_ru'] = 'Russian';
+$string['lang_sk_sk'] = 'Slovak';
+$string['lang_sl_si'] = 'Slovenian';
+$string['lang_sr_rs'] = 'Serbian';
+$string['lang_sv_se'] = 'Swedish';
+$string['lang_sw_ke'] = 'Swahili (Kenya)';
+$string['lang_ta_in'] = 'Tamil';
+$string['lang_te_in'] = 'Telugu';
+$string['lang_th_th'] = 'Thai';
+$string['lang_tr_tr'] = 'Turkish';
+$string['lang_uk_ua'] = 'Ukrainian';
+$string['lang_ur_in'] = 'Urdu';
+$string['lang_vi_vn'] = 'Vietnamese';
+$string['language_help'] = 'Select the language for questions and voiceover explanations. All content will be generated in this language.';
+$string['level_entry'] = 'Entry Level';
+$string['level_executive'] = 'Executive';
+$string['level_intermediate'] = 'Intermediate';
+$string['level_manager'] = 'Manager';
+$string['level_senior'] = 'Senior';
+$string['level_supervisor'] = 'Supervisor';
+$string['maximumgrade'] = 'Maximum grade';
+$string['messageprovider:allattemptsused'] = 'Notification when all attempts are used';
 $string['modulename'] = 'AI Knowledge Check';
-$string['modulenameplural'] = 'AI Knowledge Checks';
 $string['modulename_help'] = 'AI Knowledge Check generates topic-by-topic multiple-choice quizzes with AI voiceover explanations spoken aloud for every answer option, including why wrong answers are incorrect.
 
 Teachers enter a list of topics (one per line) and the number of questions per topic. The AI generates 4-option MCQ questions with clear explanations for each option. With voiceover enabled, every explanation is spoken using Google Chirp 3 HD text-to-speech in the teacher\'s selected language (52 languages supported).
@@ -39,519 +381,221 @@ For competency mapping, teachers enter Performance Criteria codes (one per line,
 
 Teachers set attempt limits with optional CC email notifications to nominated addresses when a student reaches their limit. Gradebook integration, passing grades, and completion conditions are all configurable. Credit cost: 1 credit per question, or 2 credits per question with voiceover enabled.';
 $string['modulename_link'] = 'mod/aiknowledgecheck/view';
-$string['pluginname'] = 'AI Knowledge Check';
-$string['pluginadministration'] = 'AI Knowledge Check administration';
-$string['knowledgecheckname'] = 'Name';
-
-// Capabilities.
-$string['aiknowledgecheck:addinstance'] = 'Add a new AI Knowledge Check';
-$string['aiknowledgecheck:view'] = 'View AI Knowledge Check';
-$string['aiknowledgecheck:create'] = 'Generate knowledge checks with AI';
-$string['aiknowledgecheck:viewreports'] = 'View AI Knowledge Check reports';
-$string['aiknowledgecheck:manageoverrides'] = 'Manage attempt overrides';
-
-// Settings.
-$string['apiurl'] = 'API URL';
-$string['apiurl_desc'] = 'The Essay Grader AI API URL. Default: https://lms-labs.com';
-$string['siteid'] = 'Site ID';
-$string['siteid_desc'] = 'Your Moodle site ID from lms-labs.com. This should match your registered site domain.';
-$string['apikey'] = 'API Key';
-$string['apikey_desc'] = 'Your API key from lms-labs.com. This is used to authenticate requests.';
-$string['credits_heading'] = 'Credits';
-$string['credits_info'] = 'AI Knowledge Check uses 1 credit per question (10¢ each), or 2 credits per question with voiceover enabled. Purchase credits at <a href="https://lms-labs.com" target="_blank">lms-labs.com</a>.';
-
-// Page content.
-$string['page_title'] = 'AI Knowledge Check';
+$string['modulenameplural'] = 'AI Knowledge Checks';
+$string['moreattempts'] = 'More Attempts';
+$string['moreattemptsheading'] = 'User Extra Attempts';
+$string['next_question'] = 'Next Question';
+$string['noattempts'] = 'No attempts yet.';
+$string['noknowledgechecks'] = 'No AI Knowledge Check activities in this course.';
+$string['nopassinggrade'] = 'No passing grade';
+$string['not_configured'] = 'Plugin not configured. Please set Site ID and API Key in the plugin settings.';
 $string['page_heading'] = 'AI Knowledge Check Generator';
 $string['page_intro'] = 'Generate interactive multiple-choice quizzes with AI-powered questions and voice explanations.';
-$string['credits_label'] = 'Credits Available';
-$string['not_configured'] = 'Plugin not configured. Please set Site ID and API Key in the plugin settings.';
-$string['students_view_message'] = 'This activity allows teachers to create AI-generated knowledge checks. Check back later for available quizzes.';
-
-// Attempt settings.
-$string['aftercompletion'] = 'After Completion';
-$string['aftercompletion_help'] = 'Choose what happens once a student reaches a terminal state — either 100% correct answers or the attempt limit is reached. "Lock this activity" prevents any further attempts (the student can still view and download their results). "Restart" shows a Start Again button that resets progress and begins a fresh attempt.';
-$string['aftercompletion_lock'] = 'Lock this activity';
-$string['aftercompletion_restart'] = 'Restart';
-$string['activity_locked_notice'] = 'This activity is now locked. No further attempts are permitted.';
+$string['page_title'] = 'AI Knowledge Check';
+$string['passinggrade'] = 'Grade to pass';
+$string['passinggrade_help'] = 'Set the minimum grade a student must achieve to pass this knowledge check. Enter a number between 0 and the maximum grade (e.g. 80 when max grade is 100). This is used by the Moodle gradebook and completion conditions to show pass/fail status. Set to 0 to disable.';
+$string['paste_content_help'] = 'Paste text from documents, policies, or course materials and the AI will create questions based on the content.';
+$string['paste_content_toggle'] = 'Generate from pasted content';
+$string['pause_explanation'] = 'Pause';
+$string['pdf_apply_all'] = 'Same for all PDFs:';
+$string['pdf_drop_text'] = 'Click to select or drag a PDF file here';
+$string['pdf_drop_text_multi'] = 'Click to select or drag PDF files here';
+$string['pdf_file_label'] = 'PDF Documents';
+$string['pdf_max_size'] = 'Maximum file size: 10 MB per file';
+$string['pdf_question_count'] = 'Number of Questions';
+$string['pdf_question_count_help'] = 'Choose how many questions to generate from each PDF. More questions provide broader coverage but use more credits (1 credit per question, 2 with voiceover).';
+$string['pdf_upload_help'] = 'Upload one or more PDF documents and the AI will create questions based on the content. Great for turning course materials, textbooks, or policies into knowledge checks.';
+$string['pdf_upload_toggle'] = 'Generate from PDF';
+$string['perq_audio_enable'] = 'Play audio clip with this question';
+$string['perq_audio_enable_help'] = 'When enabled, an HTML5 audio player appears above the question text. Students must click "I\'ve reviewed this content — Continue" before the answer options unlock. Paste a direct URL to any audio file (MP3, OGG, WAV, M4A, etc.) accessible over HTTPS. This is separate from the AI-generated voiceover explanation audio that plays after the student checks their answer.';
+$string['perq_audio_url_placeholder'] = 'https://example.com/audio.mp3';
+$string['perq_video_enable'] = 'Show YouTube video with this question';
+$string['perq_video_enable_help'] = 'When enabled, an embedded YouTube video appears above the question text. Students must click "I\'ve reviewed this content — Continue" before the answer options unlock. Paste the full YouTube watch URL (e.g. https://www.youtube.com/watch?v=XXXXXXXXXXX) or a short youtu.be URL.';
+$string['perq_video_url_placeholder'] = 'https://www.youtube.com/watch?v=...';
+$string['play_explanation'] = 'Play Explanation';
+$string['pluginadministration'] = 'AI Knowledge Check administration';
+$string['pluginname'] = 'AI Knowledge Check';
+$string['preview_section'] = 'Preview';
+$string['privacy:metadata:aiknowledgecheck_attempts'] = 'Information about user attempts.';
+$string['privacy:metadata:aiknowledgecheck_attempts:answers'] = 'The answers provided by the user.';
+$string['privacy:metadata:aiknowledgecheck_attempts:timeended'] = 'The time when the attempt was completed.';
+$string['privacy:metadata:aiknowledgecheck_attempts:timestarted'] = 'The time when the attempt was started.';
+$string['privacy:metadata:aiknowledgecheck_attempts:userid'] = 'The ID of the user who made the attempt.';
+$string['privacy:metadata:aiknowledgecheck_overrides'] = 'Per-user overrides for a knowledge check (e.g. extra attempts).';
+$string['privacy:metadata:aiknowledgecheck_overrides:extraattempts'] = 'The number of extra attempts granted to the user.';
+$string['privacy:metadata:aiknowledgecheck_overrides:userid'] = 'The ID of the user the override applies to.';
+$string['privacy:metadata:aiknowledgecheck_quizzes'] = 'Information about quizzes generated by users.';
+$string['privacy:metadata:aiknowledgecheck_quizzes:timecreated'] = 'The time when the quiz was generated.';
+$string['privacy:metadata:aiknowledgecheck_quizzes:title'] = 'The title of the generated quiz.';
+$string['privacy:metadata:aiknowledgecheck_quizzes:userid'] = 'The ID of the user who generated the quiz.';
+$string['privacy:metadata:essaygraderai'] = 'Topic data is sent to the Essay Grader AI service at lms-labs.com to generate quiz questions.';
+$string['privacy:metadata:essaygraderai:topicdata'] = 'The topic text submitted for AI question generation.';
+$string['question_of'] = 'Question {$a->current} of {$a->total}';
+$string['questions_correct'] = '{$a->correct} of {$a->total} correct';
+$string['questions_per_topic'] = 'Questions Per Topic';
+$string['questions_per_topic_help'] = 'Choose how many questions to generate for each topic. More questions provide better assessment coverage but use more credits.';
+$string['quiz_complete'] = 'Quiz Complete!';
+$string['quiz_ready'] = 'Knowledge Check Ready!';
+$string['quiz_settings'] = 'Quiz Settings';
+$string['regenerate_questions'] = 'Regenerate Questions';
+$string['report_completed'] = 'Completed';
+$string['report_no_options'] = 'No options defined.';
+$string['report_no_responses'] = 'No responses yet.';
+$string['report_openended'] = 'Open-Ended Responses';
+$string['report_student_completions'] = 'Student Completions';
+$string['retake_btn'] = 'Retake Quiz';
+$string['retakequiz'] = 'Retake Quiz';
+$string['retakesurvey']         = 'Retake Survey';
+$string['review'] = 'Review';
+$string['review_questions_btn'] = 'Review Questions';
+$string['save_changes'] = 'Save Changes';
+$string['save_settings'] = 'Save Settings';
+$string['scale_likert4agree']   = 'Likert 4-point — Agreement (Strongly Agree … Strongly Disagree)';
+$string['scale_likert5agree']   = 'Likert 5-point — Agreement (Strongly Agree … Strongly Disagree)';
+$string['scale_likert5freq']    = 'Likert 5-point — Frequency (Always … Never)';
+$string['scale_likert5imp']     = 'Likert 5-point — Importance (Very Important … Not Important at All)';
+$string['scale_likert5qual']    = 'Likert 5-point — Quality (Excellent … Very Poor)';
+$string['scale_likert5sat']     = 'Likert 5-point — Satisfaction (Very Satisfied … Very Dissatisfied)';
+$string['scale_nps5']           = 'Net Promoter 5-point (1-Very Poor … 5-Excellent)';
+$string['scale_yesno']          = 'Yes / No';
+$string['scale_yesnounsure']    = 'Yes / No / Unsure';
+$string['score'] = 'Score';
+$string['score_excellent'] = 'Excellent work!';
+$string['score_good'] = 'Good job!';
+$string['score_needs_improvement'] = 'Keep practicing!';
+$string['select_academic_level'] = 'Select academic level...';
+$string['select_country'] = 'Select country...';
+$string['select_education_type'] = 'Select education type...';
+$string['select_industry'] = 'Select industry...';
+$string['select_industry_first'] = 'Select industry first...';
+$string['select_job_level'] = 'Select job level...';
+$string['select_job_title'] = 'Select job title...';
+$string['select_state'] = 'Select state/region...';
+$string['select_vet_level'] = 'Select VET level...';
+$string['set_as_gate_image'] = 'Set as Gate Image';
+$string['settings_btn'] = 'Settings';
+$string['settings_language_warning'] = 'Changing language will regenerate questions and uses credits.';
+$string['showchapterstamps'] = 'Show chapter timestamp links';
+$string['showchapterstamps_help'] = 'When enabled, each question displays a clickable timestamp link that jumps the video to the point in the transcript where the question topic is covered. Timestamps are automatically identified by the AI from YouTube-style timestamps in the source content (e.g. "1:09"). Requires a video gate URL to be set.';
+$string['showvideoduringquiz'] = 'Show video while answering questions';
+$string['showvideoduringquiz_help'] = 'When enabled, the video player remains visible above the questions while the student is completing the quiz. When disabled (the default), the video is hidden once the student starts answering.';
+$string['siteid'] = 'Site ID';
+$string['siteid_desc'] = 'Your Moodle site ID from lms-labs.com. This should match your registered site domain.';
 $string['startAgain'] = 'Start Again';
-$string['attemptsettings'] = 'Attempt Settings';
-$string['attemptlimit'] = 'Maximum attempts';
-$string['attemptlimit_help'] = 'Set the maximum number of attempts allowed for this knowledge check. Enter 0 to allow unlimited attempts.';
-$string['unlimited'] = 'Unlimited';
-$string['attempt'] = 'Attempt';
-$string['attemptslimitreached'] = 'You have reached the attempt limit ({$a}).';
-
-// CC Email notifications.
-$string['ccemail'] = 'CC Email for Notifications';
-$string['ccemail_help'] = 'Enter email addresses (comma-separated) to receive notifications when students reach their maximum attempts. This is in addition to teacher notifications.';
-
-// Form labels.
-$string['topics_label'] = 'Topics to Assess';
+$string['startnewattempt'] = 'Retake';
+$string['startquiz'] = 'Start Quiz';
+$string['startsurvey']          = 'Start Survey';
+$string['state'] = 'State/Region';
+$string['state_act'] = 'Australian Capital Territory';
+$string['state_help'] = 'Optional. Select for state-specific legislation references.';
+$string['state_nsw'] = 'New South Wales';
+$string['state_nt'] = 'Northern Territory';
+$string['state_qld'] = 'Queensland';
+$string['state_sa'] = 'South Australia';
+$string['state_tas'] = 'Tasmania';
+$string['state_vic'] = 'Victoria';
+$string['state_wa'] = 'Western Australia';
+$string['students_view_message'] = 'This activity allows teachers to create AI-generated knowledge checks. Check back later for available quizzes.';
+$string['survey_mode_notice_body'] = 'This activity collects responses — there is no right/wrong scoring. Questions use the {$a} scale. Students see a completion message instead of a score.';
+$string['survey_mode_notice_title'] = 'Survey Mode is active';
+$string['survey_report_bystudent']    = 'Responses by Student';
+$string['survey_report_distribution'] = 'Response Distribution';
+$string['survey_report_export_csv']   = 'Export CSV';
+$string['survey_report_export_pdf']   = 'Print / Save PDF';
+$string['survey_report_freetext']     = 'Open-Ended Responses';
+$string['survey_report_heading']      = 'Survey Results';
+$string['survey_report_no_responses'] = 'No survey responses yet.';
+$string['survey_report_question']     = 'Question';
+$string['survey_report_responses']    = 'responses';
+$string['survey_report_student']      = 'Student';
+$string['survey_report_submitted']    = 'Submitted';
+$string['surveycomplete_msg']   = 'Thank you for completing the survey. Your responses have been recorded.';
+$string['surveycomplete_title'] = 'Survey Complete';
+$string['surveymode']           = 'Enable Survey Mode';
+$string['surveymode_header']    = 'Survey Mode';
+$string['surveymode_help']      = 'When enabled, this activity acts as a survey rather than a knowledge check. Students respond using the selected response scale and receive no correct/wrong feedback. The results screen shows a completion message instead of a score. Use the AI generation tools as normal — just paste your question list and the AI will format the questions for the chosen scale.';
+$string['surveyscale']          = 'Response Scale';
+$string['surveyscale_help']     = 'The response scale presented to students for every question. Choose a scale that best fits the type of feedback you are collecting.';
+$string['take_quiz_btn'] = 'Take Quiz';
+$string['text_source_label'] = 'Text source';
+$string['text_source_placeholder'] = 'Paste your text content here...';
+$string['timeended'] = 'Time Ended';
+$string['timespent'] = 'Time Spent';
+$string['timestarted'] = 'Time Started';
 $string['topics_help'] = 'Enter the topics, learning outcomes, or competency criteria you want to test. The AI will create multiple-choice questions based on each topic. One topic per line.';
+$string['topics_label'] = 'Topics to Assess';
 $string['topics_placeholder'] = 'e.g., Manual handling procedures
 Fire safety and evacuation
 Personal protective equipment';
-$string['questions_per_topic'] = 'Questions Per Topic';
-$string['questions_per_topic_help'] = 'Choose how many questions to generate for each topic. More questions provide better assessment coverage but use more credits.';
-
-// User questions.
+$string['total_questions'] = 'Questions';
+$string['total_topics'] = 'Topics';
+$string['totalallowed'] = 'Total Allowed';
+$string['unlimited'] = 'Unlimited';
 $string['use_own_questions'] = 'Use Your Own Questions';
 $string['use_own_questions_help'] = 'Already have questions written? Paste them here and the AI will create 4 answer options (1 correct, 3 distractors) plus voiceover explanations for each.';
 $string['use_own_questions_help_survey'] = 'Already have questions written? Paste one question stem per line. The response scale for this activity is applied automatically to each question — do not include answer options, they are added by the system.';
-$string['your_questions'] = 'Your Questions';
-$string['your_questions_placeholder'] = 'e.g., What is the correct procedure for manual handling?
-When should you report a workplace hazard?';
-$string['your_questions_placeholder_survey'] = 'e.g., Did the learning meet your expectations?
-Was the course content relevant to your role?
-Was the training delivery method effective for your learning style?';
-$string['your_questions_help'] = 'Enter your questions exactly as you want them to appear. The AI will generate professional answer options and audio explanations for correct and incorrect answers.';
-$string['your_questions_help_survey'] = 'Enter one question stem per line. Do not include answer options — the response scale ({$a}) is applied automatically to every question in this box. Use the Free Text Questions box below for any open-ended questions that need a typed response.';
-$string['survey_mode_notice_title'] = 'Survey Mode is active';
-$string['survey_mode_notice_body'] = 'This activity collects responses — there is no right/wrong scoring. Questions use the {$a} scale. Students see a completion message instead of a score.';
-
-// Context settings.
-$string['context_settings'] = 'Context Settings';
-$string['context_settings_help'] = 'Add workplace context to generate questions with realistic scenarios and industry-specific terminology.';
-$string['add_workplace_context'] = 'Add Workplace Context';
-$string['workplace_context_help'] = 'Enable this for questions set in realistic workplace situations. Questions will reference your specific industry, job roles, and location.';
-$string['country'] = 'Country';
-$string['country_help'] = 'Select your country for region-specific regulations, terminology, and examples.';
-$string['select_country'] = 'Select country...';
-$string['state'] = 'State/Region';
-$string['state_help'] = 'Optional. Select for state-specific legislation references.';
-$string['select_state'] = 'Select state/region...';
-$string['industry'] = 'Industry';
-$string['industry_help'] = 'Select your industry. Questions will include scenarios and terminology relevant to your sector.';
-$string['select_industry'] = 'Select industry...';
-$string['industry_sector'] = 'Sector';
-$string['industry_details'] = 'Industry Details';
-$string['industry_details_help'] = 'Add specific details about your workplace for more targeted questions.';
-$string['industry_details_placeholder'] = 'e.g., Commercial construction, Aged care facility, Mining site';
-$string['job_level'] = 'Job Level';
-$string['job_level_help'] = 'Select the target job level. Questions will be pitched at the appropriate complexity.';
-$string['select_job_level'] = 'Select job level...';
-$string['level_entry'] = 'Entry Level';
-$string['level_intermediate'] = 'Intermediate';
-$string['level_senior'] = 'Senior';
-$string['level_supervisor'] = 'Supervisor';
-$string['level_manager'] = 'Manager';
-$string['level_executive'] = 'Executive';
-$string['job_title'] = 'Job Title';
-$string['job_title_help'] = 'Select the target job role for questions that reference specific duties and responsibilities.';
-$string['select_job_title'] = 'Select job title...';
-$string['job_title_other'] = 'Other';
-$string['job_role'] = 'Job Role';
-$string['job_role_placeholder'] = 'e.g., Construction Worker, Nurse, Office Manager';
-
-// Education settings.
-$string['education_type'] = 'Education Type';
-$string['select_education_type'] = 'Select education type...';
-$string['education_vet'] = 'VET (Vocational Education & Training)';
-$string['education_academic'] = 'Academic (Higher Education)';
-$string['education_general'] = 'General Training';
-$string['vet_level'] = 'VET Level';
-$string['select_vet_level'] = 'Select VET level...';
+$string['userattempts'] = 'User Attempts';
+$string['username'] = 'User';
+$string['versionrepair_done'] = 'The recorded AI Knowledge Check version was repaired from {$a->from} to {$a->to}.';
+$string['versionrepair_gotonotifications'] = 'Continue to Notifications';
+$string['versionrepair_next'] = 'Continue to Site administration → Notifications so Moodle can run the normal upgrade and reconcile the Survey Mode database schema.';
+$string['versionrepair_notneeded'] = 'The AI Knowledge Check version record does not need repair.';
+$string['versionrepair_title'] = 'Repair AI Knowledge Check version';
+$string['vet_adv_diploma'] = 'Advanced Diploma';
 $string['vet_cert1'] = 'Certificate I';
 $string['vet_cert2'] = 'Certificate II';
 $string['vet_cert3'] = 'Certificate III';
 $string['vet_cert4'] = 'Certificate IV';
 $string['vet_diploma'] = 'Diploma';
-$string['vet_adv_diploma'] = 'Advanced Diploma';
-$string['academic_level'] = 'Academic Level';
-$string['select_academic_level'] = 'Select academic level...';
-$string['academic_undergraduate'] = 'Undergraduate';
-$string['academic_postgraduate'] = 'Postgraduate';
-$string['academic_masters'] = 'Masters';
-$string['academic_phd'] = 'PhD/Doctorate';
-$string['vet_tooltip_title'] = 'VET Training';
+$string['vet_level'] = 'VET Level';
 $string['vet_tooltip'] = 'Questions aligned to Australian Qualifications Framework (AQF) competency standards with practical workplace focus.';
-$string['academic_tooltip_title'] = 'Academic Education';
-$string['academic_tooltip'] = 'Questions aligned to higher education standards with theoretical depth and critical analysis focus.';
-$string['general_tooltip_title'] = 'General Training';
-$string['general_tooltip'] = 'Questions suitable for general workplace training, professional development, and non-accredited programs. No AQF level alignment required — practical, accessible questions for any audience.';
-
-// Extra instructions.
-$string['extra_instructions'] = 'Extra AI Instructions';
-$string['extra_instructions_help'] = 'Optional. Add custom instructions to guide how the AI creates questions. Great for adjusting reading level, focusing on specific aspects, or adding special requirements.';
-$string['extra_instructions_placeholder'] = 'e.g., "Use simple language at grade 6 reading level" or "Focus on safety procedures" or "Include specific regulatory references"';
-
-// Voice settings.
-$string['voiceover_enabled'] = 'Enable voiceover explanations';
-$string['voiceover_enabled_help'] = 'When enabled, students hear spoken explanations after answering each question. Turn off to skip audio generation and speed up quiz creation.';
-$string['voice_settings'] = 'Language & Voice Settings';
-$string['voice_settings_help'] = 'Choose the language and voice for all question text and audio explanations. When students answer, they\'ll hear a spoken explanation of the correct answer.';
-$string['voice_language'] = 'Language';
-$string['language_help'] = 'Select the language for questions and voiceover explanations. All content will be generated in this language.';
-$string['voice_gender'] = 'Voice Gender';
-$string['voice_gender_help'] = 'Choose whether the AI narrator uses a male or female voice for the spoken explanations.';
-$string['voice_female'] = 'Female';
-$string['voice_male'] = 'Male';
-$string['voice_style'] = 'Voice Style';
-$string['voice_style_help'] = 'Choose a voice personality. Different styles suit different training contexts (e.g., professional for compliance, friendly for onboarding).';
-
-// Languages - Complete Chirp 3 HD language list (51 languages).
-// English variants.
-$string['lang_en_au'] = 'English (Australia)';
-$string['lang_en_gb'] = 'English (UK)';
-$string['lang_en_in'] = 'English (India)';
-$string['lang_en_us'] = 'English (US)';
-
-// Spanish variants.
-$string['lang_es_es'] = 'Spanish (Spain)';
-$string['lang_es_us'] = 'Spanish (Latin America)';
-
-// French variants.
-$string['lang_fr_ca'] = 'French (Canada)';
-$string['lang_fr_fr'] = 'French (France)';
-
-// German.
-$string['lang_de_de'] = 'German';
-
-// Portuguese.
-$string['lang_pt_br'] = 'Portuguese (Brazil)';
-
-// Dutch variants.
-$string['lang_nl_be'] = 'Dutch (Belgium)';
-$string['lang_nl_nl'] = 'Dutch (Netherlands)';
-
-// Nordic languages.
-$string['lang_da_dk'] = 'Danish';
-$string['lang_fi_fi'] = 'Finnish';
-$string['lang_nb_no'] = 'Norwegian';
-$string['lang_sv_se'] = 'Swedish';
-
-// Eastern European languages.
-$string['lang_bg_bg'] = 'Bulgarian';
-$string['lang_cs_cz'] = 'Czech';
-$string['lang_hr_hr'] = 'Croatian';
-$string['lang_hu_hu'] = 'Hungarian';
-$string['lang_pl_pl'] = 'Polish';
-$string['lang_ro_ro'] = 'Romanian';
-$string['lang_ru_ru'] = 'Russian';
-$string['lang_sk_sk'] = 'Slovak';
-$string['lang_sl_si'] = 'Slovenian';
-$string['lang_sr_rs'] = 'Serbian';
-$string['lang_uk_ua'] = 'Ukrainian';
-
-// Baltic languages.
-$string['lang_et_ee'] = 'Estonian';
-$string['lang_lt_lt'] = 'Lithuanian';
-$string['lang_lv_lv'] = 'Latvian';
-
-// Southern European languages.
-$string['lang_el_gr'] = 'Greek';
-$string['lang_it_it'] = 'Italian';
-
-// East Asian languages.
-$string['lang_cmn_cn'] = 'Chinese (Mandarin)';
-$string['lang_ja_jp'] = 'Japanese';
-$string['lang_ko_kr'] = 'Korean';
-
-// Southeast Asian languages.
-$string['lang_id_id'] = 'Indonesian';
-$string['lang_th_th'] = 'Thai';
-$string['lang_vi_vn'] = 'Vietnamese';
-
-// South Asian languages.
-$string['lang_bn_in'] = 'Bengali';
-$string['lang_gu_in'] = 'Gujarati';
-$string['lang_hi_in'] = 'Hindi';
-$string['lang_kn_in'] = 'Kannada';
-$string['lang_ml_in'] = 'Malayalam';
-$string['lang_mr_in'] = 'Marathi';
-$string['lang_ta_in'] = 'Tamil';
-$string['lang_te_in'] = 'Telugu';
-$string['lang_ur_in'] = 'Urdu';
-
-// Middle Eastern languages.
-$string['lang_ar_xa'] = 'Arabic';
-$string['lang_he_il'] = 'Hebrew';
-$string['lang_tr_tr'] = 'Turkish';
-
-// African languages.
-$string['lang_sw_ke'] = 'Swahili (Kenya)';
-
-// Voice styles (Chirp 3 HD).
-$string['voice_aoede'] = 'Aoede (Warm)';
-$string['voice_kore'] = 'Kore (Professional)';
-$string['voice_leda'] = 'Leda (Clear)';
-$string['voice_zephyr'] = 'Zephyr (Gentle)';
-$string['voice_puck'] = 'Puck (Friendly)';
-$string['voice_charon'] = 'Charon (Deep)';
-$string['voice_fenrir'] = 'Fenrir (Strong)';
-$string['voice_orus'] = 'Orus (Authoritative)';
-
-// Preview section.
-$string['preview_section'] = 'Preview';
-$string['total_topics'] = 'Topics';
-$string['total_questions'] = 'Questions';
-$string['estimated_credits'] = 'Credits Required';
-
-// Buttons.
-$string['generate_btn'] = 'Generate Knowledge Check';
-$string['take_quiz_btn'] = 'Take Quiz';
-$string['review_questions_btn'] = 'Review Questions';
-$string['retake_btn'] = 'Retake Quiz';
-
-// Progress.
-$string['generating'] = 'Generating Knowledge Check...';
-$string['initializing'] = 'Initializing...';
-$string['quiz_ready'] = 'Knowledge Check Ready!';
-
-// Quiz player.
-$string['question_of'] = 'Question {$a->current} of {$a->total}';
-$string['check_answer'] = 'Check Answer';
-$string['next_question'] = 'Next Question';
-$string['finish_quiz'] = 'Finish Quiz';
-$string['correct'] = 'Correct!';
-$string['incorrect'] = 'Incorrect';
-$string['your_score'] = 'Your Score';
-$string['questions_correct'] = '{$a->correct} of {$a->total} correct';
-$string['play_explanation'] = 'Play Explanation';
-$string['pause_explanation'] = 'Pause';
-
-// Results.
-$string['quiz_complete'] = 'Quiz Complete!';
-$string['score_excellent'] = 'Excellent work!';
-$string['score_good'] = 'Good job!';
-$string['score_needs_improvement'] = 'Keep practicing!';
-
-// Reports and attempts.
-$string['attemptsreport'] = 'Attempts Report';
-$string['noattempts'] = 'No attempts yet.';
-$string['username'] = 'User';
-$string['attemptno'] = 'Attempt #';
-$string['score'] = 'Score';
-$string['timestarted'] = 'Time Started';
-$string['timeended'] = 'Time Ended';
-$string['timespent'] = 'Time Spent';
-$string['inprogress'] = 'In Progress';
-$string['review'] = 'Review';
-$string['startquiz'] = 'Start Quiz';
-$string['retakequiz'] = 'Retake Quiz';
-$string['startnewattempt'] = 'Retake';
-$string['backtocourse'] = 'Back to Course';
-
-// More attempts management.
-$string['moreattempts'] = 'More Attempts';
-$string['moreattemptsheading'] = 'User Extra Attempts';
-$string['userattempts'] = 'User Attempts';
-$string['attemptsused'] = 'Attempts Used';
-$string['attemptsallowed'] = 'Attempts Allowed';
-$string['additionalattempts'] = 'Additional Attempts';
-$string['totalallowed'] = 'Total Allowed';
-$string['grantplusone'] = 'Grant +1';
-$string['bulkgrantplusone'] = 'Grant +1 to Selected';
-$string['view'] = 'View';
-$string['actions'] = 'Actions';
-
-// Notifications.
-$string['messageprovider:allattemptsused'] = 'Notification when all attempts are used';
-$string['allattemptsused_subject'] = 'All attempts used: {$a->activityname}';
-$string['allattemptsused_body'] = 'User {$a->fullname} has used all {$a->limit} attempts for "{$a->activityname}" in the course "{$a->coursename}". Please review and, if appropriate, grant additional attempts at: {$a->overrideurl}';
-
-// Completion.
-$string['completionallcorrect'] = 'All answers must be correct';
-$string['completionallcorrect_help'] = 'When enabled, the activity will only be marked as complete when the student answers all questions correctly in a single attempt.';
-$string['completiondetail:completionallcorrect'] = 'Answer all questions correctly';
-$string['completionpassgrade'] = 'Achieve passing grade';
-$string['completionpassgrade_help'] = 'When enabled, the activity will be marked as complete when the student achieves the passing grade percentage set in the Grade settings section. Their best attempt score is used.';
-$string['completiondetail:completionpassgrade'] = 'Achieve passing grade';
-
-// Errors.
-$string['error_nocredits'] = 'Insufficient credits. Please purchase more credits at lms-labs.com.';
-$string['error_generation'] = 'An error occurred while generating the knowledge check. Please try again.';
-$string['error_invalid_session'] = 'Invalid session. Please refresh the page and try again.';
-$string['error_no_topics'] = 'Please enter at least one topic to generate questions.';
-$string['error:negativeattempts'] = 'Maximum attempts cannot be negative.';
-$string['error:invalidemail'] = 'Invalid email address format. Use comma-separated valid emails.';
-
-// Activity list.
-$string['noknowledgechecks'] = 'No AI Knowledge Check activities in this course.';
-
-// Privacy.
-$string['privacy:metadata:aiknowledgecheck_quizzes'] = 'Information about quizzes generated by users.';
-$string['privacy:metadata:aiknowledgecheck_quizzes:userid'] = 'The ID of the user who generated the quiz.';
-$string['privacy:metadata:aiknowledgecheck_quizzes:title'] = 'The title of the generated quiz.';
-$string['privacy:metadata:aiknowledgecheck_quizzes:timecreated'] = 'The time when the quiz was generated.';
-$string['privacy:metadata:aiknowledgecheck_attempts'] = 'Information about user attempts.';
-$string['privacy:metadata:aiknowledgecheck_attempts:userid'] = 'The ID of the user who made the attempt.';
-$string['privacy:metadata:aiknowledgecheck_overrides'] = 'Per-user overrides for a knowledge check (e.g. extra attempts).';
-$string['privacy:metadata:aiknowledgecheck_overrides:userid'] = 'The ID of the user the override applies to.';
-$string['privacy:metadata:aiknowledgecheck_overrides:extraattempts'] = 'The number of extra attempts granted to the user.';
-$string['privacy:metadata:aiknowledgecheck_attempts:answers'] = 'The answers provided by the user.';
-$string['privacy:metadata:aiknowledgecheck_attempts:timestarted'] = 'The time when the attempt was started.';
-$string['privacy:metadata:aiknowledgecheck_attempts:timeended'] = 'The time when the attempt was completed.';
-$string['privacy:metadata:essaygraderai'] = 'Topic data is sent to the Essay Grader AI service at lms-labs.com to generate quiz questions.';
-$string['privacy:metadata:essaygraderai:topicdata'] = 'The topic text submitted for AI question generation.';
-
-// PDF Upload.
-$string['pdf_upload_toggle'] = 'Generate from PDF';
-$string['pdf_upload_help'] = 'Upload one or more PDF documents and the AI will create questions based on the content. Great for turning course materials, textbooks, or policies into knowledge checks.';
-$string['pdf_file_label'] = 'PDF Documents';
-$string['pdf_drop_text'] = 'Click to select or drag a PDF file here';
-$string['pdf_drop_text_multi'] = 'Click to select or drag PDF files here';
-$string['pdf_max_size'] = 'Maximum file size: 10 MB per file';
-$string['pdf_question_count'] = 'Number of Questions';
-$string['pdf_question_count_help'] = 'Choose how many questions to generate from each PDF. More questions provide broader coverage but use more credits (1 credit per question, 2 with voiceover).';
-$string['error_pdf_too_large'] = 'PDF file is too large. Maximum size is 10 MB.';
-$string['error_pdf_invalid'] = 'Invalid file type. Please upload a PDF document.';
-$string['error_pdf_empty'] = 'Could not extract any text from the PDF. Please try a different document.';
-$string['pdf_apply_all'] = 'Same for all PDFs:';
-
-// Paste content.
-$string['paste_content_toggle'] = 'Generate from pasted content';
-$string['paste_content_help'] = 'Paste text from documents, policies, or course materials and the AI will create questions based on the content.';
-$string['add_text_source'] = 'Add another text source';
-$string['text_source_placeholder'] = 'Paste your text content here...';
-$string['text_source_label'] = 'Text source';
-$string['error_text_empty'] = 'Please add at least one text source with content.';
-$string['error_text_too_long'] = 'Text content is too long. Maximum 50,000 characters per source.';
-
-// Grade settings.
-$string['gradesettings'] = 'Grade settings';
-$string['maximumgrade'] = 'Maximum grade';
-$string['gradetopass'] = 'Grade to pass';
-$string['passinggrade'] = 'Grade to pass';
-$string['passinggrade_help'] = 'Set the minimum grade a student must achieve to pass this knowledge check. Enter a number between 0 and the maximum grade (e.g. 80 when max grade is 100). This is used by the Moodle gradebook and completion conditions to show pass/fail status. Set to 0 to disable.';
-$string['nopassinggrade'] = 'No passing grade';
-$string['error:invalidgradepass'] = 'Grade to pass must be a valid number (0 or above).';
-$string['error:gradepasstoohigh'] = 'Grade to pass cannot be higher than the maximum grade.';
-
-// Video Gate.
+$string['vet_tooltip_title'] = 'VET Training';
 $string['videogate_header'] = 'Video Gate';
-$string['videourl'] = 'YouTube video URL';
-$string['videourl_help'] = 'Paste a YouTube video URL. Students must watch the video before they can start the quiz. Leave blank to disable the video gate.';
-$string['videorequirement'] = 'Watch requirement';
-$string['videorequirement_help'] = 'Choose how much of the video students must watch before they can proceed. "No requirement" shows the video but does not gate the start button.';
-$string['videoreq_none'] = 'No requirement (video shown but not required)';
-$string['videoreq_seconds'] = 'Watch for a minimum number of seconds';
-$string['videoreq_full'] = 'Watch the entire video';
-$string['videominseconds'] = 'Minimum seconds to watch';
-$string['videominseconds_help'] = 'The number of seconds students must watch before the start button becomes available. Only used when the watch requirement is set to "minimum seconds".';
-$string['error:invalidvideourl'] = 'Please enter a valid YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...).';
-$string['error:videominseconds'] = 'Minimum seconds must be a positive number when watch requirement is set to seconds.';
-$string['showvideoduringquiz'] = 'Show video while answering questions';
-$string['showvideoduringquiz_help'] = 'When enabled, the video player remains visible above the questions while the student is completing the quiz. When disabled (the default), the video is hidden once the student starts answering.';
-$string['showchapterstamps'] = 'Show chapter timestamp links';
-$string['showchapterstamps_help'] = 'When enabled, each question displays a clickable timestamp link that jumps the video to the point in the transcript where the question topic is covered. Timestamps are automatically identified by the AI from YouTube-style timestamps in the source content (e.g. "1:09"). Requires a video gate URL to be set.';
-$string['videogate_watchvideo'] = 'Watch this video before starting';
+$string['videogate_unlocked'] = 'Video requirement met — you can now start the quiz';
 $string['videogate_watchfull'] = 'Watch the entire video to unlock the quiz';
 $string['videogate_watchseconds'] = 'Watch at least {$a} seconds to unlock the quiz';
-$string['videogate_unlocked'] = 'Video requirement met — you can now start the quiz';
-
-// Criteria mapping.
-$string['criteria_label'] = 'Performance Criteria (optional)';
-$string['criteria_placeholder'] = "e.g. HLTWHS001-1.1, 1.2, 1.3\nHLTWHS001-2.1, 2.2\nHLTWHS001-3.1, 3.2, 3.3";
-$string['criteria_help'] = 'Enter one criteria entry per line, aligned with your topics above. Each line will be mapped to the corresponding topic in the Excel export. Leave blank if not required.';
-
-// Audio Gate.
-$string['audiogate_header'] = 'Audio Gate';
-$string['audiourl'] = 'Audio file URL';
-$string['audiourl_help'] = 'Paste a direct URL to an MP3 or other audio file. Students must listen to the audio before they can start the quiz. Leave blank to disable the audio gate.';
-$string['audiorequirement'] = 'Listen requirement';
-$string['audiorequirement_help'] = 'Choose how much of the audio students must listen to before they can proceed. "No requirement" shows the player but does not gate the start button.';
-$string['audioreq_none'] = 'No requirement (audio shown but not required)';
-$string['audioreq_seconds'] = 'Listen for a minimum number of seconds';
-$string['audioreq_full'] = 'Listen to the entire audio';
-$string['audiominseconds'] = 'Minimum seconds to listen';
-$string['audiominseconds_help'] = 'The number of seconds students must listen before the start button becomes available. Only used when the listen requirement is set to "minimum seconds".';
-$string['error:invalidaudiourl'] = 'Please enter a valid URL starting with https:// (e.g. https://example.com/audio.mp3).';
-$string['error:audiominseconds'] = 'Minimum seconds must be a positive number when listen requirement is set to seconds.';
-$string['audiogate_listenaudio'] = 'Listen to this audio before starting';
-$string['audiogate_listenfull'] = 'Listen to the entire audio to unlock the quiz';
-$string['audiogate_listenseconds'] = 'Listen for at least {$a} seconds to unlock the quiz';
-$string['audiogate_unlocked'] = 'Audio requirement met — you can now start the quiz';
-
-// Image Gate.
-$string['imagegate_header'] = 'Image Gate';
-$string['imagegate_image'] = 'Image';
-$string['imagegate_image_help'] = 'Upload an image (JPG, PNG, GIF, WebP) to enable the Image Gate. Students must click "I\'ve seen this image" before they can start the quiz. Leave empty to disable the image gate. You can also generate an AI image directly on the activity page (5 credits).';
-$string['imageurl'] = 'Image URL';
-$string['imageurl_help'] = 'Paste a direct URL to an image file (JPG, PNG, GIF, WebP) or leave blank to disable the image gate. Students must click "I\'ve seen this image" before they can start the quiz. You can also generate an image on the activity page using the AI Image Generator (5 credits). Data URLs from AI generation are also accepted here.';
-$string['imagegate_viewimage'] = 'View this image before starting';
-$string['imagegate_acknowledge'] = 'I\'ve seen this image — continue to quiz';
-$string['imagegate_unlocked'] = 'Image acknowledged — you can now start the quiz';
-$string['error:invalidimageurl'] = 'Please enter a valid URL starting with https:// or a data URL (data:image/...).';
-$string['imagegate_generateimage'] = 'Generate Image with AI';
-$string['imagegate_generating'] = 'Generating image...';
-$string['imagegate_generated'] = 'Image generated — save it below or use it in the Image Gate setting.';
-$string['imagegate_error'] = 'Image generation failed. Please try again or paste a URL.';
-$string['imagegate_credits_cost'] = '5 credits per image (Imagen 4 Ultra)';
-$string['imagegate_question_enable'] = 'Show image with this question';
-$string['imagegate_question_url_placeholder'] = 'https://example.com/image.jpg';
-
-// ADD-KC-MEDIAPER-Q (v1.5.120): Per-question video lang strings.
-$string['perq_video_enable'] = 'Show YouTube video with this question';
-$string['perq_video_url_placeholder'] = 'https://www.youtube.com/watch?v=...';
-$string['perq_video_enable_help'] = 'When enabled, an embedded YouTube video appears above the question text. Students must click "I\'ve reviewed this content — Continue" before the answer options unlock. Paste the full YouTube watch URL (e.g. https://www.youtube.com/watch?v=XXXXXXXXXXX) or a short youtu.be URL.';
-
-// ADD-KC-MEDIAPER-Q (v1.5.120): Per-question audio lang strings.
-$string['perq_audio_enable'] = 'Play audio clip with this question';
-$string['perq_audio_url_placeholder'] = 'https://example.com/audio.mp3';
-$string['perq_audio_enable_help'] = 'When enabled, an HTML5 audio player appears above the question text. Students must click "I\'ve reviewed this content — Continue" before the answer options unlock. Paste a direct URL to any audio file (MP3, OGG, WAV, M4A, etc.) accessible over HTTPS. This is separate from the AI-generated voiceover explanation audio that plays after the student checks their answer.';
-$string['imagegate_question_generate'] = 'Generate image (5 credits)';
-$string['imagegate_not_configured'] = 'Image generation is not configured. Please set a Google API key in the plugin settings or site-wide AI config.';
-
-// ADD-SURVEY-MODE (v1.5.126): Survey mode lang strings.
-$string['surveymode_header']    = 'Survey Mode';
-$string['surveymode']           = 'Enable Survey Mode';
-$string['surveymode_help']      = 'When enabled, this activity acts as a survey rather than a knowledge check. Students respond using the selected response scale and receive no correct/wrong feedback. The results screen shows a completion message instead of a score. Use the AI generation tools as normal — just paste your question list and the AI will format the questions for the chosen scale.';
-$string['surveyscale']          = 'Response Scale';
-$string['surveyscale_help']     = 'The response scale presented to students for every question. Choose a scale that best fits the type of feedback you are collecting.';
-
-// Survey scale display names.
-$string['scale_likert5agree']   = 'Likert 5-point — Agreement (Strongly Agree … Strongly Disagree)';
-$string['scale_likert5sat']     = 'Likert 5-point — Satisfaction (Very Satisfied … Very Dissatisfied)';
-$string['scale_likert5freq']    = 'Likert 5-point — Frequency (Always … Never)';
-$string['scale_likert5qual']    = 'Likert 5-point — Quality (Excellent … Very Poor)';
-$string['scale_likert5imp']     = 'Likert 5-point — Importance (Very Important … Not Important at All)';
-$string['scale_likert4agree']   = 'Likert 4-point — Agreement (Strongly Agree … Strongly Disagree)';
-$string['scale_yesno']          = 'Yes / No';
-$string['scale_yesnounsure']    = 'Yes / No / Unsure';
-$string['scale_nps5']           = 'Net Promoter 5-point (1-Very Poor … 5-Excellent)';
-
-// Survey student-facing strings.
-$string['startsurvey']          = 'Start Survey';
-$string['retakesurvey']         = 'Retake Survey';
-$string['surveycomplete_title'] = 'Survey Complete';
-$string['surveycomplete_msg']   = 'Thank you for completing the survey. Your responses have been recorded.';
-$string['freetext_questions_label']   = 'Free Text Questions (Optional)';
-$string['freetext_questions_help']    = 'These open-ended questions appear after the scale questions. Students type their own response instead of selecting a scale option. Enter one question per line.';
-$string['freetext_questions_placeholder'] = "What suggestions do you have for improving this training?\nIs there anything else you would like to share?";
-$string['survey_report_heading']      = 'Survey Results';
-$string['survey_report_responses']    = 'responses';
-$string['survey_report_distribution'] = 'Response Distribution';
-$string['survey_report_freetext']     = 'Open-Ended Responses';
-$string['survey_report_bystudent']    = 'Responses by Student';
-$string['survey_report_export_csv']   = 'Export CSV';
-$string['survey_report_export_pdf']   = 'Print / Save PDF';
-$string['survey_report_no_responses'] = 'No survey responses yet.';
-$string['survey_report_question']     = 'Question';
-$string['survey_report_student']      = 'Student';
-$string['survey_report_submitted']    = 'Submitted';
-$string['versionrepair_title'] = 'Repair AI Knowledge Check version';
-$string['versionrepair_notneeded'] = 'The AI Knowledge Check version record does not need repair.';
-$string['versionrepair_done'] = 'The recorded AI Knowledge Check version was repaired from {$a->from} to {$a->to}.';
-$string['versionrepair_next'] = 'Continue to Site administration → Notifications so Moodle can run the normal upgrade and reconcile the Survey Mode database schema.';
-$string['versionrepair_gotonotifications'] = 'Continue to Notifications';
-
-// Events.
-$string['eventcoursemoduleviewed'] = 'Course module viewed';
-
-// MIGRATE-EXTERNAL-SERVICES (v1.5.144): user-facing errors returned by the External
-// Services layer. Declared here rather than hard-coded so they can be translated.
-$string['error:notconfigured'] = 'This plugin is not configured. Ask an administrator to set the Site ID and API Key under Site administration → Plugins → Activity modules → AI Knowledge Check.';
-$string['error:connectionfailed'] = 'Could not connect to the AI service. Please try again shortly.';
-$string['error:invalidresponse'] = 'The AI service returned an unexpected response.';
-$string['error:apihttp'] = 'The AI service returned an error (HTTP {$a}).';
-$string['error:statuscheckfailed'] = 'Could not check the generation status. Please try again shortly.';
-// MIGRATE-EXTERNAL-SERVICES (v1.5.152): errors for the remaining migrated actions. These
-// were hard-coded English strings inside ajax.php and are declared here so they translate.
-$string['error:topicstoolong'] = 'The topics text is too long. Please keep it under 10,000 characters.';
-$string['error:toomanytextsources'] = 'You can generate from a maximum of 10 text sources at a time.';
-$string['error:invalidquestions'] = 'The question data could not be read. Please reload the page and try again.';
-$string['error:zeroquestions'] = 'Cannot save zero questions — this would delete all existing questions. Reload the page and try again.';
-$string['error:emptyprompt'] = 'An image prompt is required.';
-$string['error:invalidimageurl'] = 'Invalid image URL format. Use https:// or a data:image/(png|jpg|gif|webp) URL.';
+$string['videogate_watchvideo'] = 'Watch this video before starting';
+$string['videominseconds'] = 'Minimum seconds to watch';
+$string['videominseconds_help'] = 'The number of seconds students must watch before the start button becomes available. Only used when the watch requirement is set to "minimum seconds".';
+$string['videoreq_full'] = 'Watch the entire video';
+$string['videoreq_none'] = 'No requirement (video shown but not required)';
+$string['videoreq_seconds'] = 'Watch for a minimum number of seconds';
+$string['videorequirement'] = 'Watch requirement';
+$string['videorequirement_help'] = 'Choose how much of the video students must watch before they can proceed. "No requirement" shows the video but does not gate the start button.';
+$string['videourl'] = 'YouTube video URL';
+$string['videourl_help'] = 'Paste a YouTube video URL. Students must watch the video before they can start the quiz. Leave blank to disable the video gate.';
+$string['view'] = 'View';
+$string['voice_aoede'] = "Aoede (warm, friendly)";
+$string['voice_charon'] = "Charon (deep, authoritative)";
+$string['voice_female'] = 'Female';
+$string['voice_fenrir'] = "Fenrir (warm, mature)";
+$string['voice_gender'] = 'Voice Gender';
+$string['voice_gender_help'] = 'Choose whether the AI narrator uses a male or female voice for the spoken explanations.';
+$string['voice_kore'] = "Kore (clear, professional)";
+$string['voice_language'] = 'Language';
+$string['voice_leda'] = "Leda (soft, nurturing)";
+$string['voice_male'] = 'Male';
+$string['voice_orus'] = "Orus (clear, professional)";
+$string['voice_puck'] = "Puck (friendly, casual)";
+$string['voice_settings'] = 'Language & Voice Settings';
+$string['voice_settings_heading'] = 'Voice Settings';
+$string['voice_settings_help'] = 'Choose the language and voice for all question text and audio explanations. When students answer, they\'ll hear a spoken explanation of the correct answer.';
+$string['voice_style'] = 'Voice Style';
+$string['voice_style_help'] = 'Choose a voice personality. Different styles suit different training contexts (e.g., professional for compliance, friendly for onboarding).';
+$string['voice_zephyr'] = "Zephyr (energetic, youthful)";
+$string['voiceover_enabled'] = 'Enable voiceover explanations';
+$string['voiceover_enabled_help'] = 'When enabled, students hear spoken explanations after answering each question. Turn off to skip audio generation and speed up quiz creation.';
+$string['voiceover_header'] = 'Voiceover';
+$string['voiceover_toggle_help'] = 'AI-generated voice reads explanations aloud after each answer.';
+$string['voiceover_toggle_label'] = 'Enable voiceover narration';
+$string['workplace_context_help'] = 'Enable this for questions set in realistic workplace situations. Questions will reference your specific industry, job roles, and location.';
+$string['your_balance'] = 'Your balance:';
+$string['your_questions'] = 'Your Questions';
+$string['your_questions_help'] = 'Enter your questions exactly as you want them to appear. The AI will generate professional answer options and audio explanations for correct and incorrect answers.';
+$string['your_questions_help_survey'] = 'Enter one question stem per line. Do not include answer options — the response scale ({$a}) is applied automatically to every question in this box. Use the Free Text Questions box below for any open-ended questions that need a typed response.';
+$string['your_questions_placeholder'] = 'e.g., What is the correct procedure for manual handling?
+When should you report a workplace hazard?';
+$string['your_questions_placeholder_survey'] = 'e.g., Did the learning meet your expectations?
+Was the course content relevant to your role?
+Was the training delivery method effective for your learning style?';
+$string['your_score'] = 'Your Score';

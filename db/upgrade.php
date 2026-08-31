@@ -1,5 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -150,7 +149,16 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     // Add completionpassgrade field for grade-based completion (v1.3.47).
     if ($oldversion < 2025120147) {
         $table = new xmldb_table('aiknowledgecheck');
-        $field = new xmldb_field('completionpassgrade', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'completionallcorrect');
+        $field = new xmldb_field(
+            'completionpassgrade',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'completionallcorrect'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -395,7 +403,16 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     // restored in v1.5.30.
     if ($oldversion < 2026072817) {
         $table  = new xmldb_table('aiknowledgecheck');
-        $field  = new xmldb_field('aftercompletion', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'restart', 'audiominseconds');
+        $field  = new xmldb_field(
+            'aftercompletion',
+            XMLDB_TYPE_CHAR,
+            '20',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'restart',
+            'audiominseconds'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -666,7 +683,16 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     // (showchapterstamps). Backfilled in v1.5.58 below with field_exists() guards.
     if ($oldversion < 2026072846) {
         $table = new xmldb_table('aiknowledgecheck');
-        $field = new xmldb_field('showchapterstamps', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'showvideoduringquiz');
+        $field = new xmldb_field(
+            'showchapterstamps',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'showvideoduringquiz'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -686,12 +712,30 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
     if ($oldversion < 2026072847) {
         $table = new xmldb_table('aiknowledgecheck');
 
-        $field1 = new xmldb_field('showvideoduringquiz', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'videominseconds');
+        $field1 = new xmldb_field(
+            'showvideoduringquiz',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'videominseconds'
+        );
         if (!$dbman->field_exists($table, $field1)) {
             $dbman->add_field($table, $field1);
         }
 
-        $field2 = new xmldb_field('showchapterstamps', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'showvideoduringquiz');
+        $field2 = new xmldb_field(
+            'showchapterstamps',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'showvideoduringquiz'
+        );
         if (!$dbman->field_exists($table, $field2)) {
             $dbman->add_field($table, $field2);
         }
@@ -940,7 +984,11 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         // No DB schema changes in this release — bump version only.
         upgrade_mod_savepoint(true, 2026072863, 'aiknowledgecheck');
     }
-    // Release v1.5.75: AMD ENCODING FIX: All non-ASCII characters (em dashes, arrows, box-drawing chars, ellipsis, bullets, emoji, accented Latin) scrubbed from all AMD JS files (amd/src, amd/build, amd/build/*.min.js). Root cause of Moodle primary/secondary navigation menus disappearing site-wide: non-ASCII bytes in any installed plugin's AMD file cause a SyntaxError inside RequireJS's first.js bundle, throwing "No define call for core/first" and aborting the entire AMD module chain. No PHP, DB schema, or functional changes in this release.
+    // Release v1.5.75: AMD ENCODING FIX: All non-ASCII characters (em dashes, arrows, box-drawing chars, ellipsis, bullets, emoji,
+    // accented Latin) scrubbed from all AMD JS files (amd/src, amd/build, amd/build/*.min.js). Root cause of Moodle
+    // primary/secondary navigation menus disappearing site-wide: non-ASCII bytes in any installed plugin's AMD file cause a
+    // SyntaxError inside RequireJS's first.js bundle, throwing "No define call for core/first" and aborting the entire AMD module
+    // chain. No PHP, DB schema, or functional changes in this release.
     if ($oldversion < 2026072864) {
         upgrade_mod_savepoint(true, 2026072864, 'aiknowledgecheck');
     }
@@ -1335,7 +1383,16 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
         // Add per-question video enabled flag.
-        $field = new xmldb_field('questionvideoenabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'questionvideourl');
+        $field = new xmldb_field(
+            'questionvideoenabled',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'questionvideourl'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -1345,7 +1402,16 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
         // Add per-question audio enabled flag.
-        $field = new xmldb_field('questionaudioenabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'questionaudiourl');
+        $field = new xmldb_field(
+            'questionaudioenabled',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'questionaudiourl'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }

@@ -1,7 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.MissingDocblock.File
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -254,7 +251,11 @@ echo html_writer::end_tag('datalist');
 echo ' ' . html_writer::link($allurl, get_string('allparticipants'), ['class' => 'btn btn-link p-1']);
 // L-5: HEX-escape so a display name containing </script> or quotes can't break out of the
 // inline JSON <script> block (defence-in-depth on top of Moodle's PARAM_NOTAGS on names).
-echo html_writer::tag('script', json_encode($useroptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ['type' => 'application/json', 'id' => 'kc-user-map']);
+echo html_writer::tag(
+    'script',
+    json_encode($useroptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
+    ['type' => 'application/json', 'id' => 'kc-user-map']
+);
 echo html_writer::end_div();
 
 // User picker JS.
@@ -289,7 +290,7 @@ $js = <<<JS
 JS;
 $PAGE->requires->js_init_code($js);
 
-// ── Data loading ──────────────────────────────────────────────────────────────.
+// Data loading.
 
 // Total quiz questions — used as fixed denominator for all attempt scores.
 $totalqs = (int)$DB->count_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $knowledgecheck->id]);
@@ -363,9 +364,9 @@ if (!empty($attempts)) {
 
 // Localised labels.
 $timespentlabel = get_string_manager()->string_exists('timespent', 'mod_aiknowledgecheck')
-    ? get_string('timespent', 'mod_aiknowledgecheck') : 'Time Spent';
+    ? get_string('timespent', 'mod_aiknowledgecheck') : get_string('timespent', 'mod_aiknowledgecheck');
 
-// ── Group attempts by user ────────────────────────────────────────────────────.
+// Group attempts by user.
 // Each row shows THAT ATTEMPT'S actual score (not a running maximum).
 // The "Best:" summary shown in the accordion header is the true maximum.
 // The correctcount field already includes carry-forward answers for retry-mode attempts:
@@ -388,7 +389,7 @@ foreach ($attempts as $a) {
     }
     $counters[$uid]++;
 
-    // ── Per-attempt correct count ─────────────────────────────────────────────.
+    // Per-attempt correct count.
     // Use the stored correctcount directly. For "Retry Wrong Answers" mode,
     // ajax.php pre-saves carry-forward correct answers so correctcount already
     // reflects the cumulative total (not just newly answered questions).
@@ -420,7 +421,7 @@ foreach ($attempts as $a) {
         $byuser[$uid]['bestcorrect'] = $correctcount;
     }
 
-    // ── Times — use aliased attempt columns (avoid user-table collision) ───────.
+    // Times — use aliased attempt columns (avoid user-table collision).
     $startts = 0;
     $timestarted = '';
     if (!empty($a->timestarted)) {
@@ -450,7 +451,7 @@ foreach ($attempts as $a) {
         $timespentstr = get_string('inprogress', 'mod_aiknowledgecheck');
     }
 
-    // ── Attempt label (X/max) ─────────────────────────────────────────────────.
+    // Attempt label (X/max).
     $extra = $extrabyuser[$uid] ?? 0;
     $effectivemax = ($basemax > 0) ? ($basemax + max(0, (int)$extra)) : 0;
     $attemptno = $counters[$uid] . '/' . ($effectivemax > 0 ? $effectivemax : '∞');
@@ -465,7 +466,7 @@ foreach ($attempts as $a) {
     ];
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────.
+// Render.
 
 // ADD-SURVEY-REPORT (v1.5.127): For survey mode, show response distribution and freetext responses
 // instead of the standard score accordion.
@@ -548,22 +549,34 @@ if (!empty($knowledgecheck->surveymode)) {
         .kc-survey-report { max-width: 900px; }
         .kc-survey-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
         .kc-survey-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-        .kc-survey-stat-chip { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px 12px; font-size: 0.85em; color: #495057; }
+        .kc-survey-stat-chip {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px 12px; font-size: 0.85em;
+            color: #495057;
+        }
         .kc-survey-stat-chip strong { color: #212529; }
         .kc-survey-q-block { border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 16px; overflow: hidden; }
-        .kc-survey-q-header { background: #f8f9fa; padding: 12px 16px; font-weight: 600; font-size: 0.95em; border-bottom: 1px solid #dee2e6; }
-        .kc-survey-q-num { display: inline-block; background: #667eea; color: #fff; border-radius: 50%; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 0.78em; font-weight: 700; margin-right: 8px; vertical-align: middle; }
+        .kc-survey-q-header {
+            background: #f8f9fa; padding: 12px 16px; font-weight: 600; font-size: 0.95em; border-bottom: 1px solid #dee2e6;
+        }
+        .kc-survey-q-num {
+            display: inline-block; background: #667eea; color: #fff; border-radius: 50%; width: 22px; height: 22px;
+            line-height: 22px; text-align: center; font-size: 0.78em; font-weight: 700; margin-right: 8px; vertical-align: middle;
+        }
         .kc-survey-q-body { padding: 14px 16px; }
         .kc-survey-bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9em; }
         .kc-survey-bar-label { min-width: 180px; max-width: 220px; padding-right: 10px; color: #495057; word-break: break-word; }
-        .kc-survey-bar-wrap { flex: 1; background: #e9ecef; border-radius: 3px; height: 18px; margin-right: 10px; overflow: hidden; }
+        .kc-survey-bar-wrap {
+            flex: 1; background: #e9ecef; border-radius: 3px; height: 18px; margin-right: 10px; overflow: hidden;
+        }
         .kc-survey-bar-fill { height: 18px; background: #667eea; border-radius: 3px; transition: width 0.3s; min-width: 2px; }
         .kc-survey-bar-count { min-width: 60px; color: #6c757d; font-size: 0.85em; }
         .kc-survey-q-noresp { color: #9ca3af; font-size: 0.88em; font-style: italic; padding: 4px 0; }
         .kc-survey-freetext-section { margin-top: 24px; }
         .kc-survey-freetext-section h3 { font-size: 1em; font-weight: 700; margin-bottom: 12px; color: #374151; }
         .kc-survey-ft-block { border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 16px; overflow: hidden; }
-        .kc-survey-ft-header { background: #fff8ee; padding: 10px 16px; font-weight: 600; font-size: 0.93em; border-bottom: 1px solid #dee2e6; }
+        .kc-survey-ft-header {
+            background: #fff8ee; padding: 10px 16px; font-weight: 600; font-size: 0.93em; border-bottom: 1px solid #dee2e6;
+        }
         .kc-survey-ft-body { padding: 0; }
         .kc-survey-ft-row { padding: 10px 16px; border-bottom: 1px solid #f3f4f6; display: flex; flex-wrap: wrap; gap: 6px; }
         .kc-survey-ft-row:last-child { border-bottom: 0; }
@@ -582,11 +595,18 @@ if (!empty($knowledgecheck->surveymode)) {
     echo html_writer::start_div('kc-survey-actions');
     echo html_writer::link(
         $csvurl,
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" ' .
+        'stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;">' .
+        '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/>' .
+        '<line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV',
         ['class' => 'btn btn-secondary btn-sm']
     );
     echo ' <button onclick="window.print()" class="btn btn-secondary btn-sm" style="margin-left:4px;">' .
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF' .
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" ' .
+        'stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;">' .
+        '<polyline points="6 9 6 2 18 2 18 9"/>' .
+        '<path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>' .
+        '<rect x="6" y="14" width="12" height="8"/></svg>Print / PDF' .
         '</button>';
     echo html_writer::end_div();
 
@@ -626,7 +646,7 @@ if (!empty($knowledgecheck->surveymode)) {
     if (empty($surveyattempts)) {
         echo html_writer::div(get_string('noattempts', 'mod_aiknowledgecheck'), 'text-muted mb-3');
     } else {
-        // ── Scale questions: response distribution ────────────────────────────.
+        // Scale questions: response distribution.
         $qnum = 0;
         foreach ($surveyqs as $sq) {
             $qnum++;
@@ -651,7 +671,7 @@ if (!empty($knowledgecheck->surveymode)) {
             echo html_writer::start_div('kc-survey-q-body');
 
             if (empty($optlabels)) {
-                echo '<div class="kc-survey-q-noresp">No options defined.</div>';
+                echo html_writer::div(get_string('report_no_options', 'mod_aiknowledgecheck'), 'kc-survey-q-noresp');
             } else {
                 $totalanswered = array_sum($counts);
                 foreach ($optlabels as $oidx => $olabel) {
@@ -660,20 +680,22 @@ if (!empty($knowledgecheck->surveymode)) {
                     $pctof = $totalanswered > 0 ? round(($cnt / $totalanswered) * 100) : 0;
                     echo '<div class="kc-survey-bar-row">';
                     echo '<div class="kc-survey-bar-label">' . htmlspecialchars($olabel, ENT_QUOTES) . '</div>';
-                    echo '<div class="kc-survey-bar-wrap"><div class="kc-survey-bar-fill" style="width:' . $pct . '%;"></div></div>';
+                    echo '<div class="kc-survey-bar-wrap"><div class="kc-survey-bar-fill" style="width:' .
+                        $pct .
+                        '%;"></div></div>';
                     echo '<div class="kc-survey-bar-count">' . $cnt . ' (' . $pctof . '%)</div>';
                     echo '</div>';
                 }
                 if ($totalanswered === 0) {
-                    echo '<div class="kc-survey-q-noresp">No responses yet.</div>';
+                    echo html_writer::div(get_string('report_no_responses', 'mod_aiknowledgecheck'), 'kc-survey-q-noresp');
                 }
             }
 
-            echo html_writer::end_div(); // .kc-survey-q-body.
-            echo html_writer::end_div(); // .kc-survey-q-block.
+            echo html_writer::end_div(); // End of .kc-survey-q-body.
+            echo html_writer::end_div(); // End of .kc-survey-q-block.
         }
 
-        // ── Free-text questions: collected responses ──────────────────────────.
+        // Free-text questions: collected responses.
         $ftqs = array_filter(
             (array)$surveyqs,
             function ($q) {
@@ -682,7 +704,7 @@ if (!empty($knowledgecheck->surveymode)) {
         );
         if (!empty($ftqs)) {
             echo html_writer::start_div('kc-survey-freetext-section');
-            echo '<h3>Open-Ended Responses</h3>';
+            echo html_writer::tag('h3', get_string('report_openended', 'mod_aiknowledgecheck'));
             $ftqnum = 0;
             foreach ($surveyqs as $sq) {
                 if ($sq->questiontype !== 'freetext') {
@@ -694,11 +716,19 @@ if (!empty($knowledgecheck->surveymode)) {
                 echo html_writer::start_div('kc-survey-ft-block');
                 echo '<div class="kc-survey-ft-header">' .
                     '<span class="kc-survey-q-num" style="background:#f59e0b;">' . $ftqnum . '</span>' .
-                    htmlspecialchars($sq->question, ENT_QUOTES) . ' <span style="font-weight:normal;color:#9ca3af;font-size:0.85em;">(' . count($responses) . ' ' . (count($responses) === 1 ? 'response' : 'responses') . ')</span>' .
+                    htmlspecialchars($sq->question, ENT_QUOTES) .
+                        ' <span style="font-weight:normal;color:#9ca3af;font-size:0.85em;">(' .
+                        count($responses) .
+                        ' ' .
+                        (count($responses) === 1 ? 'response' : 'responses') .
+                        ')</span>' .
                     '</div>';
                 echo html_writer::start_div('kc-survey-ft-body');
                 if (empty($responses)) {
-                    echo '<div style="padding:12px 16px;color:#9ca3af;font-style:italic;font-size:0.88em;">No responses yet.</div>';
+                    echo html_writer::div(
+                        get_string('report_no_responses', 'mod_aiknowledgecheck'),
+                        'kc-survey-ft-noresp'
+                    );
                 } else {
                     foreach ($responses as $r) {
                         echo '<div class="kc-survey-ft-row">';
@@ -708,17 +738,21 @@ if (!empty($knowledgecheck->surveymode)) {
                         echo '</div>';
                     }
                 }
-                echo html_writer::end_div(); // .kc-survey-ft-body.
-                echo html_writer::end_div(); // .kc-survey-ft-block.
+                echo html_writer::end_div(); // End of .kc-survey-ft-body.
+                echo html_writer::end_div(); // End of .kc-survey-ft-block.
             }
-            echo html_writer::end_div(); // .kc-survey-freetext-section.
+            echo html_writer::end_div(); // End of .kc-survey-freetext-section.
         }
 
-        // ── Per-student completion table ──────────────────────────────────────.
+        // Per-student completion table.
         echo html_writer::start_div('kc-survey-students');
-        echo '<h3>Student Completions</h3>';
+        echo html_writer::tag('h3', get_string('report_student_completions', 'mod_aiknowledgecheck'));
         echo '<table class="generaltable" style="width:auto;">';
-        echo '<thead><tr><th>Student</th><th>Completed</th><th>Time Spent</th></tr></thead><tbody>';
+        echo '<thead><tr>';
+        echo html_writer::tag('th', get_string('username', 'mod_aiknowledgecheck'));
+        echo html_writer::tag('th', get_string('report_completed', 'mod_aiknowledgecheck'));
+        echo html_writer::tag('th', get_string('timespent', 'mod_aiknowledgecheck'));
+        echo '</tr></thead><tbody>';
         foreach ($studentrows as $sr) {
             echo '<tr>';
             echo '<td>' . htmlspecialchars($sr['name'], ENT_QUOTES) . '</td>';
@@ -727,10 +761,10 @@ if (!empty($knowledgecheck->surveymode)) {
             echo '</tr>';
         }
         echo '</tbody></table>';
-        echo html_writer::end_div(); // .kc-survey-students.
+        echo html_writer::end_div(); // End of .kc-survey-students.
     }
 
-    echo html_writer::end_div(); // .kc-survey-report.
+    echo html_writer::end_div(); // End of .kc-survey-report.
     echo $OUTPUT->footer();
     die();
 }
@@ -756,10 +790,16 @@ if (empty($byuser)) {
         .kc-report-accordion[open] .kc-report-accordion-chevron { transform: rotate(180deg); }
         .kc-report-accordion-body { padding: 0; }
         .kc-report-accordion-body table { margin: 0; width: 100%; border-radius: 0; }
-        .kc-report-accordion-body table thead th { background: #fff; border-top: 0; font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.03em; color: #6c757d; padding: 8px 16px; }
+        .kc-report-accordion-body table thead th {
+            background: #fff; border-top: 0; font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.03em; color: #6c757d;
+            padding: 8px 16px;
+        }
         .kc-report-accordion-body table tbody td { padding: 8px 16px; vertical-align: middle; }
         .kc-report-summary-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-        .kc-report-summary-chip { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 10px; font-size: 0.85em; color: #495057; }
+        .kc-report-summary-chip {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 10px; font-size: 0.85em;
+            color: #495057;
+        }
     '
     );
 
@@ -774,10 +814,22 @@ if (empty($byuser)) {
         )
     );
     echo html_writer::start_div('kc-report-summary-bar');
-    echo html_writer::tag('span', $totalstudents . ' ' . ($totalstudents === 1 ? 'student' : 'students'), ['class' => 'kc-report-summary-chip']);
-    echo html_writer::tag('span', $totalattempts . ' total ' . ($totalattempts === 1 ? 'attempt' : 'attempts'), ['class' => 'kc-report-summary-chip']);
+    echo html_writer::tag(
+        'span',
+        $totalstudents . ' ' . ($totalstudents === 1 ? 'student' : 'students'),
+        ['class' => 'kc-report-summary-chip']
+    );
+    echo html_writer::tag(
+        'span',
+        $totalattempts . ' total ' . ($totalattempts === 1 ? 'attempt' : 'attempts'),
+        ['class' => 'kc-report-summary-chip']
+    );
     if ($totalqs > 0) {
-        echo html_writer::tag('span', $totalqs . ' ' . ($totalqs === 1 ? 'question' : 'questions') . ' in quiz', ['class' => 'kc-report-summary-chip']);
+        echo html_writer::tag(
+            'span',
+            $totalqs . ' ' . ($totalqs === 1 ? 'question' : 'questions') . ' in quiz',
+            ['class' => 'kc-report-summary-chip']
+        );
     }
     echo html_writer::end_div();
 
@@ -836,7 +888,7 @@ if (empty($byuser)) {
         }
 
         echo '</tbody></table>';
-        echo html_writer::end_div(); // .kc-report-accordion-body.
+        echo html_writer::end_div(); // End of .kc-report-accordion-body.
         echo html_writer::end_tag('details');
     }
 }

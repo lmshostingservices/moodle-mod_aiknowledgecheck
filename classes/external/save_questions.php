@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -62,6 +60,7 @@ class save_questions extends external_api {
                 // JSON string ajax.php received and are validated field by field below, exactly as
                 // before.
                 'questions' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON payload, json_decode()'d below
                     'JSON array of question documents'
                 ),

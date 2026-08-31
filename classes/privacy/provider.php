@@ -1,5 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -36,7 +35,10 @@ use core_privacy\local\request\transform;
 /**
  * Privacy provider implementation.
  */
-class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\core_userlist_provider, \core_privacy\local\request\plugin\provider {
+class provider implements
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
     /**
      * Get metadata about data stored by this plugin.
      *

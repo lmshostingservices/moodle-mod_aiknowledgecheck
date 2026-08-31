@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -65,6 +63,7 @@ class generate extends external_api {
             [
                 'cmid' => new external_value(PARAM_INT, 'Course module ID of the activity'),
                 'topics' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Topics to generate questions from'
                 ),
@@ -76,36 +75,42 @@ class generate extends external_api {
                     0
                 ),
                 'country' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace country',
                     VALUE_DEFAULT,
                     ''
                 ),
                 'state' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace state',
                     VALUE_DEFAULT,
                     ''
                 ),
                 'industry' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace industry',
                     VALUE_DEFAULT,
                     ''
                 ),
                 'industryDetails' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace industry detail',
                     VALUE_DEFAULT,
                     ''
                 ),
                 'jobLevel' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace job level',
                     VALUE_DEFAULT,
                     ''
                 ),
                 'jobTitle' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Workplace job title',
                     VALUE_DEFAULT,
@@ -115,6 +120,7 @@ class generate extends external_api {
                 'vetLevel' => new external_value(PARAM_ALPHANUMEXT, 'VET level', VALUE_DEFAULT, 'cert3'),
                 'academicLevel' => new external_value(PARAM_ALPHA, 'Academic level', VALUE_DEFAULT, ''),
                 'extraInstructions' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Extra AI instructions',
                     VALUE_DEFAULT,
@@ -122,6 +128,7 @@ class generate extends external_api {
                 ),
                 'useOwnQuestions' => new external_value(PARAM_INT, '1 to use teacher-supplied questions', VALUE_DEFAULT, 0),
                 'userQuestions' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — cleaned with clean_param(PARAM_TEXT) in execute()
                     'Teacher-supplied questions',
                     VALUE_DEFAULT,
@@ -129,6 +136,7 @@ class generate extends external_api {
                 ),
                 'useTextSources' => new external_value(PARAM_INT, '1 to generate from pasted text', VALUE_DEFAULT, 0),
                 'textSources' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON payload, json_decode()'d below
                     'JSON array of {text, questionCount} objects',
                     VALUE_DEFAULT,
@@ -141,6 +149,7 @@ class generate extends external_api {
                 'surveyMode' => new external_value(PARAM_INT, '1 for survey mode', VALUE_DEFAULT, 0),
                 'surveyScale' => new external_value(PARAM_ALPHANUMEXT, 'Survey response scale key', VALUE_DEFAULT, 'likert5agree'),
                 'freetextQuestions' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON payload, json_decode()'d below
                     'JSON array of free-text question strings',
                     VALUE_DEFAULT,
@@ -436,6 +445,7 @@ class generate extends external_api {
                 'ok' => new external_value(PARAM_BOOL, 'True when the generation job was accepted'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty on success'),
                 'resultjson' => new external_value(
+                    /* phpcs:ignore moodle.Commenting.InlineComment */
                     PARAM_RAW, // pipeline-ignore: PARAM_RAW — JSON blob, JSON.parse()'d by the client
                     'The generation service response verbatim, as a JSON string'
                 ),

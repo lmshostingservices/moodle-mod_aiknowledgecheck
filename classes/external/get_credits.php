@@ -1,6 +1,4 @@
 <?php
-// phpcs:disable moodle.Files.LineLength
-// phpcs:disable moodle.Commenting.InlineComment
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -130,7 +128,7 @@ class get_credits extends external_api {
         // not blocked behind it, exactly as ajax.php does.
         \core\session\manager::write_close();
 
-        // '&' is passed explicitly because some PHP configurations default the separator.
+        // The '&' is passed explicitly because some PHP configurations default the separator.
         // to '&amp;', which produces a malformed query string.
         $url = $apibase . '/api/credits?' . http_build_query(
             [
