@@ -1231,134 +1231,289 @@ define('mod_aiknowledgecheck/knowledgecheck',
     }
 
     // -- Industry & Sector Data  -  kept in sync with Content Creator --------------
+    // Values are data, not interface text: they are sent verbatim to the generation
+    // service and are never stored, so they are deliberately not language strings.
     var INDUSTRIES = [
-        'Aged Care', 'Agriculture', 'Automotive', 'Aviation', 'Building & Construction',
-        'Business Services', 'Childcare', 'Community Services', 'Education', 'Electrical',
-        'Engineering', 'Finance', 'Food Processing', 'Government', 'Healthcare',
-        'Hospitality', 'Information Technology', 'Logistics', 'Manufacturing', 'Mining',
-        'Plumbing', 'Retail', 'Security', 'Sport & Recreation', 'Tourism', 'Transport',
-        'Utilities', 'Warehousing', 'Other'
+        'Aged Care', 'Agriculture', 'Arts, Culture & Design', 'Automotive', 'Aviation', 'Beauty & Personal Care',
+        'Building & Construction', 'Business Services', 'Childcare', 'Cleaning & Facilities Management', 'Community Services',
+        'Correctional & Justice Services', 'Defence & Armed Forces', 'Education', 'Electrical', 'Emergency Services',
+        'Employment Services', 'Energy & Renewables', 'Engineering', 'Environmental Services', 'Fashion & Textiles', 'Finance',
+        'Food Processing', 'Forestry & Timber', 'Funeral Services', 'Government', 'Healthcare', 'Hospitality',
+        'Information Technology', 'Laboratory & Scientific Services', 'Libraries & Information Services', 'Logistics',
+        'Manufacturing', 'Maritime & Marine', 'Media & Communications', 'Mining', 'Pharmaceuticals & Life Sciences', 'Plumbing',
+        'Printing & Publishing', 'Property & Real Estate', 'Rail', 'Retail', 'Security', 'Sport & Recreation', 'Telecommunications',
+        'Tourism', 'Translation & Language Services', 'Transport', 'Utilities', 'Veterinary & Animal Care', 'Warehousing',
+        'Waste Management & Recycling', 'Other'
     ];
     var INDUSTRY_SUBCATEGORIES = {
         'Aged Care': [
             'Residential Aged Care', 'Home Care Services', 'Dementia Care', 'Palliative Care', 'Community Aged Care',
-            'Retirement Living', 'Respite Care', 'Allied Health in Aged Care'
+            'Retirement Living', 'Respite Care', 'Allied Health in Aged Care', 'Aged Care Administration', 'Carer Support'
         ],
         'Agriculture': [
             'Cropping & Grain', 'Livestock & Cattle', 'Dairy Farming', 'Horticulture', 'Viticulture & Wine', 'Aquaculture',
-            'Poultry', 'Shearing & Wool', 'Agricultural Contracting', 'Irrigation & Water Management'
+            'Poultry', 'Shearing & Wool', 'Agricultural Contracting', 'Irrigation & Water Management', 'Organic Farming',
+            'Agricultural Machinery', 'Farm Management', 'Agronomy'
+        ],
+        'Arts, Culture & Design': [
+            'Graphic Design', 'Industrial & Product Design', 'Interior Design', 'Performing Arts', 'Music & Audio Production',
+            'Visual Arts & Craft', 'Photography', 'Museums & Galleries', 'Arts Administration', 'Stage & Screen Production',
+            'Costume & Wardrobe', 'Community & Public Art'
         ],
         'Automotive': [
             'Light Vehicle Mechanical', 'Heavy Vehicle Mechanical', 'Auto Electrical', 'Panel Beating & Spray Painting',
-            'Motorcycle Technician', 'Marine Mechanical', 'Automotive Parts & Accessories', 'Vehicle Sales', 'Tyre Fitting'
+            'Motorcycle Technician', 'Marine Mechanical', 'Automotive Parts & Accessories', 'Vehicle Sales', 'Tyre Fitting',
+            'Electric & Hybrid Vehicles', 'Mobile Plant & Equipment', 'Vehicle Inspection'
         ],
         'Aviation': [
             'Commercial Aviation', 'General Aviation', 'Aircraft Maintenance', 'Ground Operations', 'Air Traffic Control',
-            'Cabin Crew', 'Aviation Security', 'Helicopter Operations'
+            'Cabin Crew', 'Aviation Security', 'Helicopter Operations', 'Airport Operations', 'Remote Pilot & Drone Operations'
+        ],
+        'Beauty & Personal Care': [
+            'Hairdressing & Barbering', 'Beauty Therapy', 'Nail Technology', 'Make-Up Artistry', 'Massage Therapy',
+            'Spa & Wellness', 'Cosmetic & Laser Services', 'Salon Management', 'Barbering', 'Retail Cosmetics'
         ],
         'Building & Construction': [
             'Residential Construction', 'Commercial Construction', 'Civil Construction', 'Mining Construction',
             'Industrial Construction', 'High-Rise Construction', 'Renovation & Refurbishment', 'Demolition', 'Scaffolding',
             'Formwork', 'Concreting', 'Steel Fixing', 'Carpentry', 'Bricklaying', 'Tiling', 'Painting & Decorating', 'Plastering',
-            'Roofing', 'Glazing', 'Waterproofing'
+            'Roofing', 'Glazing', 'Waterproofing', 'Site Supervision', 'Estimating & Quantity Surveying',
+            'Building Surveying & Certification'
         ],
         'Business Services': [
             'Accounting & Bookkeeping', 'Human Resources', 'Marketing & Advertising', 'Legal Services', 'Consulting', 'Recruitment',
-            'Training & Development', 'Property Management', 'Cleaning Services', 'Security Services'
+            'Training & Development', 'Property Management', 'Cleaning Services', 'Security Services',
+            'Administration & Office Support', 'Customer Contact Centres', 'Procurement', 'Business Analysis', 'Project Management'
         ],
         'Childcare': [
-            'Long Day Care', 'Family Day Care', 'Outside School Hours Care', 'Kindergarten/Preschool', 'Occasional Care',
-            'In-Home Care', 'Special Needs Support', 'Early Intervention'
+            'Full Day Care', 'Family Day Care', 'Before & After School Care', 'Kindergarten & Preschool',
+            'Occasional & Drop-In Care', 'In-Home Care', 'Special Needs Support', 'Early Intervention', 'Nanny & Au Pair Services',
+            'Service Management & Compliance'
+        ],
+        'Cleaning & Facilities Management': [
+            'Commercial Cleaning', 'Domestic Cleaning', 'Industrial Cleaning', 'Healthcare & Infection Control Cleaning',
+            'Window & High-Access Cleaning', 'Carpet & Upholstery Care', 'Grounds & Landscape Maintenance', 'Building Maintenance',
+            'Facilities Coordination', 'Waste & Recycling Handling', 'Pest Control', 'Security & Access Coordination'
         ],
         'Community Services': [
             'Disability Support', 'Mental Health Support', 'Youth Work', 'Family Services', 'Homelessness Services',
-            'Drug & Alcohol Services', 'Aboriginal & Torres Strait Islander Services', 'Refugee & Migrant Services',
-            'Domestic Violence Support', 'Case Management'
+            'Alcohol & Other Drug Services', 'Indigenous & First Nations Services', 'Refugee & Migrant Services',
+            'Domestic & Family Violence Support', 'Case Management', 'Employment Services', 'Community Development',
+            'Advocacy & Social Justice', 'Financial Counselling', 'Volunteer Coordination', 'Child Protection', 'Out-of-Home Care',
+            'Settlement & Multicultural Services', 'Carer Support', 'Community Housing'
+        ],
+        'Correctional & Justice Services': [
+            'Custodial Corrections', 'Community Corrections & Probation', 'Youth Justice', 'Prisoner Rehabilitation & Programs',
+            'Court Support Services', 'Offender Case Management', 'Forensic Mental Health', 'Restorative Justice',
+            'Legal Aid Support', 'Reintegration & Post-Release Support'
+        ],
+        'Defence & Armed Forces': [
+            'Army Operations', 'Naval Operations', 'Air Force Operations', 'Defence Logistics', 'Defence Engineering & Maintenance',
+            'Defence Administration', 'Intelligence & Analysis', 'Military Training & Instruction', 'Defence Health Services',
+            'Veteran Support Services'
         ],
         'Education': [
-            'Primary Education', 'Secondary Education', 'Vocational Education (VET)', 'Higher Education/University', 'TAFE',
-            'Adult Education', 'Special Education', 'Early Childhood Education', 'Online/Distance Education', 'Education Support',
-            'Training Administration', 'School Administration', 'Private Training Provider (RTO)'
+            'Primary Education', 'Secondary Education', 'Vocational Education & Training', 'Higher Education & University',
+            'Technical & Further Education College', 'Adult & Community Education', 'Special Education',
+            'Early Childhood Education', 'Online & Distance Education', 'Education Support', 'Training Administration',
+            'School Administration', 'Private Training Provider', 'Curriculum Development', 'Assessment & Moderation',
+            'Student Services'
         ],
         'Electrical': [
             'Domestic Electrical', 'Commercial Electrical', 'Industrial Electrical', 'Instrumentation',
             'Refrigeration & Air Conditioning', 'Solar Installation', 'Data & Communications', 'Fire Protection Systems',
-            'Lift Installation'
+            'Lift Installation', 'Battery & Energy Storage', 'Electric Vehicle Charging', 'Switchboard & Controls'
+        ],
+        'Emergency Services': [
+            'Firefighting & Fire Rescue', 'Ambulance & Paramedicine', 'Police & Law Enforcement',
+            'State & Territory Emergency Response', 'Search & Rescue', 'Emergency Management & Coordination',
+            'Emergency Dispatch & Communications', 'Disaster Recovery', 'Volunteer Emergency Services',
+            'Hazardous Materials Response'
+        ],
+        'Employment Services': [
+            'Recruitment & Staffing', 'Disability Employment Services', 'Employment Coaching & Case Management',
+            'Career Guidance & Counselling', 'Job Placement & Matching', 'Workforce Development', 'Labour Hire',
+            'Apprenticeship & Traineeship Support', 'Return to Work & Rehabilitation', 'Youth Employment Programs',
+            'Long-Term Unemployment Programs', 'Employer Engagement', 'Vocational Assessment',
+            'Work Experience & Placement Coordination', 'Resume & Interview Preparation', 'Skills Recognition & Assessment'
+        ],
+        'Energy & Renewables': [
+            'Solar Energy', 'Wind Energy', 'Hydro & Pumped Storage', 'Battery & Energy Storage', 'Hydrogen & Alternative Fuels',
+            'Oil & Gas Operations', 'Energy Efficiency & Audit', 'Grid Connection & Integration', 'Energy Trading & Retail',
+            'Power Station Operations', 'Geothermal & Bioenergy'
         ],
         'Engineering': [
             'Mechanical Engineering', 'Civil Engineering', 'Structural Engineering', 'Electrical Engineering',
             'Chemical Engineering', 'Mining Engineering', 'Environmental Engineering', 'Project Engineering',
-            'Maintenance Engineering'
+            'Maintenance Engineering', 'Software & Systems Engineering', 'Aerospace Engineering', 'Engineering Drafting',
+            'Quality & Reliability Engineering'
+        ],
+        'Environmental Services': [
+            'Environmental Monitoring', 'Land & Catchment Management', 'Conservation & Biodiversity',
+            'Environmental Assessment & Compliance', 'Contaminated Land Remediation', 'Water Quality Management',
+            'Air Quality Management', 'Sustainability & Carbon', 'Parks & Wildlife Management', 'Environmental Education'
+        ],
+        'Fashion & Textiles': [
+            'Fashion Design', 'Garment Manufacturing', 'Pattern Making & Grading', 'Textile Production', 'Dyeing & Finishing',
+            'Footwear & Leather Goods', 'Fashion Retail & Merchandising', 'Costume & Theatrical Wardrobe',
+            'Sustainable & Circular Fashion', 'Quality & Compliance'
         ],
         'Finance': [
-            'Banking', 'Insurance', 'Financial Planning', 'Mortgage Broking', 'Credit & Lending', 'Superannuation',
-            'Investment Management', 'Payroll', 'Accounts Payable/Receivable', 'Auditing'
+            'Banking', 'Insurance', 'Financial Planning', 'Mortgage & Loan Broking', 'Credit & Lending',
+            'Pensions & Superannuation', 'Investment Management', 'Payroll', 'Accounts Payable & Receivable', 'Auditing',
+            'Risk & Compliance', 'Financial Crime & AML', 'Treasury', 'Financial Technology'
         ],
         'Food Processing': [
             'Meat Processing', 'Seafood Processing', 'Dairy Processing', 'Bakery', 'Beverage Manufacturing', 'Confectionery',
-            'Fruit & Vegetable Processing', 'Ready Meals & Convenience Foods', 'Quality Assurance', 'Food Safety'
+            'Fruit & Vegetable Processing', 'Ready Meals & Convenience Foods', 'Quality Assurance', 'Food Safety',
+            'Plant-Based & Alternative Proteins', 'Packaging & Labelling'
+        ],
+        'Forestry & Timber': [
+            'Plantation Forestry', 'Native Forest Operations', 'Harvesting & Haulage', 'Sawmilling',
+            'Timber Processing & Treatment', 'Wood Products Manufacturing', 'Forest Management & Planning',
+            'Nursery & Reforestation', 'Arboriculture & Tree Services', 'Fire Management'
+        ],
+        'Funeral Services': [
+            'Funeral Directing', 'Embalming & Mortuary Care', 'Cemetery & Crematorium Operations', 'Funeral Administration',
+            'Bereavement & Grief Support', 'Memorial & Monumental Services', 'Repatriation Services', 'Pre-Need Planning'
         ],
         'Government': [
-            'Local Government', 'State Government', 'Federal Government', 'Emergency Services', 'Regulatory & Compliance',
-            'Policy & Planning', 'Customer Service', 'Parks & Recreation', 'Infrastructure', 'Community Engagement'
+            'Local Government', 'Regional & State Government', 'National & Federal Government', 'Emergency Management',
+            'Regulatory & Compliance', 'Policy & Planning', 'Public Customer Service', 'Parks & Recreation', 'Infrastructure',
+            'Community Engagement', 'Public Procurement', 'Statistics & Data'
         ],
         'Healthcare': [
-            'Acute Care/Hospital', 'Primary Care/GP', 'Allied Health', 'Mental Health', 'Community Health', 'Dental', 'Pharmacy',
-            'Pathology', 'Radiology', 'Emergency Services', 'Surgical', 'Rehabilitation', 'Infection Control', 'Aged Care Nursing',
-            'Midwifery', 'Disability Health', 'Aboriginal Health'
+            'Acute Care & Hospital', 'Primary Care & General Practice', 'Allied Health', 'Mental Health', 'Community Health',
+            'Dental', 'Pharmacy', 'Pathology', 'Radiology', 'Emergency Department', 'Surgical', 'Rehabilitation',
+            'Infection Control', 'Aged Care Nursing', 'Midwifery', 'Disability Health', 'Indigenous & First Nations Health',
+            'Sterilisation Services', 'Health Administration', 'Telehealth'
         ],
         'Hospitality': [
             'Hotels & Accommodation', 'Restaurants & Cafes', 'Bars & Pubs', 'Catering', 'Events & Functions',
-            'Fast Food & Quick Service', 'Clubs & Gaming', 'Commercial Cookery', 'Patisserie', 'Front Office', 'Housekeeping'
+            'Fast Food & Quick Service', 'Clubs & Gaming', 'Commercial Cookery', 'Patisserie', 'Front Office', 'Housekeeping',
+            'Food & Beverage Service', 'Barista & Coffee', 'Resort Operations'
         ],
         'Information Technology': [
             'Software Development', 'Network Administration', 'Cybersecurity', 'Cloud Computing', 'Database Administration',
-            'IT Support/Help Desk', 'Web Development', 'Data Analytics', 'Systems Administration', 'IT Project Management'
+            'IT Support & Help Desk', 'Web Development', 'Data Analytics', 'Systems Administration', 'IT Project Management',
+            'Artificial Intelligence & Machine Learning', 'DevOps & Automation', 'UX & Interface Design', 'Game Development',
+            'IT Governance'
+        ],
+        'Laboratory & Scientific Services': [
+            'Analytical Chemistry', 'Microbiology', 'Biotechnology', 'Medical Laboratory Science', 'Environmental Testing',
+            'Food & Agricultural Testing', 'Materials Testing', 'Forensic Science', 'Laboratory Quality & Accreditation',
+            'Sample Management', 'Research Support'
+        ],
+        'Libraries & Information Services': [
+            'Public Libraries', 'Academic Libraries', 'School Libraries', 'Special & Corporate Libraries',
+            'Archives & Records Management', 'Digital Collections', 'Cataloguing & Metadata', 'Information Literacy',
+            'Community Programs', 'Knowledge Management'
         ],
         'Logistics': [
             'Supply Chain Management', 'Freight Forwarding', 'Customs & Border', 'Inventory Management', 'Distribution',
-            'Third-Party Logistics (3PL)', 'Last Mile Delivery', 'Cold Chain Logistics', 'Dangerous Goods'
+            'Third-Party Logistics', 'Last Mile Delivery', 'Cold Chain Logistics', 'Dangerous Goods', 'Reverse Logistics',
+            'Logistics Planning & Scheduling'
         ],
         'Manufacturing': [
             'Food & Beverage Manufacturing', 'Pharmaceutical Manufacturing', 'Chemical Manufacturing', 'Metal Fabrication',
             'Plastics & Rubber', 'Textiles', 'Furniture Manufacturing', 'Electronics Manufacturing', 'Printing', 'Packaging',
-            'Process Manufacturing'
+            'Process Manufacturing', 'Welding & Boilermaking', 'Machining & Toolmaking', 'Advanced & Additive Manufacturing',
+            'Production Planning'
+        ],
+        'Maritime & Marine': [
+            'Commercial Shipping', 'Port & Stevedoring Operations', 'Marine Engineering', 'Deck Operations', 'Fishing Operations',
+            'Marine Construction & Dredging', 'Boat Building & Repair', 'Marine Safety & Survey', 'Offshore Support',
+            'Ferry & Passenger Vessels', 'Marine Pilotage'
+        ],
+        'Media & Communications': [
+            'Journalism & News', 'Broadcasting & Radio', 'Film & Television Production', 'Digital & Social Media',
+            'Public Relations', 'Content Production', 'Advertising Production', 'Screen Post-Production', 'Publishing',
+            'Corporate Communications', 'Podcasting & Audio Media'
         ],
         'Mining': [
             'Open Cut Mining', 'Underground Mining', 'Coal Mining', 'Iron Ore', 'Gold Mining', 'Mineral Processing', 'Exploration',
-            'Drilling', 'Mine Site Services', 'Tailings Management', 'Mine Rehabilitation'
+            'Drilling', 'Mine Site Services', 'Tailings Management', 'Mine Rehabilitation', 'Critical Minerals', 'Mine Surveying',
+            'Mine Safety & Emergency Response'
+        ],
+        'Pharmaceuticals & Life Sciences': [
+            'Drug Discovery & Research', 'Clinical Trials', 'Pharmaceutical Manufacturing', 'Regulatory Affairs',
+            'Quality Control & Assurance', 'Medical Devices', 'Biotechnology', 'Pharmacovigilance', 'Medical Science Liaison',
+            'Supply & Cold Chain', 'Veterinary Pharmaceuticals'
         ],
         'Plumbing': [
             'Domestic Plumbing', 'Commercial Plumbing', 'Industrial Plumbing', 'Gas Fitting', 'Roofing & Drainage',
-            'Fire Protection Plumbing', 'Irrigation', 'Water Treatment', 'Mechanical Services'
+            'Fire Protection Plumbing', 'Irrigation', 'Water Treatment', 'Mechanical Services', 'Backflow Prevention',
+            'Hydronic Heating'
+        ],
+        'Printing & Publishing': [
+            'Offset Printing', 'Digital Printing', 'Wide Format & Signage', 'Packaging & Label Printing',
+            'Prepress & Graphic Reproduction', 'Bookbinding & Finishing', 'Book Publishing', 'Periodical Publishing',
+            'Editing & Proofreading', 'Print Estimating & Production Management'
+        ],
+        'Property & Real Estate': [
+            'Residential Sales', 'Commercial Sales & Leasing', 'Property Management', 'Strata & Body Corporate Management',
+            'Buyers Advocacy', 'Valuation', 'Property Development', 'Auctioneering', 'Facilities & Asset Management',
+            'Real Estate Administration'
+        ],
+        'Rail': [
+            'Track Construction & Maintenance', 'Rolling Stock Maintenance', 'Train Operations', 'Rail Signalling & Communications',
+            'Rail Safety & Compliance', 'Rail Network Control', 'Passenger Services', 'Freight Rail Operations',
+            'Overhead & Traction Systems', 'Level Crossing & Infrastructure'
         ],
         'Retail': [
             'Supermarkets & Grocery', 'Fashion & Apparel', 'Electronics & Technology', 'Hardware & Building', 'Pharmacy Retail',
-            'Furniture & Homewares', 'Automotive Retail', 'Sporting Goods', 'Online/E-commerce', 'Luxury Retail'
+            'Furniture & Homewares', 'Automotive Retail', 'Sporting Goods', 'Online & E-Commerce', 'Luxury Retail',
+            'Visual Merchandising', 'Store Management', 'Point of Sale & Checkout'
         ],
         'Security': [
             'Static Security', 'Mobile Patrol', 'Event Security', 'Close Protection', 'Loss Prevention', 'Corporate Security',
-            'Cash in Transit', 'CCTV & Monitoring', 'Access Control', 'Cybersecurity Operations'
+            'Cash in Transit', 'CCTV & Monitoring', 'Access Control', 'Cybersecurity Operations', 'Control Room Operations',
+            'Risk & Threat Assessment'
         ],
         'Sport & Recreation': [
             'Fitness & Personal Training', 'Aquatics', 'Outdoor Recreation', 'Sports Coaching', 'Sports Administration',
-            'Community Recreation', 'Event Management', 'Golf & Turf Management', 'Sports Medicine Support'
+            'Community Recreation', 'Event Management', 'Golf & Turf Management', 'Sports Medicine Support', 'Sports Officiating',
+            'High Performance Support', 'Facility Operations'
+        ],
+        'Telecommunications': [
+            'Network Design & Planning', 'Fibre Optic Installation', 'Mobile & Wireless Networks', 'Satellite Communications',
+            'Cabling & Infrastructure', 'Network Operations Centre', 'Telecommunications Field Services', 'Customer Provisioning',
+            'Radio Frequency Engineering', 'Broadband Services'
         ],
         'Tourism': [
             'Travel Agencies', 'Tour Operations', 'Attractions & Theme Parks', 'Eco-Tourism', 'Adventure Tourism',
-            'Cultural Tourism', 'Cruise Operations', 'Tourism Marketing', 'Visitor Information Services', 'Indigenous Tourism'
+            'Cultural Tourism', 'Cruise Operations', 'Tourism Marketing', 'Visitor Information Services',
+            'Indigenous & First Nations Tourism', 'Destination Management', 'Guiding & Interpretation'
+        ],
+        'Translation & Language Services': [
+            'Translation', 'Interpreting', 'Community & Public Sector Interpreting', 'Conference Interpreting',
+            'Sign Language Interpreting', 'Subtitling & Captioning', 'Localisation', 'Language Teaching', 'Transcription',
+            'Terminology & Language Quality'
         ],
         'Transport': [
             'Road Transport', 'Rail Transport', 'Maritime Transport', 'Air Transport', 'Public Transport', 'Taxi & Rideshare',
-            'Courier Services', 'Bus Operations', 'Heavy Vehicle Operations', 'Transport Administration'
+            'Courier Services', 'Bus Operations', 'Heavy Vehicle Operations', 'Transport Administration', 'Fleet Management',
+            'Driver Training', 'Transport Compliance & Chain of Responsibility'
         ],
         'Utilities': [
             'Electricity Generation', 'Electricity Distribution', 'Gas Distribution', 'Water Supply', 'Wastewater Treatment',
-            'Renewable Energy', 'Smart Grid', 'Meter Reading', 'Network Maintenance'
+            'Renewable Energy', 'Smart Grid', 'Meter Reading', 'Network Maintenance', 'Utility Customer Service',
+            'Outage & Fault Response'
+        ],
+        'Veterinary & Animal Care': [
+            'Veterinary Nursing', 'Veterinary Practice', 'Animal Shelter & Rescue', 'Companion Animal Services', 'Equine Care',
+            'Livestock Health', 'Wildlife Care & Rehabilitation', 'Animal Grooming', 'Animal Training & Behaviour',
+            'Zoo & Aquarium Keeping', 'Animal Welfare & Compliance'
         ],
         'Warehousing': [
             'General Warehousing', 'Cold Storage', 'Distribution Centres', 'Cross-Docking', 'Hazardous Goods Storage',
-            'Automated Warehousing', 'Order Fulfillment', 'Returns Processing', 'Inventory Control'
+            'Automated Warehousing', 'Order Fulfilment', 'Returns Processing', 'Inventory Control', 'Forklift & Materials Handling',
+            'Warehouse Safety'
+        ],
+        'Waste Management & Recycling': [
+            'Waste Collection', 'Landfill Operations', 'Materials Recovery & Sorting', 'Recycling Processing',
+            'Organics & Composting', 'Hazardous Waste Management', 'E-Waste Processing', 'Liquid Waste & Sludge',
+            'Resource Recovery', 'Waste Education & Compliance'
         ],
         'Other': ['General Industry', 'Cross-Industry', 'Emerging Industry']
     };

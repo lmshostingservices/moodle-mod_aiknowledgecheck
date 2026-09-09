@@ -27,32 +27,15 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026083021;
+$plugin->version = 2026090901;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
-// PIPELINE (v1.5.164): the 1.5.163 note in this file tripped three of the release pipeline's
-// own checks. Nothing here is executable -- the scanner reads comments, and the note quoted the
-// very tokens the scanner looks for: a request superglobal, a raw parameter constant, and an
-// anonymous-function spelling. Release notes in this file must describe such rules in words
-// rather than reproduce them. This is the second time it has happened; see also v1.5.155.
-//
-// The 1.5.163 changes themselves are unaffected and remain in place:
-// - tests/permissions_test.php no longer touches a request superglobal. It used to drive the
-//   services through the AJAX entry point, which ends in require_sesskey() and therefore needs
-//   a request to exist; it now invokes each service's execute() directly, which performs the
-//   same parameter validation and capability checks with no request to fake. Re-checked by
-//   mutation: removing a capability check still fails the test.
-// - view.php no longer puts two PHP statements on one physical line. The gated button's class
-//   and disabled attributes are built as a single fragment.
-// - The 26 phpcs:ignore annotations use the block-comment form, so they no longer read as
-//   comments beginning with a lowercase letter while still suppressing the sniff.
-//
-// Two pipeline warnings remain, deliberately, because satisfying either would break Moodle
-// Plugin CI, which is the gate that actually blocks a release:
-// - Anonymous-function spacing in the AMD modules. Moodle's own .eslintrc requires no space
-//   before the parenthesis, and Plugin CI runs grunt with --max-lint-warnings 0, so inserting
-//   one fails that gate.
-// - The pipeline-ignore markers must stay lowercase and unpunctuated for the pipeline's own
-//   scanner to match them; capitalising them risks reintroducing a security blocker.
-$plugin->release = '1.5.164';
+// Keep release notes for this file in CHANGELOG.md, not here. Two rules apply to any comment
+// that does end up in version.php, because both have already cost a release. First, the release
+// pipeline scans comments as well as code, so a note must describe a rule in words rather than
+// reproduce the token the scanner searches for; that mistake was made in v1.5.155 and again in
+// v1.5.163. Second, a line comment may not carry a hanging indent, because the Moodle inline
+// comment sniff rejects more than one space after the slashes; that mistake was made in v1.5.164
+// and was caught only by an audit after the release had shipped. Flat sentences avoid both.
+$plugin->release = '1.5.165';

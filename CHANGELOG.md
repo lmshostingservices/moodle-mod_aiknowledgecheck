@@ -2,6 +2,66 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.165] - 2026-09-09
+
+Expands the workplace-context industry list and neutralises its Australian-specific wording.
+
+### Added — industry list expanded from 29 to 53, sectors from 292 to 634
+
+Twenty-four industries were added: Arts, Culture & Design; Beauty & Personal Care; Cleaning &
+Facilities Management; Correctional & Justice Services; Defence & Armed Forces; Emergency
+Services; **Employment Services**; Energy & Renewables; Environmental Services; Fashion &
+Textiles; Forestry & Timber; Funeral Services; Laboratory & Scientific Services; Libraries &
+Information Services; Maritime & Marine; Media & Communications; Pharmaceuticals & Life
+Sciences; Printing & Publishing; Property & Real Estate; Rail; Telecommunications; Translation
+& Language Services; Veterinary & Animal Care; and Waste Management & Recycling.
+
+Existing industries were deepened at the same time — Building & Construction gained site
+supervision, estimating and building surveying; Information Technology gained AI/ML, DevOps, UX
+and IT governance; Healthcare gained sterilisation services, health administration and
+telehealth; and so on across the list.
+
+**Employment Services also appears as a sector under Community Services**, alongside sixteen
+sectors of its own covering disability employment services, employment coaching and case
+management, labour hire, apprenticeship and traineeship support, return to work, and skills
+recognition.
+
+### Changed — Australian-specific sector names made internationally neutral
+
+The list read as Australian-only in several places. `TAFE` is now `Technical & Further Education
+College`, `Vocational Education (VET)` is `Vocational Education & Training`, `Private Training
+Provider (RTO)` is `Private Training Provider`, `Aboriginal & Torres Strait Islander Services` is
+`Indigenous & First Nations Services`, `Long Day Care` is `Full Day Care`, `Outside School Hours
+Care` is `Before & After School Care`, and the three tiers of `Government` are now
+`Local`/`Regional & State`/`National & Federal`.
+
+These values are **not stored**. They are collected on the generation form and sent to the
+generation service for that request only — there is no database column for them and no
+`get_records` call reads them — so renaming them needs no upgrade step and cannot orphan a
+saved selection. Verified against `db/install.xml` and every write path before the rename.
+
+The values remain data rather than interface text, so they are deliberately not language strings:
+they are transmitted verbatim to the generation service, and translating them would change what
+the service receives. A comment in the module now records that reasoning.
+
+### Fixed — phpcs errors in version.php
+
+The 1.5.164 release note used hanging indents on its continuation lines, which the Moodle inline
+comment sniff rejects: nine errors, enough to fail Moodle Plugin CI. **1.5.164 shipped with this
+defect and it was reported at the time as passing phpcs — it was not.** The note is now flat
+prose and records both traps this file has now sprung: the pipeline scanner reads comments, and
+line comments may not carry a hanging indent.
+
+### Known, unchanged
+
+ESLint still reports 68 warnings (0 errors) under Moodle's own `.eslintrc`, so a
+`--max-lint-warnings 0` grunt run still fails. This release adds none of them. The full list, and
+the other findings from the 1.5.164 contract audit, are unaddressed here by agreement.
+
+### Version
+- `version.php` → `2026090901` (release `1.5.165`). No DB schema changes; the highest savepoint
+  is unchanged at `2026083006`. `v1.5.157` and every other existing tag remain untouched.
+
 ## [1.5.164] - 2026-08-31
 
 Fixes three release-pipeline findings that were entirely self-inflicted: the 1.5.163 note in
