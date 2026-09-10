@@ -111,6 +111,12 @@ function aiknowledgecheck_add_instance($data, ?object $mform = null) {
         $data->surveyscale = 'likert5agree';
     }
 
+    // The showcorrectanswer column is NOT NULL and the form hides the field in survey mode, so
+    // an insert can arrive without it. Default to 1, as every release before v1.5.166 behaved.
+    if (!isset($data->showcorrectanswer)) {
+        $data->showcorrectanswer = 1;
+    }
+
     $data->id = $DB->insert_record('aiknowledgecheck', $data);
 
     // Save image gate file from draft area to permanent filearea.
@@ -205,6 +211,12 @@ function aiknowledgecheck_update_instance($data, ?object $mform = null) {
 
     if (!isset($data->grade) || (int)$data->grade <= 0) {
         $data->grade = 100;
+    }
+
+    // As in add_instance: the form hides showcorrectanswer in survey mode, and the column is
+    // NOT NULL, so an update that omits it must not write a null.
+    if (!isset($data->showcorrectanswer)) {
+        $data->showcorrectanswer = 1;
     }
 
     // Save image gate file from draft area to permanent filearea.

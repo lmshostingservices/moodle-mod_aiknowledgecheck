@@ -104,6 +104,20 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $mform->setDefault('aftercompletion', 'restart');
         $mform->addHelpButton('aftercompletion', 'aftercompletion', 'mod_aiknowledgecheck');
 
+        // Whether an incorrect answer reveals which option was correct. Survey mode has no
+        // correct answers, so the setting is meaningless there and is hidden.
+        $mform->addElement(
+            'advcheckbox',
+            'showcorrectanswer',
+            get_string('showcorrectanswer', 'mod_aiknowledgecheck'),
+            '',
+            [],
+            [0, 1]
+        );
+        $mform->setDefault('showcorrectanswer', 1);
+        $mform->addHelpButton('showcorrectanswer', 'showcorrectanswer', 'mod_aiknowledgecheck');
+        $mform->hideIf('showcorrectanswer', 'surveymode', 'checked');
+
         // CC Email for notifications.
         $mform->addElement('text', 'ccemail', get_string('ccemail', 'mod_aiknowledgecheck'), ['size' => '64']);
         $mform->setType('ccemail', PARAM_TEXT);

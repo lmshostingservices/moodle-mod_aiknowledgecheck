@@ -206,14 +206,15 @@ class save_answer extends external_api {
         // only advances forward and wrong-only retry uses a NEW attempt id, so no legitimate
         // flow re-saves an already-answered scale question.
         if (self::already_answered($answers, $question->id)) {
-            return self::result(
-                true,
-                '',
-                !empty($answers[$question->id]['iscorrect']),
+            $wascorrect = !empty($answers[$question->id]['iscorrect']);
+            [$key, $feedback] = self::feedback_for(
+                $knowledgecheck,
+                $wascorrect,
                 (int)$question->correctanswer,
-                $explanations,
-                true
+                (int)$answers[$question->id]['answer'],
+                $explanations
             );
+            return self::result(true, '', $wascorrect, $key, $feedback, true);
         }
 
         $iscorrect = ($answerindex == $question->correctanswer);
@@ -246,8 +247,55 @@ class save_answer extends external_api {
         $DB->update_record('aiknowledgecheck_attempts', $attempt);
 
         // SECURITY (C2): the student has now answered, so it is safe to return the correct
-        // index + explanations for feedback rendering.
-        return self::result(true, '', $iscorrect, (int)$question->correctanswer, $explanations);
+        // index + explanations for feedback rendering — subject to the activity's
+        // showcorrectanswer setting, which feedback_for() applies.
+        [$key, $feedback] = self::feedback_for(
+            $knowledgecheck,
+            $iscorrect,
+            (int)$question->correctanswer,
+            $answerindex,
+            $explanations
+        );
+        return self::result(true, '', $iscorrect, $key, $feedback);
+    }
+
+    /**
+     * Decide how much of the answer key to disclose for one graded response.
+     *
+     * When the activity has showcorrectanswer disabled and the student answered incorrectly,
+     * the key is withheld entirely and only the student's own option keeps its explanation.
+     * Withholding happens here rather than in the browser on purpose: suppressing the highlight
+     * client-side would still ship the answer inside the AJAX response, where it is one devtools
+     * panel away. A correct answer is always disclosed, because the student has already found it
+     * and hiding it would leave a right answer with no confirmation.
+     *
+     * @param \stdClass $knowledgecheck The activity record.
+     * @param bool $iscorrect Whether the student's answer was correct.
+     * @param int $correctanswer The answer key index, in original option order.
+     * @param int $selectedindex The student's own answer, in original option order.
+     * @param array $explanations Per-option explanations, in original option order.
+     * @return array [int|null $key, array $explanations]
+     */
+    private static function feedback_for(
+        \stdClass $knowledgecheck,
+        bool $iscorrect,
+        int $correctanswer,
+        int $selectedindex,
+        array $explanations
+    ): array {
+        if ($iscorrect || !empty($knowledgecheck->showcorrectanswer)) {
+            return [$correctanswer, $explanations];
+        }
+
+        // Keep the array the same length and shape so the client's original-to-shuffled
+        // remapping still works; blank every option but the one the student chose, because
+        // the correct option's explanation normally names it.
+        $withheld = array_fill(0, count($explanations), '');
+        if (isset($explanations[$selectedindex])) {
+            $withheld[$selectedindex] = $explanations[$selectedindex];
+        }
+
+        return [null, $withheld];
     }
 
     /**

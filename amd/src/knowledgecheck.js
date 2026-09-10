@@ -3024,36 +3024,42 @@ define('mod_aiknowledgecheck/knowledgecheck',
     function resolveCorrectAnswer(q, originalIndex, cb) {
         saveAnswerToDatabase(q.id, originalIndex, undefined, function(resp) {
             q._answerSaved = true; // Don't double-save on the re-run
-            if (resp && typeof resp.correctanswer === 'number') {
-                if (q.shuffledToOriginal && q.shuffledToOriginal.length) {
-                    var origToShuf = {};
-                    for (var i = 0; i < q.shuffledToOriginal.length; i++) {
-                        origToShuf[q.shuffledToOriginal[i]] = i;
+            q._keyResolved = true; // This question's key came from the server, not from load time
+            var shuffled = q.shuffledToOriginal && q.shuffledToOriginal.length;
+            var origToShuf = {};
+            var i;
+            if (shuffled) {
+                for (i = 0; i < q.shuffledToOriginal.length; i++) {
+                    origToShuf[q.shuffledToOriginal[i]] = i;
+                }
+            }
+
+            // Explanations are patched whether or not a key came back. The activity may have
+            // showcorrectanswer disabled, in which case the server withholds the key but still
+            // returns the explanation for the option this student chose.
+            if (resp && Array.isArray(resp.explanations) && resp.explanations.length) {
+                if (shuffled) {
+                    var shufExp = [];
+                    for (i = 0; i < q.shuffledToOriginal.length; i++) {
+                        shufExp.push(resp.explanations[q.shuffledToOriginal[i]] || '');
                     }
-                    q.correctAnswer = (origToShuf[resp.correctanswer] !== undefined)
-                        ? origToShuf[resp.correctanswer] : resp.correctanswer;
-                    if (Array.isArray(resp.explanations)) {
-                        var shufExp = [];
-                        for (var j = 0; j < q.shuffledToOriginal.length; j++) {
-                            shufExp.push(resp.explanations[q.shuffledToOriginal[j]] || '');
-                        }
-                        q.explanations = shufExp;
-                    }
+                    q.explanations = shufExp;
                 } else {
-                    q.correctAnswer = resp.correctanswer;
-                    if (Array.isArray(resp.explanations)) {
-                        q.explanations = resp.explanations;
-                    }
+                    q.explanations = resp.explanations;
                 }
-            } else {
-                // Graceful fallback: server gave nothing usable. Keep the quiz functional —
-                // treat as "no highlight" rather than throwing. Scoring stays server-side.
-                if (q.correctAnswer === null || q.correctAnswer === undefined) {
-                    q.correctAnswer = -1;
-                }
-                if (!q.explanations) {
-                    q.explanations = [];
-                }
+            } else if (!q.explanations) {
+                q.explanations = [];
+            }
+
+            if (resp && typeof resp.correctanswer === 'number') {
+                q.correctAnswer = (shuffled && origToShuf[resp.correctanswer] !== undefined)
+                    ? origToShuf[resp.correctanswer] : resp.correctanswer;
+            } else if (q.correctAnswer === null || q.correctAnswer === undefined) {
+                // Either the activity withholds the key (showcorrectanswer off and this answer
+                // was wrong) or the server gave nothing usable. Both mean the same thing here:
+                // no option matches index -1, so nothing is highlighted as correct. Scoring
+                // stays server-side either way.
+                q.correctAnswer = -1;
             }
             if (typeof cb === 'function') {
                 cb();
@@ -4595,6 +4601,24 @@ define('mod_aiknowledgecheck/knowledgecheck',
             ' -  wrong Q indices:', wrongQuestionIndices);
 
         quizAnswerLog = [];
+
+        // FIX-KC-RETRY-RESOLVE (v1.5.166): the retake reuses the quizData objects from the first
+        // attempt, so the per-question state left behind by resolveCorrectAnswer has to be
+        // cleared or the retry runs against stale values. _answerSaved would suppress the save
+        // into the NEW attempt id, and a key resolved during the first attempt would skip the
+        // resolve step entirely — which, for an activity that withholds the key, means the
+        // question is still holding -1 and every retry answer grades as wrong.
+        wrongQuestionIndices.forEach(function(idx) {
+            var wq = quizData[idx];
+            if (!wq) {
+                return;
+            }
+            wq._answerSaved = false;
+            if (wq._keyResolved) {
+                wq.correctAnswer = null;
+                wq._keyResolved = false;
+            }
+        });
 
         // Step 1: carry-forward one correct entry per already-correct question,
         // preserving the attemptNum of the LATEST correct answer in the snapshot

@@ -210,4 +210,39 @@ final class lib_test extends \advanced_testcase {
         $this->assertTrue((bool)aiknowledgecheck_supports(FEATURE_COMPLETION_TRACKS_VIEWS));
         $this->assertNull(aiknowledgecheck_supports('an_unknown_feature_constant'));
     }
+    /**
+     * showcorrectanswer round-trips through add_instance and update_instance, including the
+     * value 0 — which is the one that matters, since a truthiness slip would silently reset it
+     * to the default and quietly re-enable the reveal a teacher had turned off.
+     */
+    public function test_showcorrectanswer_round_trips(): void {
+        global $DB;
+
+        $activity = $this->make_activity(['showcorrectanswer' => 1]);
+        $this->assertSame(1, (int)$DB->get_field('aiknowledgecheck', 'showcorrectanswer', ['id' => $activity->id]));
+
+        $cm = get_coursemodule_from_instance('aiknowledgecheck', $activity->id);
+        $update = clone $activity;
+        $update->instance = $activity->id;
+        $update->coursemodule = $cm->id;
+        $update->showcorrectanswer = 0;
+        aiknowledgecheck_update_instance($update);
+
+        $this->assertSame(
+            0,
+            (int)$DB->get_field('aiknowledgecheck', 'showcorrectanswer', ['id' => $activity->id]),
+            'Turning the reveal off must persist.'
+        );
+    }
+
+    /**
+     * An instance created without the field at all still gets the historical default.
+     */
+    public function test_showcorrectanswer_defaults_to_on(): void {
+        global $DB;
+
+        $activity = $this->make_activity();
+
+        $this->assertSame(1, (int)$DB->get_field('aiknowledgecheck', 'showcorrectanswer', ['id' => $activity->id]));
+    }
 }

@@ -2,6 +2,58 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.166] - 2026-09-10
+
+Adds a per-activity setting that stops a wrong answer revealing which option was correct.
+
+### Added — "Show the correct answer after a wrong response"
+
+A new checkbox in *Attempt Settings*, on by default, so every existing activity keeps the
+behaviour it has today. When a teacher turns it off, a student who answers incorrectly sees their
+own option marked wrong and the explanation for the option they chose, but nothing identifies the
+right answer.
+
+**The answer is withheld by the server, not hidden by the browser.** `save_answer` returns
+`correctanswer` as null for that student, and blanks every option's explanation except the one
+they picked — because the correct option's explanation usually names it. Suppressing the
+highlight client-side would have been a few lines less work and worth nothing: the answer would
+still be sitting in the AJAX response, one devtools panel away, for an activity whose whole
+purpose is to withhold it. This follows the pattern already used at load time, where students
+never receive the answer key with the questions.
+
+A correct answer is still confirmed and still highlighted, whatever the setting. The student has
+already found it, and hiding it would leave a right answer with no feedback.
+
+The setting is hidden in survey mode, which has no correct answers. `db/install.xml` defaults the
+column to 1 and the upgrade step adds it with the same default, so no backfill is needed.
+
+### Fixed — the wrong-only retry ran against stale per-question state
+
+Found while testing the above. The "retry wrong answers" flow reuses the question objects from
+the first attempt, and the state left behind by the answer-resolution step was never cleared:
+
+- `_answerSaved` stayed true, so answers given during the retry were **not saved into the new
+  attempt** for students. This is a pre-existing defect, present in every release since the
+  answer key was moved server-side in v1.5.152.
+- A key resolved during the first attempt made the retry skip the resolve step entirely. Harmless
+  until now; with the new setting it would have graded every retry answer as wrong.
+
+Both are cleared when a wrong-only retake starts.
+
+### Tests
+Six new PHPUnit tests (46 tests, 162 assertions) covering the key being disclosed by default,
+withheld on a wrong answer, still returned on a correct one, withheld on a re-sent answer, and
+the setting round-tripping through add and update — including the value 0, which is the one a
+truthiness slip would silently reset. Verified by mutation: forcing disclosure fails two of them.
+
+Four new Behat scenarios (30 scenarios, 331 steps) covering the setting round-tripping through
+the form, and, in a real browser, that the correct option is highlighted when the setting allows
+it and absent when it does not.
+
+### Version
+- `version.php` → `2026091001` (release `1.5.166`). Adds `aiknowledgecheck.showcorrectanswer`;
+  savepoint `2026091001`. `v1.5.157` and every other existing tag remain untouched.
+
 ## [1.5.165] - 2026-09-09
 
 Expands the workplace-context industry list and neutralises its Australian-specific wording.

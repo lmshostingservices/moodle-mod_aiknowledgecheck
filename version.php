@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026090901;
+$plugin->version = 2026091001;
 $plugin->requires = 2022041900;
 $plugin->supported = [400, 500];
 $plugin->maturity = MATURITY_STABLE;
@@ -38,4 +38,4 @@ $plugin->maturity = MATURITY_STABLE;
 // v1.5.163. Second, a line comment may not carry a hanging indent, because the Moodle inline
 // comment sniff rejects more than one space after the slashes; that mistake was made in v1.5.164
 // and was caught only by an audit after the release had shipped. Flat sentences avoid both.
-$plugin->release = '1.5.165';
+$plugin->release = '1.5.166';

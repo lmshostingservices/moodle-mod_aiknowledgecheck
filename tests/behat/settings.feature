@@ -50,3 +50,17 @@ Feature: An AI Knowledge Check can be configured from the activity settings form
     Then I should see "Feedback survey"
     And I am on the "Feedback survey" "aiknowledgecheck activity editing" page
     And the field "Enable Survey Mode" matches value "1"
+
+  @javascript
+  Scenario: The correct-answer reveal is on by default and can be turned off
+    Given I am on the "Course 1" course page logged in as "teacher1"
+    When I add a aiknowledgecheck activity to course "Course 1" section "1" and I fill the form with:
+      | Name | Assessment mode |
+    Then I am on the "Assessment mode" "aiknowledgecheck activity editing" page
+    And I expand all fieldsets
+    And the field "Show the correct answer after a wrong response" matches value "1"
+    When I set the field "Show the correct answer after a wrong response" to "0"
+    And I press "Save and return to course"
+    And I am on the "Assessment mode" "aiknowledgecheck activity editing" page
+    And I expand all fieldsets
+    Then the field "Show the correct answer after a wrong response" matches value "0"

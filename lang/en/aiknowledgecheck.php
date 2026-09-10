@@ -477,6 +477,12 @@ $string['settings_btn'] = 'Settings';
 $string['settings_language_warning'] = 'Changing language will regenerate questions and uses credits.';
 $string['showchapterstamps'] = 'Show chapter timestamp links';
 $string['showchapterstamps_help'] = 'When enabled, each question displays a clickable timestamp link that jumps the video to the point in the transcript where the question topic is covered. Timestamps are automatically identified by the AI from YouTube-style timestamps in the source content (e.g. "1:09"). Requires a video gate URL to be set.';
+$string['showcorrectanswer'] = 'Show the correct answer after a wrong response';
+$string['showcorrectanswer_help'] = 'When enabled (the default), a student who answers incorrectly sees the correct option highlighted alongside their own.
+
+When disabled, the correct option is not highlighted and the answer is never sent to the student\'s browser, so it cannot be found by inspecting the page. Students still see whether their own answer was right or wrong, and still receive the explanation for the option they chose.
+
+Turn this off when learners may reattempt the same questions, or when the activity is used as an assessment rather than for practice. It has no effect in survey mode, which has no correct answers.';
 $string['showvideoduringquiz'] = 'Show video while answering questions';
 $string['showvideoduringquiz_help'] = 'When enabled, the video player remains visible above the questions while the student is completing the quiz. When disabled (the default), the video is hidden once the student starts answering.';
 $string['siteid'] = 'Site ID';

@@ -20,12 +20,14 @@ Feature: A student works through an AI Knowledge Check
       | siteid | behat-site-id | mod_aiknowledgecheck |
       | apikey | behat-api-key | mod_aiknowledgecheck |
     And the following "activities" exist:
-      | activity         | name        | course | idnumber | maxattempts |
-      | aiknowledgecheck | Fire safety | C1     | kc1      | 2           |
+      | activity         | name        | course | idnumber | maxattempts | showcorrectanswer |
+      | aiknowledgecheck | Fire safety | C1     | kc1      | 2           | 1                 |
+      | aiknowledgecheck | Sealed exam | C1     | kc2      | 2           | 0                 |
     And the following "mod_aiknowledgecheck > questions" exist:
       | activity | questionnumber | questiontext                  | answer1 | answer2 | answer3 | answer4 | correctanswer |
       | kc1      | 1              | Where is the assembly point?  | Car park| Kitchen | Roof    | Cellar  | 0             |
       | kc1      | 2              | Who calls the fire brigade?   | Nobody  | Warden  | Anyone  | Cleaner | 1             |
+      | kc2      | 1              | Where is the assembly point?  | Car park| Kitchen | Roof    | Cellar  | 0             |
 
   Scenario: A student answers every question and reaches the results screen
     Given I am on the "Fire safety" "aiknowledgecheck activity" page logged in as "student1"
@@ -93,3 +95,29 @@ Feature: A student works through an AI Knowledge Check
     And I am on the "Fire safety" "aiknowledgecheck activity" page logged in as "student1"
     When I click on "#start-attempt-btn" "css_element"
     Then I should see "Where is the assembly point?"
+
+  Scenario: A wrong answer highlights the correct option when the activity allows it
+    Given I am on the "Fire safety" "aiknowledgecheck activity" page logged in as "student1"
+    When I click on "#start-attempt-btn" "css_element"
+    And I click on "Kitchen" "text"
+    And I click on "#check-answer-btn" "css_element"
+    Then I should see "Incorrect"
+    And ".kc-option.incorrect" "css_element" should exist
+    And ".kc-option.correct" "css_element" should exist
+
+  Scenario: A wrong answer does not reveal the correct option when the teacher has turned it off
+    Given I am on the "Sealed exam" "aiknowledgecheck activity" page logged in as "student1"
+    When I click on "#start-attempt-btn" "css_element"
+    And I click on "Kitchen" "text"
+    And I click on "#check-answer-btn" "css_element"
+    Then I should see "Incorrect"
+    And ".kc-option.incorrect" "css_element" should exist
+    But ".kc-option.correct" "css_element" should not exist
+
+  Scenario: A correct answer is still confirmed when the reveal is turned off
+    Given I am on the "Sealed exam" "aiknowledgecheck activity" page logged in as "student1"
+    When I click on "#start-attempt-btn" "css_element"
+    And I click on "Car park" "text"
+    And I click on "#check-answer-btn" "css_element"
+    Then I should see "Correct"
+    And ".kc-option.correct" "css_element" should exist

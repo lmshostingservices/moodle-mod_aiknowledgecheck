@@ -233,6 +233,99 @@ final class external_test extends externallib_advanced_testcase {
     }
 
     /**
+     * Build a second activity that hides the correct answer, and open an attempt on it.
+     *
+     * @return array [int $attemptid, array $questionids]
+     */
+    private function hidden_answer_activity(): array {
+        $activity = $this->generator->create_instance(
+            [
+                'course' => $this->course->id,
+                'maxattempts' => 2,
+                'showcorrectanswer' => 0,
+            ]
+        );
+        $cm = get_coursemodule_from_instance('aiknowledgecheck', $activity->id);
+        $questionids = $this->generator->create_questions($activity->id, 2);
+
+        // Call execute() as its own statement first: it is what autoloads the external class,
+        // and loading that class is what defines the legacy external_api alias this file uses.
+        $this->setUser($this->student);
+        $started = start_attempt::execute($cm->id);
+        $started = external_api::clean_returnvalue(start_attempt::execute_returns(), $started);
+
+        return [$started['attemptid'], $questionids];
+    }
+
+    /**
+     * With the default setting, a wrong answer still returns the key so the UI can reveal it.
+     */
+    public function test_save_answer_returns_the_key_when_the_activity_shows_it(): void {
+        $attempt = $this->start_as($this->student)['attemptid'];
+
+        $result = save_answer::execute($attempt, $this->questionids[0], 2);
+        $result = external_api::clean_returnvalue(save_answer::execute_returns(), $result);
+
+        $this->assertFalse($result['iscorrect']);
+        $this->assertSame(0, $result['correctanswer'], 'The key is disclosed by default.');
+        $this->assertContains('A1 is correct.', $result['explanations']);
+    }
+
+    /**
+     * With showcorrectanswer off, a wrong answer must not disclose the key — not as an index,
+     * and not through the correct option's explanation either.
+     */
+    public function test_save_answer_withholds_the_key_when_the_activity_hides_it(): void {
+        [$attempt, $questionids] = $this->hidden_answer_activity();
+
+        $result = save_answer::execute($attempt, $questionids[0], 2);
+        $result = external_api::clean_returnvalue(save_answer::execute_returns(), $result);
+
+        $this->assertTrue($result['ok']);
+        $this->assertFalse($result['iscorrect'], 'The student is still told they were wrong.');
+        $this->assertNull($result['correctanswer'], 'The answer key must not reach the browser.');
+
+        // The chosen option keeps its explanation; every other option is blanked, so the
+        // correct option's text cannot be read out of the response.
+        $this->assertSame('C1 is wrong.', $result['explanations'][2]);
+        $this->assertNotContains('A1 is correct.', $result['explanations']);
+        $this->assertSame('', $result['explanations'][0]);
+        $this->assertSame('', $result['explanations'][1]);
+        $this->assertSame('', $result['explanations'][3]);
+    }
+
+    /**
+     * A correct answer is still confirmed when the key is hidden — the student has already
+     * found it, and withholding it would leave a right answer with no feedback.
+     */
+    public function test_save_answer_confirms_a_correct_choice_when_the_key_is_hidden(): void {
+        [$attempt, $questionids] = $this->hidden_answer_activity();
+
+        $result = save_answer::execute($attempt, $questionids[0], 0);
+        $result = external_api::clean_returnvalue(save_answer::execute_returns(), $result);
+
+        $this->assertTrue($result['iscorrect']);
+        $this->assertSame(0, $result['correctanswer']);
+        $this->assertContains('A1 is correct.', $result['explanations']);
+    }
+
+    /**
+     * Re-sending an already-answered question must not become a way around the setting.
+     */
+    public function test_save_answer_withholds_the_key_on_a_resent_answer(): void {
+        [$attempt, $questionids] = $this->hidden_answer_activity();
+
+        save_answer::execute($attempt, $questionids[0], 2);
+        $resent = save_answer::execute($attempt, $questionids[0], 0);
+        $resent = external_api::clean_returnvalue(save_answer::execute_returns(), $resent);
+
+        $this->assertTrue($resent['locked'], 'The first answer stands.');
+        $this->assertFalse($resent['iscorrect']);
+        $this->assertNull($resent['correctanswer'], 'A resend must not leak the key either.');
+        $this->assertNotContains('A1 is correct.', $resent['explanations']);
+    }
+
+    /**
      * A student must not be able to write into another student's attempt.
      */
     public function test_save_answer_rejects_someone_elses_attempt(): void {

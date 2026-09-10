@@ -56,6 +56,7 @@ class mod_aiknowledgecheck_generator extends testing_module_generator {
             'videominseconds' => 0,
             'showvideoduringquiz' => 0,
             'showchapterstamps' => 0,
+            'showcorrectanswer' => 1,
             'audiourl' => '',
             'audiorequirement' => 'seconds',
             'audiominseconds' => 0,

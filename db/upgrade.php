@@ -1720,5 +1720,29 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026083006, 'aiknowledgecheck');
     }
 
+    // Release v1.5.166: teachers can stop the correct option being highlighted when a student
+    // answers incorrectly. DEFAULT is 1, which is what every earlier release did, so existing
+    // activities keep their current behaviour without a backfill.
+    // DB: adds aiknowledgecheck.showcorrectanswer. version.php → 2026091001.
+    if ($oldversion < 2026091001) {
+        $table = new xmldb_table('aiknowledgecheck');
+        $field = new xmldb_field(
+            'showcorrectanswer',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'surveyscale'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091001, 'aiknowledgecheck');
+    }
+
     return true;
 }
