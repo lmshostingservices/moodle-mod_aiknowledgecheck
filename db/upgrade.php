@@ -33,6 +33,13 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
 
     $dbman = $DB->get_manager();
 
+    // Repair skipped dependencies before any historical step can refer to them.
+    // Do not save the new version until all historical steps have succeeded.
+    if ($oldversion < 2026102200) {
+        require_once(__DIR__ . '/upgradelib.php');
+        xmldb_aiknowledgecheck_repair_skipped_schema();
+    }
+
     // Add attempt management tables and fields for version 1.2.0.
     if ($oldversion < 2025120102) {
         // Add maxattempts field to knowledgecheck table.
@@ -1507,7 +1514,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         }
 
         // Add surveyscale column.
-        $field2 = new xmldb_field('surveyscale', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, '', 'surveymode');
+        $field2 = new xmldb_field('surveyscale', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, 'likert5agree', 'surveymode');
         if (!$dbman->field_exists($table, $field2)) {
             $dbman->add_field($table, $field2);
         }
@@ -1645,7 +1652,7 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
             null,
             XMLDB_NOTNULL,
             null,
-            '',
+            'likert5agree',
             'surveymode'
         );
         if (!$dbman->field_exists($table, $field)) {
@@ -1742,6 +1749,10 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         }
 
         upgrade_mod_savepoint(true, 2026091001, 'aiknowledgecheck');
+    }
+
+    if ($oldversion < 2026102200) {
+        upgrade_mod_savepoint(true, 2026102200, 'aiknowledgecheck');
     }
 
     return true;

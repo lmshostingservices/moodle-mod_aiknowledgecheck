@@ -2,6 +2,25 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.167] - 2026-10-22
+
+### Fixed
+- Repair missing image, audio, video and survey columns before historical upgrade steps run.
+  This fixes the MySQL upgrade failure when `answer5` was positioned after a
+  missing `imageenabled` column on sites affected by skipped earlier upgrades.
+- The repair adds only missing columns, uses the fresh-install defaults, and
+  does not depend on physical column order. Existing activities, questions,
+  images, answers and settings are preserved.
+- Interrupted upgrades can be rerun safely. The new upgrade savepoint is written
+  only after all historical upgrade steps complete successfully.
+- Use the supported survey-scale default in historical upgrade definitions,
+  avoiding XMLDB warnings while keeping existing survey choices unchanged.
+- No image-provider, generation-prompt, or credit-price changes.
+
+### Tests
+- Regression coverage for missing image prerequisites, skipped survey fields,
+  partially upgraded databases, existing settings and answers, and repeat runs.
+
 ## [1.5.166] - 2026-09-10
 
 Adds a per-activity setting that stops a wrong answer revealing which option was correct.
