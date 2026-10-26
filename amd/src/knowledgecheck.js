@@ -50,6 +50,25 @@ define('mod_aiknowledgecheck/knowledgecheck',
     var fmt = Util.fmt;
 
     /**
+     * Maximum characters accepted in one pasted text source.
+     *
+     * Mirrors mod_aiknowledgecheck\external\generate::MAX_SOURCE_CHARS. The service refuses
+     * anything longer; this copy exists so the teacher is told before a request is sent.
+     *
+     * @type {number}
+     */
+    var MAX_SOURCE_CHARS = 50000;
+
+    /**
+     * Maximum questions one generation request may ask for, across every mode.
+     *
+     * Mirrors mod_aiknowledgecheck\external\generate::MAX_TOTAL_QUESTIONS. Change both.
+     *
+     * @type {number}
+     */
+    var MAX_TOTAL_QUESTIONS = 100;
+
+    /**
      * Show a message in a modal dialog.
      *
      * @param {string} message The message to show.
@@ -159,6 +178,18 @@ define('mod_aiknowledgecheck/knowledgecheck',
     let selectedKcJobRoles = []; // Multi-select job roles (chips input)
     let isAddingMore = false; // "Add More Questions" mode flag
     let existingQuizData = null; // Preserved questions while adding more
+
+    /**
+     * How many questions the generation request in flight asked for, or null.
+     *
+     * Set when Generate is pressed and consumed once by the completion handler, which compares
+     * it with what actually arrived. It is null at every other time on purpose: showQuizReady()
+     * is also reached by the regeneration and save paths, and a stale value there would warn
+     * about a shortfall that no request had asked about.
+     *
+     * @type {?number}
+     */
+    let requestedQuestionTotal = null;
 
     // Initialize Web Audio API for sound effects
     /**
@@ -595,7 +626,11 @@ define('mod_aiknowledgecheck/knowledgecheck',
         {key: 'js_success_regenfree', component: 'mod_aiknowledgecheck'},
         {key: 'js_success_regenpaid', component: 'mod_aiknowledgecheck'},
         {key: 'js_unsavedanswers_message', component: 'mod_aiknowledgecheck'},
-        {key: 'js_unsavedanswers_title', component: 'mod_aiknowledgecheck'}
+        {key: 'js_unsavedanswers_title', component: 'mod_aiknowledgecheck'},
+        {key: 'js_sourcetoolong', component: 'mod_aiknowledgecheck'},
+        {key: 'js_toomanyquestions', component: 'mod_aiknowledgecheck'},
+        {key: 'js_shortfall', component: 'mod_aiknowledgecheck'},
+        {key: 'js_shortfalltitle', component: 'mod_aiknowledgecheck'}
     ];
 
     /**
@@ -716,7 +751,11 @@ define('mod_aiknowledgecheck/knowledgecheck',
         'successregenfree',
         'successregenpaid',
         'unsavedanswersmessage',
-        'unsavedanswerstitle'
+        'unsavedanswerstitle',
+        'sourcetoolong',
+        'toomanyquestions',
+        'shortfall',
+        'shortfalltitle'
     ];
 
     /**
@@ -1760,7 +1799,9 @@ define('mod_aiknowledgecheck/knowledgecheck',
                      escapeHtml(source.text) +
                      '</textarea>' +
                 '<div class="kc-text-source-footer">' +
-                    '<span class="kc-text-source-charcount">' + charCount.toLocaleString() + ' characters</span>' +
+                    '<span class="kc-text-source-charcount' +
+                        (charCount > MAX_SOURCE_CHARS ? ' kc-over-limit' : '') +
+                        '">' + charCount.toLocaleString() + ' characters</span>' +
                     '<span class="kc-text-source-limit">Max 50,000</span>' +
                 '</div>' +
             '</div>';
@@ -1769,34 +1810,68 @@ define('mod_aiknowledgecheck/knowledgecheck',
     }
 
     /**
+     * How many free-text questions a survey is asking for.
+     *
+     * Survey mode only; zero everywhere else. These are requested separately from the scale
+     * questions but arrive in the same list, so the shortfall comparison has to account for
+     * them. They are deliberately NOT part of the MAX_TOTAL_QUESTIONS check, which counts only
+     * the active generation mode, as it did when that ceiling shipped.
+     *
+     * @return {number} The number of non-blank free-text lines.
+     */
+    function freetextQuestionCount() {
+        if (!config.surveyMode) {
+            return 0;
+        }
+
+        return ($('#freetext-questions-input').val() || '').split('\n').filter(function(s) {
+            return s.trim().length > 0;
+        }).length;
+    }
+
+    /**
+     * How many questions the form is currently asking for.
+     *
+     * One source of truth for the summary line, the Generate button's enabled state, and the
+     * pre-submit guard, so the number the teacher reads is the number that gets checked.
+     *
+     * @return {number} The requested total.
+     */
+    function countRequestedQuestions() {
+        var useTextSources = $('#paste-content-toggle').is(':checked');
+        var useOwnQuestions = $('#user-questions-toggle').is(':checked');
+
+        if (useTextSources && textSources.length > 0) {
+            var fromSources = 0;
+            for (var p = 0; p < textSources.length; p++) {
+                if (textSources[p].text && textSources[p].text.trim().length > 0) {
+                    fromSources += textSources[p].questionCount;
+                }
+            }
+            return fromSources;
+        }
+
+        if (useOwnQuestions) {
+            return $('#user-questions-input').val().trim().split('\n').filter(function(q) {
+                return q.trim();
+            }).length;
+        }
+
+        var topicLines = $('#topics-input').val().trim().split('\n').filter(function(t) {
+            return t.trim();
+        }).length;
+
+        return topicLines * parseInt($('#questions-per-topic').val(), 10);
+    }
+
+    /**
      * Recalculate the question count and credit cost and update the summary line.
      *
      * @return {void}
      */
     function updateStats() {
-        var useTextSources = $('#paste-content-toggle').is(':checked');
-        var useOwnQuestions = $('#user-questions-toggle').is(':checked');
-        var totalQuestions = 0;
-
-        if (useTextSources && textSources.length > 0) {
-            totalQuestions = 0;
-            for (var p = 0; p < textSources.length; p++) {
-                if (textSources[p].text && textSources[p].text.trim().length > 0) {
-                    totalQuestions += textSources[p].questionCount;
-                }
-            }
-        } else if (useOwnQuestions) {
-            var userQuestions = $('#user-questions-input').val().trim().split('\n').filter(function(q) {
-                return q.trim();
-            });
-            totalQuestions = userQuestions.length;
-        } else {
-            var topics = $('#topics-input').val().trim().split('\n').filter(function(t) {
-                return t.trim();
-            });
-            var questionsPerTopic = parseInt($('#questions-per-topic').val(), 10);
-            totalQuestions = topics.length * questionsPerTopic;
-        }
+        var totalQuestions = countRequestedQuestions();
+        var overCap = totalQuestions > MAX_TOTAL_QUESTIONS;
 
         var voiceoverOn = $('#voiceover-toggle').is(':checked');
         var creditsPerQuestion = voiceoverOn ? 2 : 1;
@@ -1814,12 +1889,20 @@ define('mod_aiknowledgecheck/knowledgecheck',
              ' credits</strong> ($' +
              audAmount +
              ' AUD)';
+        if (overCap) {
+            formulaHtml += '<div class="kc-over-cap">' +
+                escapeHtml(fmt(S.toomanyquestions, {
+                    requested: totalQuestions.toLocaleString(),
+                    max: MAX_TOTAL_QUESTIONS
+                })) +
+                '</div>';
+        }
         $('#kc-credit-formula').html(formulaHtml);
         $('#kc-progress-credit-formula').html(formulaHtml);
 
         if (totalQuestions > 0) {
             $('#preview-stats').show();
-            $('#generate-btn').prop('disabled', false);
+            $('#generate-btn').prop('disabled', overCap);
         } else {
             $('#preview-stats').hide();
             $('#generate-btn').prop('disabled', true);
@@ -1848,6 +1931,28 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 kcAlert(S.errornotextsourcecontent);
                 return;
             }
+            // FIX-KC-TEXTLIMIT (v1.5.167): refuse an over-length source instead of trimming it
+            // silently. This used to substring() the text on its way out, so the teacher paid
+            // to generate questions from material whose tail had been discarded without a word.
+            // Numbered against textSources rather than the filtered list so the number in the
+            // message matches the source the teacher sees on screen.
+            var overLimit = -1;
+            var overLength = 0;
+            for (var ti = 0; ti < textSources.length; ti++) {
+                var sourceText = textSources[ti].text ? textSources[ti].text.trim() : '';
+                if (sourceText.length > MAX_SOURCE_CHARS) {
+                    overLimit = ti;
+                    overLength = sourceText.length;
+                    break;
+                }
+            }
+            if (overLimit !== -1) {
+                kcAlert(fmt(S.sourcetoolong, {
+                    number: overLimit + 1,
+                    count: overLength.toLocaleString()
+                }));
+                return;
+            }
             topics = 'Pasted content';
         } else if (useOwnQuestions) {
             userQuestions = $('#user-questions-input').val().trim();
@@ -1863,6 +1968,24 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 return;
             }
         }
+
+        // FIX-KC-TOTALCAP (v1.5.167): the service enforces this ceiling too; checking here
+        // means the teacher is told before a request is sent rather than after.
+        var requested = countRequestedQuestions();
+        if (requested > MAX_TOTAL_QUESTIONS) {
+            kcAlert(fmt(S.toomanyquestions, {
+                requested: requested.toLocaleString(),
+                max: MAX_TOTAL_QUESTIONS
+            }));
+            return;
+        }
+
+        // FIX-KC-SHORTFALL (v1.5.168): remember what this request asked for, so the completion
+        // handler can say when fewer questions came back. Free-text questions are requested
+        // separately and arrive in the same list, so they are counted in here too — otherwise
+        // the delivered total would look larger than the request and a real shortfall would be
+        // hidden. Cleared as soon as it is used.
+        requestedQuestionTotal = requested + freetextQuestionCount();
 
         // Get workplace context if enabled.
         var workplaceContextEnabled = $('#workplace-context-toggle').is(':checked') ? 1 : 0;
@@ -1924,7 +2047,7 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 return s.text && s.text.trim().length > 0;
             });
             data.textSources = JSON.stringify(validSources.map(function(s) {
-                return {text: s.text.trim().substring(0, 50000), questionCount: s.questionCount};
+                return {text: s.text.trim(), questionCount: s.questionCount};
             }));
             kcLog('[KC] Text sources mode - sending through the generate service');
             kcLog('[KC] Text sources:', validSources.length);
@@ -1962,11 +2085,13 @@ define('mod_aiknowledgecheck/knowledgecheck',
             currentJobId = response.jobId;
             startStatusPolling();
         } else if (response.error === 'INSUFFICIENT_CREDITS') {
+            requestedQuestionTotal = null;
             kcWarn('[KC] Insufficient credits - has: ' + response.credits + ', needs: ' + response.required);
             kcAlert(S.errorinsufficientcredits);
             $('#kc-progress-section').hide();
             $('#kc-form-section').show();
         } else {
+            requestedQuestionTotal = null;
             kcError('[KC] Generation failed:', response.error || 'Unknown error');
             kcAlert(response.error || S.errorgenerationstartfailed);
             $('#kc-progress-section').hide();
@@ -1986,6 +2111,7 @@ define('mod_aiknowledgecheck/knowledgecheck',
      * @param {Object} err the Moodle exception object from core/ajax.
      */
     function handleGenerateError(err) {
+        requestedQuestionTotal = null; // No job started, so nothing to compare against.
         kcError('[KC] Generate request failed:', err);
         var msg = S.errorrequestfailed;
         var code = (err && err.errorcode) ? String(err.errorcode) : '';
@@ -2078,6 +2204,7 @@ define('mod_aiknowledgecheck/knowledgecheck',
                         if (newQuestions.length === 0) {
                             kcError('[KC] Job completed but returned 0 questions  -  possible server-side error. Check server log' +
                                 's.');
+                            requestedQuestionTotal = null;
                             if (isAddingMore && existingQuizData) {
                                 quizData = existingQuizData;
                                 existingQuizData = null;
@@ -2093,6 +2220,21 @@ define('mod_aiknowledgecheck/knowledgecheck',
                             }
                             return;
                         }
+
+                        // FIX-KC-SHORTFALL (v1.5.168): compare what arrived with what was asked
+                        // for, before the add-more branch below folds the new questions into
+                        // the existing set. newQuestions is the right number to judge: after
+                        // that merge, quizData also holds questions from an earlier run, and
+                        // comparing the merged total would report a shortfall that no request
+                        // had asked about.
+                        var shortfall = 0;
+                        if (requestedQuestionTotal !== null && newQuestions.length < requestedQuestionTotal) {
+                            shortfall = requestedQuestionTotal - newQuestions.length;
+                            kcWarn('[KC] Generation shortfall: asked for ' + requestedQuestionTotal +
+                                ', received ' + newQuestions.length);
+                        }
+                        var requestedForMessage = requestedQuestionTotal;
+                        requestedQuestionTotal = null;
 
                         // Tag each new question with its topic and criteria from the form
                         // so they are persisted to DB and appear in the Excel mapping.
@@ -2123,8 +2265,19 @@ define('mod_aiknowledgecheck/knowledgecheck',
                         }
 
                         showQuizReady();
+
+                        // Shown after the ready screen, so the teacher sees the questions they
+                        // did get behind the dialog rather than a warning over an empty page.
+                        if (shortfall > 0) {
+                            kcAlert(fmt(S.shortfall, {
+                                received: newQuestions.length,
+                                requested: requestedForMessage,
+                                missing: shortfall
+                            }), S.shortfalltitle);
+                        }
                     } else if (response.status === 'failed') {
                         clearInterval(statusPollingInterval);
+                        requestedQuestionTotal = null;
                         if (isAddingMore && existingQuizData) {
                             quizData = existingQuizData;
                             existingQuizData = null;
@@ -2150,6 +2303,7 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 );
                 if (statusPollFailures >= MAX_POLL_FAILURES) {
                     clearInterval(statusPollingInterval);
+                    requestedQuestionTotal = null; // Outcome unknown, so no shortfall can be claimed.
                     kcError('[KC] Status polling stopped after ' + MAX_POLL_FAILURES + ' consecutive failures');
                     if (isAddingMore && existingQuizData) {
                         quizData = existingQuizData;

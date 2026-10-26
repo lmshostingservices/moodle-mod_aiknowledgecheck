@@ -2,24 +2,114 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.5.168] - 2026-10-26
+
+Tells the teacher when the service returns fewer questions than were asked for. This is the third
+and last of the generation issues raised against 1.5.166; the other two were fixed in 1.5.167.
+
+### Fixed — a short delivery was reported as a plain success
+
+The completion message gave the number of questions that arrived and called it a success. A
+teacher who asked for 60 and received 39 saw "39 questions generated successfully!" and had to
+count to notice anything was missing. The requested total was known on the client the whole time
+and nothing compared the two.
+
+The request total is now recorded when Generate is pressed and read once by the completion
+handler, which reports the gap after the ready screen appears — so the questions that did arrive
+are visible behind the dialog rather than a warning over an empty page.
+
+The message states the numbers, which are known, and attributes the cause only as what it usually
+means. The plugin cannot tell whether the service ran short of material, hit a filter, or partly
+failed, and asserting a reason it cannot see would be inventing one. It also says that only the
+delivered questions were charged for, which is true and is the first thing a teacher wonders.
+
+Three cases this had to get right:
+
+- The comparison uses the newly generated batch, not the whole question set. In Add More
+  Questions mode those differ — the new questions have already been merged with the previous run
+  by the time the ready screen appears, and comparing the merged total would report a shortfall
+  no request had asked about.
+- `showQuizReady()` is reached from five places: the completed path, two paths that preserve
+  existing questions after an error, the zero-question guard, and the polling give-up. Only the
+  first may claim a shortfall, so the stored total is cleared on every other route, including
+  when the generate call is refused outright. A stale value would have warned about a shortfall
+  during an unrelated regeneration.
+- Free-text survey questions are requested separately but arrive in the same list, so they are
+  counted into the stored total; otherwise the delivery would look larger than the request and a
+  real shortfall would be hidden. They remain outside the 100-question ceiling, which counts only
+  the active generation mode, as it did when that ceiling shipped in 1.5.167.
+
+### Not covered by an automated test
+This change is entirely client-side and sits behind a live call to the generation service, which
+neither PHPUnit nor Behat can reach — there is no seam to make the service return fewer questions
+than requested. It was verified by tracing every path instead: one assignment, one guarded read,
+six clears, and the message reachable from exactly one of the five completion routes. That is
+reasoning, not a test. Closing the gap properly needs either a test seam for the service response
+or a reason code from the API, which would also let the message state the real cause rather than a
+likely one.
+
+### Version
+- `version.php` → `2026102601` (release `1.5.168`). No DB schema changes; the highest savepoint is
+  unchanged at `2026091001`. `v1.5.157` and every other existing tag remain untouched.
+
 ## [1.5.167] - 2026-10-22
 
-### Fixed
-- Repair missing image, audio, video and survey columns before historical upgrade steps run.
-  This fixes the MySQL upgrade failure when `answer5` was positioned after a
-  missing `imageenabled` column on sites affected by skipped earlier upgrades.
-- The repair adds only missing columns, uses the fresh-install defaults, and
-  does not depend on physical column order. Existing activities, questions,
-  images, answers and settings are preserved.
-- Interrupted upgrades can be rerun safely. The new upgrade savepoint is written
-  only after all historical upgrade steps complete successfully.
-- Use the supported survey-scale default in historical upgrade definitions,
-  avoiding XMLDB warnings while keeping existing survey choices unchanged.
-- No image-provider, generation-prompt, or credit-price changes.
+Stops two silent failures in question generation: content being discarded without warning, and a
+request for more questions than the activity can sensibly hold.
+
+### Fixed — over-length pasted content was discarded silently
+
+A text source longer than 50,000 characters was truncated twice on its way to the service, once
+in the browser and once in `generate.php`, with no warning at either point. A teacher pasting
+62,000 characters lost 12,000 of them, was told nothing, and then paid to generate questions from
+material whose tail had been thrown away — which is one of the reasons a request for 60 questions
+could come back with fewer.
+
+Both truncations are gone. The service now refuses the request with `error_text_too_long`, a
+string that had been sitting in the language pack **unused** since the limit was introduced; its
+wording now says what to do about it. The character counter under each source turns red once it
+goes over, so the problem is visible before the Generate button is pressed.
+
+### Added — a ceiling of 100 questions per generation request
+
+Per-unit caps already existed — 1-20 questions per topic, at most 10 text sources of 1-30 each —
+but nothing bounded their product. Topics mode asks for one line of topics multiplied by the
+per-topic count, and only the topic text's length was limited, so a few hundred short topic lines
+at 20 questions each reached into the thousands.
+
+`generate.php` now counts what a request is actually asking for, in whichever mode is active, and
+refuses anything over 100. The AMD module applies the same ceiling so the teacher is told before a
+request is sent: the Generate button disables and the credit estimate carries the reason.
+
+Two details the tests pin down:
+
+- The count uses the **clamped** per-topic value, so 6 topics at 50 questions is caught as 120
+  rather than passed through as 300 and then reduced. The ceiling cannot be stepped around by
+  sending a per-topic number the service was going to lower anyway.
+- Blank lines in the topic list do not count, so a trailing newline cannot inflate the total.
+
+**This reduces what two modes could previously do.** Text sources could reach 300 and topics mode
+was effectively unbounded; a request above 100 is now refused in both. A knowledge check is a
+formative activity, so nothing above that figure is a usable activity, but the change is a
+reduction rather than a pure addition. The ceiling is one constant in `generate.php` and one in
+`amd/src/knowledgecheck.js` — change both together.
 
 ### Tests
-- Regression coverage for missing image prerequisites, skipped survey fields,
-  partially upgraded databases, existing settings and answers, and repeat runs.
+Twelve new PHPUnit tests (58 tests, 180 assertions) in a new `generate_test.php`, covering the
+length refusal at and over the limit and with one bad source among several, the cap for each of
+the three modes, the clamped per-topic edge case, blank-line handling, and a student being refused
+outright. Every limit is checked before the service reads its credentials, so the tests need no
+API key and make no outbound request. Verified by mutation: restoring the silent truncation and
+removing the cap fails six of them.
+
+### Not addressed here
+The plugin still does not tell a teacher when the service returns fewer questions than were
+requested for reasons of its own — the generated count is reported as a success with no reference
+to what was asked for. That is the next fix, and it is separate from the two above.
+
+### Version
+- `version.php` → `2026102201` (release `1.5.167`). No DB schema changes; the highest savepoint is
+  unchanged at `2026091001`. `v1.5.157` and every other existing tag remain untouched.
 
 ## [1.5.166] - 2026-09-10
 

@@ -39,12 +39,31 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use core_text;
 use Throwable;
 
 /**
  * Starts a generation job on the external service.
  */
 class generate extends external_api {
+    /**
+     * Maximum characters accepted in one pasted text source.
+     *
+     * Enforced here and mirrored in the AMD module so the teacher is told before they pay
+     * for a generation run. Content over this length is refused, not trimmed.
+     */
+    private const MAX_SOURCE_CHARS = 50000;
+
+    /**
+     * Maximum questions one generation request may ask for, across every mode.
+     *
+     * A knowledge check is a formative activity, so nothing above this is a usable activity;
+     * the ceiling exists to stop an accident (a long topic list multiplied by the per-topic
+     * count) turning into a request for thousands of questions. The per-unit caps still
+     * apply underneath it: 1-20 questions per topic, and at most 10 text sources of 1-30.
+     */
+    private const MAX_TOTAL_QUESTIONS = 100;
+
     /**
      * Describes the parameters accepted by execute().
      *
@@ -302,8 +321,17 @@ class generate extends external_api {
                 if ($sourcetext === '') {
                     return saas_client::failure(get_string('error_text_empty', 'mod_aiknowledgecheck'));
                 }
+                // FIX-KC-TEXTLIMIT (v1.5.167): over-length content used to be truncated here
+                // with substr(), and again in the browser before it was sent. Both were silent,
+                // so a teacher who pasted more than the limit lost the remainder without being
+                // told and then wondered why the generated questions did not cover the later
+                // part of their material. Refuse the request instead; error_text_too_long has
+                // been in the language pack, unused, since the limit was introduced.
+                if (core_text::strlen($sourcetext) > self::MAX_SOURCE_CHARS) {
+                    return saas_client::failure(get_string('error_text_too_long', 'mod_aiknowledgecheck'));
+                }
                 $validatedtextsources[] = [
-                    'text' => substr($sourcetext, 0, 50000),
+                    'text' => $sourcetext,
                     'questionCount' => max(1, min(30, (int)($textitem['questionCount'] ?? 10))),
                 ];
             }
@@ -329,6 +357,30 @@ class generate extends external_api {
         );
         if (count($freetext) > 20) {
             $freetext = array_slice($freetext, 0, 20);
+        }
+
+        // FIX-KC-TOTALCAP (v1.5.167): cap the total this request can ask for. The per-unit
+        // caps above bound each piece, but nothing bounded their product: topics mode asks for
+        // one line of topics times questionsPerTopic, and only the topic text's byte length was
+        // limited, so a few hundred short topic lines at 20 questions each reached into the
+        // thousands. Counted here for whichever mode is active, after that mode's own
+        // validation, so the ceiling cannot be bypassed by driving the service directly.
+        $requested = self::requested_question_total(
+            $useownquestions,
+            $userquestions,
+            $usetextsources,
+            $validatedtextsources,
+            $topics,
+            $questionspertopic
+        );
+        if ($requested > self::MAX_TOTAL_QUESTIONS) {
+            return saas_client::failure(
+                get_string(
+                    'error:toomanyquestions',
+                    'mod_aiknowledgecheck',
+                    (object)['requested' => $requested, 'max' => self::MAX_TOTAL_QUESTIONS]
+                )
+            );
         }
 
         [$apibase, $siteid, $apikey] = saas_client::credentials();
@@ -432,6 +484,63 @@ class generate extends external_api {
             // upgrade that has not run yet) or the write failed.
             debugging('aiknowledgecheck: sourcecontext persist failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
+    }
+
+    /**
+     * How many questions this request is asking the service to produce.
+     *
+     * Each mode counts differently, and only one is ever active: teacher-supplied questions are
+     * one per non-empty line, pasted text asks for the per-source counts added together, and
+     * topics mode asks for one line of topics multiplied by the per-topic count.
+     *
+     * @param bool $useownquestions True when the teacher supplied the questions.
+     * @param string $userquestions The teacher's questions, one per line.
+     * @param bool $usetextsources True when generating from pasted text.
+     * @param array $textsources Validated text sources, each with a questionCount.
+     * @param string $topics The topic list, one per line.
+     * @param int $questionspertopic Questions requested for each topic.
+     * @return int The total requested.
+     */
+    private static function requested_question_total(
+        bool $useownquestions,
+        string $userquestions,
+        bool $usetextsources,
+        array $textsources,
+        string $topics,
+        int $questionspertopic
+    ): int {
+        if ($useownquestions) {
+            return count(self::nonempty_lines($userquestions));
+        }
+
+        if ($usetextsources) {
+            $total = 0;
+            foreach ($textsources as $source) {
+                $total += (int)$source['questionCount'];
+            }
+            return $total;
+        }
+
+        return count(self::nonempty_lines($topics)) * $questionspertopic;
+    }
+
+    /**
+     * Split a textarea value into its non-blank lines.
+     *
+     * @param string $value The raw textarea value.
+     * @return array The trimmed, non-empty lines.
+     */
+    private static function nonempty_lines(string $value): array {
+        $lines = preg_split('/\R/', $value) ?: [];
+
+        return array_values(
+            array_filter(
+                array_map('trim', $lines),
+                function (string $line): bool {
+                    return $line !== '';
+                }
+            )
+        );
     }
 
     /**

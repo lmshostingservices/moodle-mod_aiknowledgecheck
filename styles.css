@@ -2803,3 +2803,17 @@ body.dark .kc-survey-notice-body span {
     font-style: italic;
     font-size: 0.88em;
 }
+
+/* FIX-KC-TEXTLIMIT (v1.5.167): flag a text source that is over the character limit, and the
+   over-cap notice under the credit estimate. Both are warnings about input the service will
+   refuse, so they share the same treatment. */
+#page .kc-text-source-charcount.kc-over-limit {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+#page .kc-over-cap {
+    margin-top: 6px;
+    color: #b91c1c;
+    font-weight: 600;
+}
