@@ -44,21 +44,25 @@ class custom_completion extends activity_custom_completion {
         $this->validate_rule($rule);
 
         switch ($rule) {
+            case 'completionsubmitted':
+                // Survey mode's own rule: one completed attempt is the whole requirement. A
+                // survey has no score to reach, so submitting it is the only thing completion
+                // can mean. Before v1.6.0 this logic lived inside completionallcorrect as a
+                // reinterpretation, because surveys had no rule of their own; db/upgrade.php
+                // moves the affected activities across, and the evaluation is unchanged, so no
+                // learner's completion state moved with it.
+                return $DB->record_exists(
+                    'aiknowledgecheck_attempts',
+                    [
+                        'aiknowledgecheckid' => (int)$this->cm->instance,
+                        'userid' => (int)$this->userid,
+                        'status' => 1,
+                    ]
+                ) ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+
             case 'completionallcorrect':
                 $kid = (int)$this->cm->instance;
                 $userid = (int)$this->userid;
-
-                // H-1: a survey has no right/wrong answers, so "all correct" is meaningless and
-                // could never be met legitimately. Treat the rule as satisfied once the learner
-                // has submitted any completed attempt.
-                $issurvey = (int)$DB->get_field('aiknowledgecheck', 'surveymode', ['id' => $kid]);
-                if ($issurvey) {
-                    $done = $DB->record_exists(
-                        'aiknowledgecheck_attempts',
-                        ['aiknowledgecheckid' => $kid, 'userid' => $userid, 'status' => 1]
-                    );
-                    return $done ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
-                }
 
                 // Check if ANY completed attempt has all correct.
                 $attempt = $DB->get_record_sql(
@@ -148,6 +152,7 @@ class custom_completion extends activity_custom_completion {
     public static function get_defined_custom_rules(): array {
         return [
             'completionallcorrect',
+            'completionsubmitted',
         ];
     }
 
@@ -159,6 +164,7 @@ class custom_completion extends activity_custom_completion {
     public function get_custom_rule_descriptions(): array {
         return [
             'completionallcorrect' => get_string('completiondetail:completionallcorrect', 'mod_aiknowledgecheck'),
+            'completionsubmitted' => get_string('completiondetail:completionsubmitted', 'mod_aiknowledgecheck'),
         ];
     }
 
@@ -173,6 +179,7 @@ class custom_completion extends activity_custom_completion {
             'completionusegrade',
             'completionpassgrade',
             'completionallcorrect',
+            'completionsubmitted',
         ];
     }
 }

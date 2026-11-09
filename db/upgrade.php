@@ -1744,5 +1744,67 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026091001, 'aiknowledgecheck');
     }
 
+    // Release v1.6.0: survey activities get their own completion rule, "Must submit survey".
+    // Until now a survey had no honest completion rule of its own, so custom_completion
+    // reinterpreted completionallcorrect — "All answers must be correct" — as "has submitted",
+    // because a survey has no right answers for that rule to be about. The reinterpretation is
+    // gone, so any survey relying on it is moved onto the real rule here.
+    //
+    // No learner's completion state changes. The new rule evaluates exactly what the
+    // reinterpretation evaluated: one completed attempt exists. Only the label and the stored
+    // flag change, which is why this migration is safe to run unconditionally.
+    // DB: adds aiknowledgecheck.completionsubmitted. version.php → 2026110901.
+    if ($oldversion < 2026110901) {
+        $table = new xmldb_table('aiknowledgecheck');
+        $field = new xmldb_field(
+            'completionsubmitted',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'completionpassgrade'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Move survey activities off the reinterpreted rule and onto the new one. Done with two
+        // targeted statements rather than a row loop: the set is small, both are idempotent, and
+        // neither touches a quiz activity.
+        $DB->set_field_select(
+            'aiknowledgecheck',
+            'completionsubmitted',
+            1,
+            'surveymode = 1 AND completionallcorrect = 1'
+        );
+        $DB->set_field_select(
+            'aiknowledgecheck',
+            'completionallcorrect',
+            0,
+            'surveymode = 1 AND completionsubmitted = 1'
+        );
+
+        // The course_modules.customdata cache holds the active custom completion rules for the
+        // course page, and it still names the old rule for every activity migrated above. Rebuild
+        // cache for those modules so the course page stops advertising a rule they no longer
+        // carry. rebuild_course_cache() is per course, so collect the distinct courses first.
+        $migratedcourses = $DB->get_fieldset_sql(
+            "SELECT DISTINCT cm.course
+               FROM {course_modules} cm
+               JOIN {modules} m ON m.id = cm.module AND m.name = :modname
+               JOIN {aiknowledgecheck} kc ON kc.id = cm.instance
+              WHERE kc.completionsubmitted = 1",
+            ['modname' => 'aiknowledgecheck']
+        );
+        foreach ($migratedcourses as $courseid) {
+            rebuild_course_cache((int)$courseid, true);
+        }
+
+        upgrade_mod_savepoint(true, 2026110901, 'aiknowledgecheck');
+    }
+
     return true;
 }

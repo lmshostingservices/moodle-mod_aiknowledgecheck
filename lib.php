@@ -71,6 +71,9 @@ function aiknowledgecheck_add_instance($data, ?object $mform = null) {
     if (!isset($data->completionallcorrect)) {
         $data->completionallcorrect = 0;
     }
+    if (!isset($data->completionsubmitted)) {
+        $data->completionsubmitted = 0;
+    }
     if (!isset($data->ccemail)) {
         $data->ccemail = '';
     }
@@ -186,6 +189,9 @@ function aiknowledgecheck_update_instance($data, ?object $mform = null) {
     }
     if (!isset($data->completionallcorrect)) {
         $data->completionallcorrect = 0;
+    }
+    if (!isset($data->completionsubmitted)) {
+        $data->completionsubmitted = 0;
     }
     if (!isset($data->ccemail)) {
         $data->ccemail = '';
@@ -510,7 +516,7 @@ function aiknowledgecheck_get_coursemodule_info($coursemodule) {
         !$knowledgecheck = $DB->get_record(
             'aiknowledgecheck',
             ['id' => $coursemodule->instance],
-            'id, name, intro, introformat, completionallcorrect'
+            'id, name, intro, introformat, completionallcorrect, completionsubmitted'
         )
     ) {
         return null;
@@ -526,6 +532,9 @@ function aiknowledgecheck_get_coursemodule_info($coursemodule) {
     // Populate custom completion rules.
     if ($knowledgecheck->completionallcorrect) {
         $info->customdata['customcompletionrules']['completionallcorrect'] = $knowledgecheck->completionallcorrect;
+    }
+    if ($knowledgecheck->completionsubmitted) {
+        $info->customdata['customcompletionrules']['completionsubmitted'] = $knowledgecheck->completionsubmitted;
     }
 
     return $info;
@@ -855,6 +864,10 @@ function mod_aiknowledgecheck_get_completion_active_rule_descriptions($cm) {
 
     if ($knowledgecheck && !empty($knowledgecheck->completionallcorrect)) {
         $descriptions[] = get_string('completiondetail:completionallcorrect', 'mod_aiknowledgecheck');
+    }
+
+    if ($knowledgecheck && !empty($knowledgecheck->completionsubmitted)) {
+        $descriptions[] = get_string('completiondetail:completionsubmitted', 'mod_aiknowledgecheck');
     }
 
     return $descriptions;

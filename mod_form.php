@@ -240,6 +240,10 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $mform = $this->_form;
         $suffix = $this->get_suffix();
 
+        // The two rules are mutually exclusive by subject matter, not by validation: a survey
+        // has no correct answers for "all correct" to be about, and a quiz is not submitted in
+        // the sense a survey is. Each is hidden in the other's mode so a teacher is only ever
+        // offered the rule that means something for the activity in front of them.
         $mform->addElement(
             'checkbox',
             'completionallcorrect' . $suffix,
@@ -247,8 +251,18 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         );
         $mform->setDefault('completionallcorrect' . $suffix, 0);
         $mform->addHelpButton('completionallcorrect' . $suffix, 'completionallcorrect', 'mod_aiknowledgecheck');
+        $mform->hideIf('completionallcorrect' . $suffix, 'surveymode', 'checked');
 
-        return ['completionallcorrect' . $suffix];
+        $mform->addElement(
+            'checkbox',
+            'completionsubmitted' . $suffix,
+            get_string('completionsubmitted', 'mod_aiknowledgecheck')
+        );
+        $mform->setDefault('completionsubmitted' . $suffix, 0);
+        $mform->addHelpButton('completionsubmitted' . $suffix, 'completionsubmitted', 'mod_aiknowledgecheck');
+        $mform->hideIf('completionsubmitted' . $suffix, 'surveymode', 'notchecked');
+
+        return ['completionallcorrect' . $suffix, 'completionsubmitted' . $suffix];
     }
 
     /**
@@ -259,7 +273,9 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
      */
     public function completion_rule_enabled($data) {
         $suffix = $this->get_suffix();
-        return !empty($data['completionallcorrect' . $suffix]);
+
+        return !empty($data['completionallcorrect' . $suffix])
+            || !empty($data['completionsubmitted' . $suffix]);
     }
 
     /**
@@ -271,6 +287,17 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         parent::data_postprocessing($data);
         $suffix = $this->get_suffix();
         $data->completionallcorrect = !empty($data->{"completionallcorrect$suffix"}) ? 1 : 0;
+        $data->completionsubmitted = !empty($data->{"completionsubmitted$suffix"}) ? 1 : 0;
+
+        // Belt and braces for the pair above. hideIf disables the element it hides, so the one
+        // that does not apply to this mode submits nothing and lands as 0 — but a direct POST,
+        // or a future form change, could set both. Store only the rule that matches the mode so
+        // the saved row can never claim a rule the activity cannot satisfy.
+        if (!empty($data->surveymode)) {
+            $data->completionallcorrect = 0;
+        } else {
+            $data->completionsubmitted = 0;
+        }
 
         // Normalise gradepass to a float for the gradebook.
         $data->gradepass = !empty($data->gradepass) ? round((float)$data->gradepass, 5) : 0.0;
@@ -288,6 +315,9 @@ class mod_aiknowledgecheck_mod_form extends moodleform_mod {
         $suffix = $this->get_suffix();
         if (isset($defaultvalues['completionallcorrect'])) {
             $defaultvalues["completionallcorrect$suffix"] = $defaultvalues['completionallcorrect'];
+        }
+        if (isset($defaultvalues['completionsubmitted'])) {
+            $defaultvalues["completionsubmitted$suffix"] = $defaultvalues['completionsubmitted'];
         }
 
         // Load existing image gate file into draft area for filemanager.

@@ -45,6 +45,7 @@ class mod_aiknowledgecheck_generator extends testing_module_generator {
             'questioncount' => 0,
             'passinggrade' => 50,
             'completionallcorrect' => 0,
+            'completionsubmitted' => 0,
             'completionpassgrade' => 0,
             'ccemail' => '',
             'voiceoverenabled' => 0,

@@ -75,8 +75,22 @@ class restore_aiknowledgecheck_activity_structure_step extends restore_activity_
         if (!isset($data->completionpassgrade)) {
             $data->completionpassgrade = 0;
         }
+        if (!isset($data->completionsubmitted)) {
+            $data->completionsubmitted = 0;
+        }
         if (!isset($data->ccemail)) {
             $data->ccemail = '';
+        }
+
+        // Apply the v1.6.0 completion migration to incoming backups as well as to the site's
+        // own rows. A backup taken before that release records a survey whose completion rule is
+        // completionallcorrect, which custom_completion used to reinterpret as "has submitted";
+        // restoring it as-is now would leave an unsatisfiable rule, since a survey has no
+        // correct answers. db/upgrade.php cannot reach a course restored later, so the same
+        // normalisation has to happen here.
+        if (!empty($data->surveymode) && !empty($data->completionallcorrect)) {
+            $data->completionsubmitted = 1;
+            $data->completionallcorrect = 0;
         }
 
         $newitemid = $DB->insert_record('aiknowledgecheck', $data);

@@ -2,6 +2,67 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.6.0] - 2026-11-09
+
+Gives survey mode a completion rule of its own, and retires the workaround it had been using.
+
+**Renumbered from 1.5.169 before release.** Nothing was published under that number — the series
+simply moves to 1.6.0, which is a fairer description of where the plugin is after three releases
+that each added real behaviour. The numeric `$plugin->version` is unchanged at `2026110901`,
+matching the upgrade savepoint this release adds.
+
+### Added — "Must submit survey"
+
+A new completion condition, available only in survey mode: the activity is complete once the
+learner submits the survey. There is no score to reach, so submitting it is the whole
+requirement.
+
+Each mode now offers only the rule that means something for it. "All answers must be correct" is
+hidden in survey mode and "Must submit survey" is hidden outside it, and `data_postprocessing()`
+clears whichever one does not apply before the row is saved — so a stored activity can never
+claim a rule it has no way to satisfy, even via a hand-made POST.
+
+### Changed — the completionallcorrect reinterpretation is gone
+
+A survey has no right answers, so "All answers must be correct" could never be met honestly.
+Rather than leave it unsatisfiable, `custom_completion` quietly reinterpreted it for surveys as
+"has submitted a completed attempt". That worked, but it meant a survey's completion rule was
+labelled as something it was not, and a teacher reading the activity settings — or an auditor
+reading a completion report — was told the wrong thing.
+
+The reinterpretation has been removed and the surveys relying on it are migrated. **No learner's
+completion state changes.** The new rule evaluates exactly what the reinterpretation evaluated:
+one completed attempt exists. Only the label and the stored flag move.
+
+The migration runs in `db/upgrade.php`: survey activities with `completionallcorrect` set gain
+`completionsubmitted` and have the old flag cleared. Quiz activities are untouched, and a survey
+with no completion rule does not gain one. It then rebuilds the course cache for the affected
+courses, because `course_modules.customdata` caches the active rule names for the course page and
+would otherwise keep advertising a rule those activities no longer carry.
+
+The same normalisation is applied in `restore_aiknowledgecheck_stepslib.php`. A backup taken
+before this release records a survey whose rule is `completionallcorrect`; restoring it later
+would reintroduce the unsatisfiable rule, and an upgrade step cannot reach a course restored
+afterwards.
+
+### Tests
+Ten new PHPUnit tests (68 tests, 207 assertions): the rule needing a completed attempt, an
+in-progress attempt not counting, scoping per user and per activity, the quiz rule still
+requiring every answer correct, both rules being declared with descriptions, the course-page
+cache advertising the right rule, and the migration itself — including that it leaves quizzes
+alone, does not invent a rule for a survey that had none, and is idempotent. The install path
+builds from `install.xml` and never runs the upgrade branch, so the migration is driven directly;
+without that it would have shipped unexercised. Verified by mutation: a migration that forgets to
+clear the old flag, one that ignores survey mode, and a rule that accepts an unfinished attempt
+are each caught.
+
+Two new Behat scenarios (32 scenarios, 364 steps) cover the rule appearing only in survey mode
+and round-tripping through the form.
+
+### Version
+- `version.php` → `2026110901` (release `1.6.0`). Adds `aiknowledgecheck.completionsubmitted`;
+  savepoint `2026110901`. `v1.5.157` and every other existing tag remain untouched.
+
 ## [1.5.168] - 2026-10-26
 
 Tells the teacher when the service returns fewer questions than were asked for. This is the third

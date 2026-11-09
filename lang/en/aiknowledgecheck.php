@@ -85,8 +85,13 @@ $string['completionallcorrect'] = 'All answers must be correct';
 $string['completionallcorrect_help'] = 'When enabled, the activity will only be marked as complete when the student answers all questions correctly in a single attempt.';
 $string['completiondetail:completionallcorrect'] = 'Answer all questions correctly';
 $string['completiondetail:completionpassgrade'] = 'Achieve passing grade';
+$string['completiondetail:completionsubmitted'] = 'Submit the survey';
 $string['completionpassgrade'] = 'Achieve passing grade';
 $string['completionpassgrade_help'] = 'When enabled, the activity will be marked as complete when the student achieves the passing grade percentage set in the Grade settings section. Their best attempt score is used.';
+$string['completionsubmitted'] = 'Must submit survey';
+$string['completionsubmitted_help'] = 'When enabled, the activity is marked complete once the learner submits the survey. There is no score to reach — submitting it is the requirement.
+
+This rule is only available in survey mode. Quiz activities use \'All answers must be correct\' or the passing-grade condition instead.';
 $string['content_language'] = 'Content Language';
 $string['content_language_help'] = 'Controls the spelling and grammar of generated questions (e.g. colour vs color).';
 $string['context_settings'] = 'Context Settings';

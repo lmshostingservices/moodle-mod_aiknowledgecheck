@@ -16,6 +16,7 @@
         <FIELD NAME="passinggrade" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Passing grade percentage"/>
         <FIELD NAME="completionallcorrect" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Complete when all correct"/>
         <FIELD NAME="completionpassgrade" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Complete when passing grade achieved"/>
+        <FIELD NAME="completionsubmitted" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Survey mode only: complete when the learner has submitted the survey. Added v1.6.0, replacing the reinterpretation of completionallcorrect that survey activities previously relied on."/>
         <FIELD NAME="ccemail" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="CC email for notifications"/>
         <FIELD NAME="voiceoverenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether voiceover is enabled (1=yes, 0=no)"/>
         <FIELD NAME="voicelanguage" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="en-AU" SEQUENCE="false" COMMENT="Voice language code"/>

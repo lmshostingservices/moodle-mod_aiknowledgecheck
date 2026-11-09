@@ -64,3 +64,44 @@ Feature: An AI Knowledge Check can be configured from the activity settings form
     And I am on the "Assessment mode" "aiknowledgecheck activity editing" page
     And I expand all fieldsets
     Then the field "Show the correct answer after a wrong response" matches value "0"
+
+  @javascript
+  Scenario: The survey completion rule appears only in survey mode
+    Given the following "courses" exist:
+      | fullname | shortname | category | enablecompletion |
+      | Course 2 | C2        | 0        | 1                |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | teacher1 | C2     | editingteacher |
+    And I am on the "Course 2" course page logged in as "teacher1"
+    When I add a aiknowledgecheck activity to course "Course 2" section "1" and I fill the form with:
+      | Name | Completion modes |
+    Then I am on the "Completion modes" "aiknowledgecheck activity editing" page
+    And I expand all fieldsets
+    And I set the field "Add requirements" to "1"
+    And I should see "All answers must be correct"
+    And I should not see "Must submit survey"
+    When I set the field "Enable Survey Mode" to "1"
+    Then I should see "Must submit survey"
+    And I should not see "All answers must be correct"
+
+  @javascript
+  Scenario: The survey completion rule saves and comes back set
+    Given the following "courses" exist:
+      | fullname | shortname | category | enablecompletion |
+      | Course 2 | C2        | 0        | 1                |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | teacher1 | C2     | editingteacher |
+    And I am on the "Course 2" course page logged in as "teacher1"
+    When I add a aiknowledgecheck activity to course "Course 2" section "1" and I fill the form with:
+      | Name | Feedback completion |
+    Then I am on the "Feedback completion" "aiknowledgecheck activity editing" page
+    And I expand all fieldsets
+    And I set the field "Enable Survey Mode" to "1"
+    And I set the field "Add requirements" to "1"
+    And I set the field "Must submit survey" to "1"
+    And I press "Save and return to course"
+    And I am on the "Feedback completion" "aiknowledgecheck activity editing" page
+    And I expand all fieldsets
+    Then the field "Must submit survey" matches value "1"
