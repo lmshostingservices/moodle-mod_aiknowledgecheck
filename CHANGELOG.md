@@ -2,6 +2,15 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.6.1] - 2026-11-10
+
+### Added
+- AI Course Builder adapter. AI Course Builder can now build Knowledge Checks through the existing generate, status and save functions.
+
+### Fixed
+- Course Builder questions are written for the real audience. The adapter sends the sector and level (VET qualification level, university level, workplace context or general), the learner profile, the language and spelling, and the teacher's own instructions. Without this every question was written for a VET Certificate III learner.
+- Course Builder questions get a mapping topic and criteria from the lesson, so the question-mapping export is no longer blank.
+
 ## [1.6.0] - 2026-11-09
 
 Gives survey mode a completion rule of its own, and retires the workaround it had been using.
