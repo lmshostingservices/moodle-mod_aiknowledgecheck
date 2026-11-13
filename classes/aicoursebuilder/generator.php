@@ -16,8 +16,6 @@
 
 namespace mod_aiknowledgecheck\aicoursebuilder;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * AI Course Builder adapter for AI Knowledge Check.
  *
@@ -26,13 +24,28 @@ defined('MOODLE_INTERNAL') || die();
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class generator {
+    /** @var string The frankenstyle component this adapter builds for. */
     private const COMPONENT = 'mod_aiknowledgecheck';
+    /** @var int Questions requested for each learning outcome in the brief. */
     private const QUESTIONS_PER_OUTCOME = 5;
 
+    /**
+     * How many questions a brief will produce.
+     *
+     * @param array $brief The Course Builder brief.
+     * @return int The number of questions.
+     */
     public static function native_estimate(array $brief): int {
         return count(self::topics($brief)) * self::QUESTIONS_PER_OUTCOME;
     }
 
+    /**
+     * Start a generation job for a brief.
+     *
+     * @param int $cmid Course module ID of the activity to fill.
+     * @param array $brief The Course Builder brief.
+     * @return string The job ID to poll.
+     */
     public static function native_generate(int $cmid, array $brief): string {
         $topics = self::topics($brief);
         if (!$topics) {
@@ -71,6 +84,13 @@ class generator {
         return clean_param((string)$payload['jobId'], PARAM_ALPHANUMEXT);
     }
 
+    /**
+     * Poll a generation job and save its questions once it completes.
+     *
+     * @param int $cmid Course module ID.
+     * @param string $jobid The job ID returned by native_generate().
+     * @return array Status array with status, retryable and either result or error.
+     */
     public static function native_status(int $cmid, string $jobid): array {
         global $DB;
         $status = \mod_aiknowledgecheck\external\get_generation_status::execute($cmid, $jobid);
@@ -168,6 +188,13 @@ class generator {
         return $questions;
     }
 
+    /**
+     * Record the outcome of a completed job against the activity.
+     *
+     * @param int $cmid Course module ID.
+     * @param array $result The result payload from native_status().
+     * @return void
+     */
     public static function native_save_result(int $cmid, array $result): void {
         global $DB;
         $cm = get_coursemodule_from_id('aiknowledgecheck', $cmid, 0, false, MUST_EXIST);
@@ -241,6 +268,12 @@ class generator {
         return $result;
     }
 
+    /**
+     * Extract the topic list from a brief.
+     *
+     * @param array $brief The Course Builder brief.
+     * @return array The topics, one per learning outcome.
+     */
     private static function topics(array $brief): array {
         $lesson = is_array($brief['lesson'] ?? null) ? $brief['lesson'] : [];
         $topics = [];
@@ -256,19 +289,44 @@ class generator {
         return array_values(array_unique(array_slice($topics, 0, 20)));
     }
 
+    /**
+     * Whether this adapter can run on the current site.
+     *
+     * @return bool True when AI Course Builder can build knowledge checks here.
+     */
     public static function is_available(): bool {
         return class_exists('\local_aicoursebuilder\local\generator_runtime')
             && \local_aicoursebuilder\local\generator_runtime::component_available(self::COMPONENT);
     }
 
+    /**
+     * Adapter entry point for the question-count estimate.
+     *
+     * @param array $brief The Course Builder brief.
+     * @return int The number of questions.
+     */
     public static function estimate(array $brief): int {
         return \local_aicoursebuilder\local\generator_runtime::estimate(self::COMPONENT, $brief);
     }
 
+    /**
+     * Adapter entry point for starting generation.
+     *
+     * @param int $cmid Course module ID.
+     * @param array $brief The Course Builder brief.
+     * @return string The job ID to poll.
+     */
     public static function generate(int $cmid, array $brief): string {
         return \local_aicoursebuilder\local\generator_runtime::generate(self::COMPONENT, $cmid, $brief);
     }
 
+    /**
+     * Adapter entry point for polling a job.
+     *
+     * @param int $cmid Course module ID.
+     * @param string $jobid The job ID.
+     * @return array Status array with status, retryable and either result or error.
+     */
     public static function status(int $cmid, string $jobid): array {
         return \local_aicoursebuilder\local\generator_runtime::status(self::COMPONENT, $cmid, $jobid);
     }

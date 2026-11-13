@@ -78,6 +78,16 @@ class save_questions extends external_api {
                 ),
                 'voiceGender' => new external_value(PARAM_ALPHA, 'Voice gender, empty to leave unchanged', VALUE_DEFAULT, ''),
                 'voiceStyle' => new external_value(PARAM_ALPHA, 'Voice style, empty to leave unchanged', VALUE_DEFAULT, ''),
+                // FIX-KC-SURVEY-EDIT (v1.6.3): whether to replace a survey's answer options with
+                // the canonical labels for its scale. Defaults to on, so every existing caller
+                // keeps the behaviour it has today; the question editor passes 0, because a
+                // teacher saving their own wording is the one case where overwriting it is wrong.
+                'enforceScale' => new external_value(
+                    PARAM_INT,
+                    '1 to reset a survey question to its scale labels, 0 to keep the supplied options',
+                    VALUE_DEFAULT,
+                    1
+                ),
             ]
         );
     }
@@ -91,6 +101,7 @@ class save_questions extends external_api {
      * @param string $voicelanguage Voice language code.
      * @param string $voicegender Voice gender.
      * @param string $voicestyle Voice style.
+     * @param int $enforcescale 1 to reset survey options to the scale labels, 0 to keep them.
      * @return array Result array matching execute_returns().
      */
     public static function execute(
@@ -99,7 +110,8 @@ class save_questions extends external_api {
         int $voiceoverenabled = -1,
         string $voicelanguage = '',
         string $voicegender = '',
-        string $voicestyle = ''
+        string $voicestyle = '',
+        int $enforcescale = 1
     ): array {
         global $DB;
 
@@ -112,6 +124,7 @@ class save_questions extends external_api {
                 'voiceLanguage' => $voicelanguage,
                 'voiceGender' => $voicegender,
                 'voiceStyle' => $voicestyle,
+                'enforceScale' => $enforcescale,
             ]
         );
 
@@ -138,12 +151,16 @@ class save_questions extends external_api {
 
         $DB->delete_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $cm->instance]);
 
+        $enforce = !empty($params['enforceScale']);
         $questionnumber = 1;
         foreach ($questionsdata as $q) {
             if (!is_array($q)) {
                 $q = [];
             }
-            $DB->insert_record('aiknowledgecheck_questions', self::build_record($q, $questionnumber++, $cm, $knowledgecheck));
+            $DB->insert_record(
+                'aiknowledgecheck_questions',
+                self::build_record($q, $questionnumber++, $cm, $knowledgecheck, $enforce)
+            );
         }
 
         $DB->set_field('aiknowledgecheck', 'questioncount', count($questionsdata), ['id' => $cm->instance]);
@@ -178,9 +195,16 @@ class save_questions extends external_api {
      * @param int $questionnumber Its 1-based position.
      * @param \stdClass $cm Course module record.
      * @param \stdClass $knowledgecheck Activity record.
+     * @param bool $enforcescale Whether to reset a survey question's options to its scale labels.
      * @return \stdClass The row to insert.
      */
-    private static function build_record(array $q, int $questionnumber, \stdClass $cm, \stdClass $knowledgecheck): stdClass {
+    private static function build_record(
+        array $q,
+        int $questionnumber,
+        \stdClass $cm,
+        \stdClass $knowledgecheck,
+        bool $enforcescale
+    ): stdClass {
         $record = new stdClass();
         $record->aiknowledgecheckid = $cm->instance;
         $record->questionnumber = $questionnumber;
@@ -227,15 +251,27 @@ class save_questions extends external_api {
         // The block also runs AFTER the feedback and correctanswer assignments above, where
         // ajax.php had it before them — so its `feedbackN = ''` and `correctanswer = 0` would
         // have been overwritten by those generic assignments even had it been reachable.
+        //
+        // FIX-KC-SURVEY-EDIT (v1.6.3): the overwrite now happens only when the caller asks for
+        // it. Enforcing it on EVERY save meant a teacher who edited the option wording in the
+        // question editor had it silently replaced by the scale labels the moment they saved:
+        // the editor keeps its own copy and does not re-read, so it went on showing the typed
+        // text while the database held something else, and the change only surfaced in the
+        // student view. The enforcement is still right for generated questions — the service
+        // does not get to choose a survey's scale — so generation keeps it and the editor
+        // turns it off.
         if (!empty($knowledgecheck->surveymode) && $record->questiontype !== 'freetext') {
-            $scalekey = (isset($knowledgecheck->surveyscale) && $knowledgecheck->surveyscale !== '')
-                ? $knowledgecheck->surveyscale : 'likert5agree';
-            $scaleopts = mod_aiknowledgecheck_survey_scale_options($scalekey);
-            for ($si = 0; $si < 5; $si++) {
-                $field = 'answer' . ($si + 1);
-                $record->$field = $scaleopts[$si] ?? ($si < 4 ? '' : null);
+            if ($enforcescale) {
+                $scalekey = (isset($knowledgecheck->surveyscale) && $knowledgecheck->surveyscale !== '')
+                    ? $knowledgecheck->surveyscale : 'likert5agree';
+                $scaleopts = mod_aiknowledgecheck_survey_scale_options($scalekey);
+                for ($si = 0; $si < 5; $si++) {
+                    $field = 'answer' . ($si + 1);
+                    $record->$field = $scaleopts[$si] ?? ($si < 4 ? '' : null);
+                }
             }
-            // Survey questions are ungraded; per-option feedback is meaningless.
+
+            // Survey questions are ungraded whatever the options say, so these hold either way.
             $record->feedback1 = '';
             $record->feedback2 = '';
             $record->feedback3 = '';

@@ -5758,12 +5758,22 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 voiceoverEnabled: $('#voiceover-toggle').is(':checked') ? 1 : 0,
                 voiceLanguage: $('#voice-language').val() || '',
                 voiceGender: $('#voice-gender').val() || '',
-                voiceStyle: $('#voice-style').val() || ''
+                voiceStyle: $('#voice-style').val() || '',
+                // FIX-KC-SURVEY-EDIT (v1.6.3): the teacher is saving their own wording, so the
+                // service must not replace a survey's options with its scale labels. Generation
+                // still enforces them; this is the one caller that opts out.
+                enforceScale: 0
             }
         }])[0].done(function(response) {
                 if (response.ok) {
                     kcLog('[KC] Questions saved:', response.saved);
-                    callback(true);
+                    // FIX-KC-EDITOR-REREAD (v1.6.3): read the questions back rather than trusting
+                    // the local copy. The editor used to keep showing whatever was typed, so
+                    // anything the server altered or rejected on the way in stayed invisible here
+                    // and only appeared in the student view.
+                    reloadQuestionsAfterSave(function() {
+                        callback(true);
+                    });
                 } else {
                     kcError('[KC] Save failed:', response.error);
                     callback(false);
@@ -5771,6 +5781,66 @@ define('mod_aiknowledgecheck/knowledgecheck',
         }).fail(function(err) {
             kcError('[KC] Save request failed:', err);
             callback(false);
+        });
+    }
+
+    /**
+     * Re-read the stored questions into quizData after a save.
+     *
+     * The editor's own copy is what the teacher typed; this is what the database actually holds.
+     * Failure is not fatal — the save already succeeded, so the callback runs either way and the
+     * editor simply keeps the copy it had.
+     *
+     * @param {Function} done Called once quizData reflects the stored questions, or on failure.
+     * @return {void}
+     */
+    function reloadQuestionsAfterSave(done) {
+        Ajax.call([{
+            methodname: 'mod_aiknowledgecheck_get_questions',
+            args: {cmid: parseInt(config.cmid, 10)}
+        }])[0].done(function(response) {
+            if (!response || !response.ok || !Array.isArray(response.questions)) {
+                done();
+                return;
+            }
+
+            // Matched by position, not by id. Saving deletes every row and re-inserts, so the
+            // ids the editor is holding belong to the questions that were just removed; save
+            // assigns questionnumber in the order it was given and get_questions returns them
+            // in that order, so index is the one thing both sides agree on. The fresh ids are
+            // picked up here too, which is what keeps the editor's copy usable afterwards.
+            //
+            // Only text, options and id are taken. The editor's entries also carry
+            // per-question media state and audio that this response is not the authority on,
+            // so quizData is patched rather than rebuilt.
+            if (response.questions.length !== (quizData || []).length) {
+                kcWarn('[KC] Stored question count does not match the editor; skipping refresh.');
+                done();
+                return;
+            }
+
+            (quizData || []).forEach(function(q, idx) {
+                var sq = response.questions[idx];
+                if (!sq) {
+                    return;
+                }
+                q.id = sq.id;
+                q.question = sq.question;
+                if (Array.isArray(sq.options)) {
+                    q.options = sq.options.map(function(o) {
+                        return o.text;
+                    });
+                    q.explanations = sq.options.map(function(o) {
+                        return o.explanation || '';
+                    });
+                }
+            });
+
+            kcLog('[KC] Editor refreshed from the stored questions:', response.questions.length);
+            done();
+        }).fail(function(err) {
+            kcWarn('[KC] Could not re-read questions after saving:', err);
+            done();
         });
     }
 

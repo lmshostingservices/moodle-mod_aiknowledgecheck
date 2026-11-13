@@ -2,6 +2,66 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.6.3] - 2026-11-13
+
+Fixes a survey defect that discarded a teacher's edits to the answer options without telling
+them.
+
+### Fixed — editing a survey's answer options had no effect
+
+Editing the option wording on a survey question, saving, and then viewing the activity as a
+student showed the original scale labels. The editor went on displaying the new wording, so the
+two views disagreed and it looked as though some questions saved and others did not.
+
+Neither had. `save_questions` replaced every survey question's options with the canonical labels
+for the activity's scale on **every** save. That enforcement was added in v1.5.141 for a good
+reason — the generation service does not get to choose a scale the teacher did not pick — but it
+could not tell a generated question from one a teacher had just edited, so it overwrote both. An
+activity on the 5-point Agreement scale had its options reset to Strongly Agree / Agree / Neither
+Agree nor Disagree / Disagree / Strongly Disagree whatever was typed.
+
+The enforcement is now requested by the caller rather than applied to everyone. `save_questions`
+takes an `enforceScale` parameter that defaults to **on**, so generation — including the AI
+Course Builder adapter, which calls the service directly — behaves exactly as before. The
+question editor is the single caller that passes it off, because a teacher saving their own
+wording is the one case where replacing it is wrong.
+
+Survey questions remain ungraded either way: per-option feedback and the answer key are still
+cleared on save, so editing the options cannot turn a survey into something that marks people.
+
+**Wording already overwritten cannot be recovered** — it was never stored. Any survey whose
+options were edited before this release needs them entered again, once.
+
+### Fixed — the question editor showed what you typed, not what was stored
+
+The editor kept its own copy after a successful save and never read back, so anything the server
+changed or rejected on the way in stayed invisible until someone opened the activity as a
+student. It now re-reads the stored questions and patches the result onto what it is holding.
+
+Matched by position rather than by id: saving deletes every question row and re-inserts, so the
+ids the editor holds belong to the rows that were just removed. The fresh ids are picked up at
+the same time. Only question text and options are taken from the response — the editor's entries
+also carry per-question media state the service is not the authority on.
+
+### Fixed — coding style regressions from 1.6.1
+
+`classes/aicoursebuilder/generator.php` arrived without docblocks on its two constants and nine
+methods, and with a redundant `MOODLE_INTERNAL` check: eleven phpcs errors and a warning in a
+file that had never been through the checker. The plugin had been phpcs-clean since v1.5.158, and
+is again. No behaviour changed.
+
+### Tests
+Six new PHPUnit tests (74 tests, 219 assertions) covering a teacher's wording surviving a save,
+generation still being forced onto the activity's scale, the scale being the activity's own and
+not merely the default, quizzes being unaffected in both directions, surveys staying ungraded
+after an edit, and the saved wording being what `get_questions` serves back — the path the student
+view reads. Verified by mutation in both directions: always enforcing fails the edit tests, never
+enforcing fails the generation tests.
+
+### Version
+- `version.php` → `2026111301` (release `1.6.3`). No DB schema changes; the highest savepoint is
+  unchanged at `2026110901`. `v1.5.157` and every other existing tag remain untouched.
+
 ## [1.6.2] - 2026-11-13
 
 ### Added

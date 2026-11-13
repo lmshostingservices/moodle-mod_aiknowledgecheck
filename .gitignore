@@ -1,0 +1,10 @@
+# Local build and editor noise. The plugin itself is tracked in full, including
+# amd/build, because Moodle executes the built files rather than amd/src.
+node_modules/
+.DS_Store
+__MACOSX/
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
