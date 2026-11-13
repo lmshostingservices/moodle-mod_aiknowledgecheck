@@ -111,6 +111,7 @@ class generate_image extends external_api {
             return self::result(false, get_string('error:connectionfailed', 'mod_aiknowledgecheck'));
         }
 
+        saas_client::report_usage($context, $raw, $httpcode, 'image');
         $result = $raw !== null ? json_decode($raw, true) : null;
         if ($httpcode === 200 && is_array($result) && !empty($result['ok']) && !empty($result['imageDataUrl'])) {
             // Sanitise before handing the URL back: the same check the save path applies, so a

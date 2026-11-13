@@ -175,6 +175,7 @@ class regenerate_instructions extends external_api {
             200
         );
 
+        saas_client::report_usage($context, $raw, $httpcode, 'questions');
         return saas_client::envelope($raw, $httpcode, $connectionerror);
     }
 

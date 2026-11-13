@@ -59,6 +59,7 @@ use external_function_parameters;
 use external_single_structure;
 use external_value;
 use context_module;
+use mod_aiknowledgecheck\saas_client;
 
 /**
  * Returns the current status of an asynchronous question generation job.
@@ -128,6 +129,9 @@ class get_generation_status extends external_api {
                 'error' => get_string('error:statuscheckfailed', 'mod_aiknowledgecheck'),
             ];
         }
+
+        // A finished job carries its questions: Client Portal (when installed) bills it once.
+        saas_client::report_usage($context, (string)$response, $httpcode, 'questions', (string)$params['jobid']);
 
         // Passed through verbatim — see the design note at the top of this file.
         return [

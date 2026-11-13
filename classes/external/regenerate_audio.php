@@ -119,6 +119,7 @@ class regenerate_audio extends external_api {
             170
         );
 
+        saas_client::report_usage($context, $raw, $httpcode, 'audio');
         return saas_client::envelope($raw, $httpcode, $connectionerror);
     }
 

@@ -458,6 +458,7 @@ class generate extends external_api {
             $usetextsources ? 160 : 100
         );
 
+        saas_client::report_usage($context, $raw, $httpcode, 'questions');
         return saas_client::envelope($raw, $httpcode, $connectionerror);
     }
 

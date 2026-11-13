@@ -128,6 +128,61 @@ class saas_client {
     }
 
     /**
+     * Tell Client Portal (when installed) what a call cost, so the site owner can bill the client.
+     *
+     * The service's own figure is used when its reply gives one. Otherwise the published prices: 1 credit per
+     * question (2 with voiceover), 1 per regenerated voice clip and 5 per image.
+     *
+     * @param \context $context the activity
+     * @param string|null $raw raw reply
+     * @param int $httpcode
+     * @param string $kind questions, audio or image
+     * @param string $ref job id, so a polled job is counted once
+     * @return void
+     */
+    public static function report_usage(
+        \context $context,
+        ?string $raw,
+        int $httpcode,
+        string $kind,
+        string $ref = ''
+    ): void {
+        global $USER;
+        if ($httpcode !== 200 || $raw === null || !method_exists('\\local_clientportal\\api', 'record_lmslabs_call')) {
+            return;
+        }
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            return;
+        }
+        $fallback = 0;
+        if ($kind === 'image') {
+            $fallback = 5;
+        } else {
+            $items = $data['questions'] ?? ($data['audioData'] ?? ($data['audio'] ?? []));
+            $items = is_array($items) ? $items : [];
+            $fallback = count($items);
+            if ($kind === 'questions') {
+                foreach ($items as $item) {
+                    if (is_array($item) && (!empty($item['audioData']) || !empty($item['audio']))) {
+                        $fallback = 2 * count($items);
+                        break;
+                    }
+                }
+            }
+        }
+        \local_clientportal\api::record_lmslabs_call(
+            (int)$USER->id,
+            (int)$context->id,
+            'mod_aiknowledgecheck',
+            $data,
+            $fallback,
+            'Knowledge check ' . $kind,
+            $ref
+        );
+    }
+
+    /**
      * Turn a raw service response into the {ok, error, resultjson} envelope the migrated
      * External Services return.
      *
