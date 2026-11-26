@@ -44,6 +44,9 @@ require_once($CFG->dirroot . '/mod/aiknowledgecheck/lib.php');
 #[\PHPUnit\Framework\Attributes\CoversClass(byok::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(engine::class)]
 final class byok_test extends \externallib_advanced_testcase {
+    /** @var string A Markdown code fence (three backticks). */
+    private const FENCE = "\x60\x60\x60";
+
     /** @var array Requests the mocked providers received. */
     protected $requests = [];
     /** @var array Text answers the mocked text provider gives, in order. */
@@ -64,7 +67,7 @@ final class byok_test extends \externallib_advanced_testcase {
         set_config('testpublickey', base64_encode(sodium_crypto_sign_publickey($pair)), 'local_aiconfig');
         $payload = json_encode(['v' => 1, 'id' => 'lic_t', 'site' => \local_aiconfig\byok\licence::site_host(),
             'plan' => 'pro', 'byok' => true, 'products' => ['*'], 'sub' => 'sub_t', 'exp' => time() + DAYSECS]);
-        $b64 = function(string $s): string {
+        $b64 = function (string $s): string {
             return rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
         };
         set_config('licencekey', $b64($payload) . '.' .
@@ -79,7 +82,7 @@ final class byok_test extends \externallib_advanced_testcase {
         set_config('apikey', '', 'mod_aiknowledgecheck');
         $this->requests = [];
         $this->answers = [];
-        $GLOBALS['local_aiconfig_byok_mock'] = function($url, $headers, $body, $vendor, $raw = false) {
+        $GLOBALS['local_aiconfig_byok_mock'] = function ($url, $headers, $body, $vendor, $raw = false) {
             $this->requests[] = ['url' => $url, 'body' => $body, 'vendor' => $vendor];
             if (strpos($url, 'texttospeech') !== false) {
                 return ['audioContent' => base64_encode('OggS-' . $body['input']['text'])];
@@ -155,9 +158,30 @@ final class byok_test extends \externallib_advanced_testcase {
     protected function generate(array $over = []): array {
         $a = $over + ['topics' => "Isolation\nLockout", 'perTopic' => 2, 'voiceover' => 0, 'voice' => 'Kore',
             'language' => 'en-AU'];
-        $result = generate::execute($this->cm->id, $a['topics'], $a['perTopic'], 1, 'Australia', 'WA', 'Mining', 'Iron ore',
-            'Supervisor', 'Crusher operator', 'vet', 'cert3', '', '', 0, '', 0, '', $a['voiceover'], $a['language'], 'female',
-            $a['voice']);
+        $result = generate::execute(
+            $this->cm->id,
+            $a['topics'],
+            $a['perTopic'],
+            1,
+            'Australia',
+            'WA',
+            'Mining',
+            'Iron ore',
+            'Supervisor',
+            'Crusher operator',
+            'vet',
+            'cert3',
+            '',
+            '',
+            0,
+            '',
+            0,
+            '',
+            $a['voiceover'],
+            $a['language'],
+            'female',
+            $a['voice']
+        );
         return external_api::clean_returnvalue(generate::execute_returns(), $result);
     }
 
@@ -168,8 +192,10 @@ final class byok_test extends \externallib_advanced_testcase {
      * @return array
      */
     protected function poll(string $jobid): array {
-        $result = external_api::clean_returnvalue(get_generation_status::execute_returns(),
-            get_generation_status::execute($this->cm->id, $jobid));
+        $result = external_api::clean_returnvalue(
+            get_generation_status::execute_returns(),
+            get_generation_status::execute($this->cm->id, $jobid)
+        );
         $this->assertTrue($result['ok']);
         return json_decode($result['payload'], true);
     }
@@ -216,7 +242,7 @@ final class byok_test extends \externallib_advanced_testcase {
         $q = $done['questions'][0];
         $this->assertCount(4, $q['audioData']);
         $this->assertSame('OggS-' . $q['explanations'][0], base64_decode($q['audioData'][0]));
-        $tts = array_values(array_filter($this->requests, function($r) {
+        $tts = array_values(array_filter($this->requests, function ($r) {
             return strpos($r['url'], 'texttospeech') !== false;
         }));
         $this->assertCount(4, $tts);
@@ -230,14 +256,16 @@ final class byok_test extends \externallib_advanced_testcase {
     public function test_openai_voice_gets_the_matching_voice(): void {
         set_config('src_voice', 'ownkey', 'local_aiconfig');
         set_config('vendor_voice', 'openai', 'local_aiconfig');
-        $GLOBALS['local_aiconfig_byok_mock'] = function($url, $headers, $body) {
+        $GLOBALS['local_aiconfig_byok_mock'] = function ($url, $headers, $body) {
             $this->requests[] = ['url' => $url, 'body' => $body];
             return 'OggS-openai';
         };
         $questions = json_decode($this->questions(1), true)['questions'];
         $questions[0]['explanations'] = array_column($questions[0]['options'], 'explanation');
-        $result = external_api::clean_returnvalue(regenerate_audio::execute_returns(),
-            regenerate_audio::execute($this->cm->id, json_encode($questions), 'en-GB', 'Puck'));
+        $result = external_api::clean_returnvalue(
+            regenerate_audio::execute_returns(),
+            regenerate_audio::execute($this->cm->id, json_encode($questions), 'en-GB', 'Puck')
+        );
         $this->assertTrue($result['ok'], $result['error']);
         $out = json_decode($result['resultjson'], true);
         $this->assertSame(base64_encode('OggS-openai'), $out['questions'][0]['audioData'][1]);
@@ -284,9 +312,11 @@ final class byok_test extends \externallib_advanced_testcase {
         }
         $rewritten = $questions;
         $rewritten[0]['question'] = 'Quelle étape vient en premier ?';
-        $this->answers = ['```json' . "\n" . json_encode($rewritten) . "\n```"];
-        $result = external_api::clean_returnvalue(regenerate_with_settings::execute_returns(),
-            regenerate_with_settings::execute($this->cm->id, json_encode($questions), 'fr-FR', 0, 'female', 'Aoede'));
+        $this->answers = [self::FENCE . 'json' . "\n" . json_encode($rewritten) . "\n" . self::FENCE];
+        $result = external_api::clean_returnvalue(
+            regenerate_with_settings::execute_returns(),
+            regenerate_with_settings::execute($this->cm->id, json_encode($questions), 'fr-FR', 0, 'female', 'Aoede')
+        );
         $this->assertTrue($result['ok'], $result['error']);
         $out = json_decode($result['resultjson'], true);
         $this->assertSame('Quelle étape vient en premier ?', $out['questions'][0]['question']);
@@ -301,8 +331,10 @@ final class byok_test extends \externallib_advanced_testcase {
     public function test_picture_on_own_image_provider(): void {
         set_config('src_image', 'ownkey', 'local_aiconfig');
         set_config('vendor_image', 'openai', 'local_aiconfig');
-        $result = external_api::clean_returnvalue(generate_image::execute_returns(),
-            generate_image::execute($this->cm->id, 'A crusher operator checking the isolation board at dawn'));
+        $result = external_api::clean_returnvalue(
+            generate_image::execute_returns(),
+            generate_image::execute($this->cm->id, 'A crusher operator checking the isolation board at dawn')
+        );
         $this->assertTrue($result['ok'], $result['error']);
         $this->assertStringStartsWith('data:image/jpeg;base64,', $result['imageDataUrl']);
         $this->assertSame('1024x1536', $this->requests[0]['body']['size']);

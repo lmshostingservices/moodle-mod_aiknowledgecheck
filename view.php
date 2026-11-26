@@ -290,12 +290,14 @@ if ($cancreate) {
         // LMS Labs credentials are set (nothing is charged to credits then).
         $byokparts = array_keys(array_filter($byokstate));
         if ($byokparts) {
-            echo html_writer::tag('div',
+            $detail = get_string('byok:badge_' . implode('_', $byokparts), 'mod_aiknowledgecheck');
+            echo html_writer::tag(
+                'div',
                 html_writer::tag('i', '', ['class' => 'fa fa-microchip', 'aria-hidden' => 'true']) .
-                html_writer::span(get_string('byok:badge', 'mod_aiknowledgecheck'), 'kc-byok-badge-label') .
-                html_writer::span(get_string('byok:badge_' . implode('_', $byokparts), 'mod_aiknowledgecheck'),
-                    'kc-byok-badge-detail'),
-                ['class' => 'kc-byok-badge', 'data-testid' => 'badge-byok']);
+                    html_writer::span(get_string('byok:badge', 'mod_aiknowledgecheck'), 'kc-byok-badge-label') .
+                    html_writer::span($detail, 'kc-byok-badge-detail'),
+                ['class' => 'kc-byok-badge', 'data-testid' => 'badge-byok']
+            );
         }
         if (!empty($siteid) && !empty($apikey)) {
             ?>

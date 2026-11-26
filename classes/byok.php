@@ -90,7 +90,7 @@ class byok {
      * @param callable|null $progress Told how a generation is going.
      */
     protected static function hooks(?callable $progress = null): void {
-        engine::$aicall = function(string $system, string $user, array $options): string {
+        engine::$aicall = function (string $system, string $user, array $options): string {
             $opts = ['json' => !empty($options['json']), 'timeout' => self::TEXT_TIMEOUT];
             if ($options['maxtokens'] !== null) {
                 $opts['maxtokens'] = (int) $options['maxtokens'];
@@ -100,10 +100,10 @@ class byok {
             }
             return \local_aiconfig\byok\ai::text(self::COMPONENT, $system, $user, $opts);
         };
-        engine::$tts = function(string $text, array $voice): string {
+        engine::$tts = function (string $text, array $voice): string {
             return self::speech($text, $voice);
         };
-        engine::$image = function(string $prompt): string {
+        engine::$image = function (string $prompt): string {
             return self::image_url($prompt);
         };
         engine::$random = null;
@@ -130,8 +130,11 @@ class byok {
         } else {
             $name = '';
         }
-        return \local_aiconfig\byok\ai::speech(self::COMPONENT, $text,
-            ['language' => $voice['languageCode'], 'voice' => $name, 'format' => 'ogg', 'rate' => self::SPEAKING_RATE]);
+        return \local_aiconfig\byok\ai::speech(
+            self::COMPONENT,
+            $text,
+            ['language' => $voice['languageCode'], 'voice' => $name, 'format' => 'ogg', 'rate' => self::SPEAKING_RATE]
+        );
     }
 
     /**
@@ -200,11 +203,17 @@ class byok {
             return get_string('error:byokunavailable', 'mod_aiknowledgecheck');
         }
         if ($e instanceof http_error || $e instanceof js_error) {
-            return get_string('error:byokfailed', 'mod_aiknowledgecheck',
-                \core_text::substr(clean_param($e->getMessage(), PARAM_TEXT), 0, 400));
+            return get_string(
+                'error:byokfailed',
+                'mod_aiknowledgecheck',
+                \core_text::substr(clean_param($e->getMessage(), PARAM_TEXT), 0, 400)
+            );
         }
-        return get_string('error:byokfailed', 'mod_aiknowledgecheck',
-            \core_text::substr(clean_param($e->getMessage(), PARAM_TEXT), 0, 300));
+        return get_string(
+            'error:byokfailed',
+            'mod_aiknowledgecheck',
+            \core_text::substr(clean_param($e->getMessage(), PARAM_TEXT), 0, 300)
+        );
     }
 
     // Generation: a job, run by a task, polled like the service's.
@@ -310,7 +319,8 @@ class byok {
                 return null;
             }
             $job = ['contextid' => $context->id, 'status' => 'processing', 'progress' => 70,
-                'progressMessage' => get_string('byok:narrating', 'mod_aiknowledgecheck'), 'questions' => null, 'error' => null];
+                'progressMessage' => get_string('byok:narrating', 'mod_aiknowledgecheck'), 'questions' => null, 'error' =>
+                    null];
             $jobs->set(self::key($jobid), $job);
             $jobs->delete(self::key('narrate:' . $jobid));
             $task = new task\byok_generate();
@@ -352,11 +362,11 @@ class byok {
             return;
         }
         $context = \context::instance_by_id((int) $data['contextid'], IGNORE_MISSING);
-        $save = function(array $changes) use ($jobs, $key, &$job) {
+        $save = function (array $changes) use ($jobs, $key, &$job) {
             $job = $changes + $job;
             $jobs->set($key, $job);
         };
-        self::hooks(function(?int $progress, string $message) use ($save, &$job) {
+        self::hooks(function (?int $progress, string $message) use ($save, &$job) {
             $changes = ['status' => 'processing'];
             if ($progress !== null) {
                 $changes['progress'] = $progress;
@@ -408,9 +418,13 @@ class byok {
         if ($siteid === '' || $apikey === '' || !$questions) {
             return $questions;
         }
-        [$raw, $httpcode, $error] = saas_client::post_json($apibase . '/api/knowledgecheck-regenerate-audio',
+        [$raw, $httpcode, $error] = saas_client::post_json(
+            $apibase . '/api/knowledgecheck-regenerate-audio',
             ['siteId' => $siteid, 'apiKey' => $apikey, 'questions' => $questions, 'voiceLanguage' => $language,
-                'voiceId' => $voiceid], 180, 240);
+            'voiceId' => $voiceid],
+            180,
+            240
+        );
         saas_client::report_usage($context, $raw, $httpcode, 'audio');
         if ($error !== '' || $httpcode !== 200 || $raw === null) {
             return $questions;
@@ -446,7 +460,8 @@ class byok {
             $payload['voiceoverEnabled'] = false;
         }
         try {
-            $out = $route === 'instructions' ? engine::regenerate_instructions($payload) : engine::regenerate_settings($payload);
+            $out = $route === 'instructions' ? engine::regenerate_instructions($payload) :
+                engine::regenerate_settings($payload);
         } catch (http_error $e) {
             // The service's message for a failed rewrite is fixed; say what the provider said when it said something.
             $said = engine::$providererror;
@@ -456,8 +471,12 @@ class byok {
             return self::failure($e);
         }
         if ($servicevoice) {
-            $out['questions'] = self::narrate_on_credits($out['questions'], (string) ($payload['voiceLanguage'] ?? 'en-AU'),
-                (string) ($payload['voiceId'] ?? 'Aoede'), $context);
+            $out['questions'] = self::narrate_on_credits(
+                $out['questions'],
+                (string) ($payload['voiceLanguage'] ?? 'en-AU'),
+                (string) ($payload['voiceId'] ?? 'Aoede'),
+                $context
+            );
         }
         unset($out['isFree'], $out['regenerationCount']);
         $out['ownAi'] = true;
