@@ -153,8 +153,9 @@ aiknowledgecheck_view($knowledgecheck, $course, $cm, $context);
 
 echo $OUTPUT->header();
 
-// Check configuration.
-if (empty($siteid) || empty($apikey)) {
+// Check configuration. Bring your own AI: with text on the site's own AI, questions are written without LMS Labs.
+$byokstate = \mod_aiknowledgecheck\byok::state();
+if ((empty($siteid) || empty($apikey)) && !$byokstate['text']) {
     echo $OUTPUT->notification($str('not_configured'), 'warning');
     echo $OUTPUT->footer();
     exit;
@@ -284,6 +285,22 @@ if ($canviewreports) {
 if ($cancreate) {
     ?>
     <div id="kc-app" class="kc-container">
+        <?php
+        // Bring your own AI: say which work runs on the site's own AI, and drop the credits badge when no
+        // LMS Labs credentials are set (nothing is charged to credits then).
+        $byokparts = array_keys(array_filter($byokstate));
+        if ($byokparts) {
+            $detail = get_string('byok:badge_' . implode('_', $byokparts), 'mod_aiknowledgecheck');
+            echo html_writer::tag(
+                'div',
+                html_writer::tag('i', '', ['class' => 'fa fa-microchip', 'aria-hidden' => 'true']) .
+                    html_writer::span(get_string('byok:badge', 'mod_aiknowledgecheck'), 'kc-byok-badge-label') .
+                    html_writer::span($detail, 'kc-byok-badge-detail'),
+                ['class' => 'kc-byok-badge', 'data-testid' => 'badge-byok']
+            );
+        }
+        if (!empty($siteid) && !empty($apikey)) {
+            ?>
         <!-- Credits Badge (Teachers Only) -->
         <div class="kc-credits-badge">
             <svg class="kc-credits-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -295,6 +312,9 @@ if ($cancreate) {
             <span id="credits-value">--</span>
             <span class="kc-credits-label"><?php echo $str('credits_label'); ?></span>
         </div>
+            <?php
+        }
+        ?>
 
         <!-- Main Form -->
         <div id="kc-form-section" class="kc-card">
@@ -729,7 +749,7 @@ if ($cancreate) {
                             <span id="kc-credit-formula" class="kc-credit-formula" data-testid="text-credit-formula"></span>
                             <span class="kc-credit-cost-label">to generate content</span>
                         </div>
-                        <div class="kc-credit-balance-box">
+                        <div class="kc-credit-balance-box"<?php echo (empty($siteid) || empty($apikey)) ? ' hidden' : ''; ?>>
                             <span class="kc-balance-label"><?php echo $str('your_balance'); ?></span>
                             <span id="kc-balance-amount" class="kc-balance-amount" data-testid="text-credit-balance">--</span>
                             <span class="kc-balance-unit">credits</span>
@@ -769,7 +789,7 @@ if ($cancreate) {
                             </span>
                         <span class="kc-credit-cost-label">to generate content</span>
                     </div>
-                    <div class="kc-credit-balance-box">
+                    <div class="kc-credit-balance-box"<?php echo (empty($siteid) || empty($apikey)) ? ' hidden' : ''; ?>>
                         <span class="kc-balance-label"><?php echo $str('your_balance'); ?></span>
                         <span id="kc-progress-balance" class="kc-balance-amount" data-testid="text-progress-balance">--</span>
                         <span class="kc-balance-unit">credits</span>
@@ -810,7 +830,8 @@ if ($cancreate) {
                     <textarea id="ready-extra-instructions" class="kc-textarea" rows="3" 
                         placeholder="Add or modify instructions for the AI to refine the generated questions..."></textarea>
                     <small class="kc-help">Edit these instructions and click Regenerate to refine your questions.
-                        First 3 regenerations are free.</small>
+                        <?php echo $byokstate['text'] ? get_string('byok:regenfree', 'mod_aiknowledgecheck')
+                            : 'First 3 regenerations are free.'; ?></small>
                 </div>
                 <div class="kc-regen-controls">
                     <button id="ready-regenerate-btn" class="kc-btn kc-btn-secondary">
@@ -890,7 +911,8 @@ if ($cancreate) {
                     </svg>
                     <?php echo $str('imagegate_generateimage'); ?>
                     <span class="kc-cost-hint"
-                        ><?php echo $str('imagegate_credits_cost'); ?></span>
+                        ><?php echo $byokstate['image'] ? get_string('byok:imagecost', 'mod_aiknowledgecheck')
+                            : $str('imagegate_credits_cost'); ?></span>
                 </strong>
                 <div class="kc-button-row">
                     <input type="text" id="kc-imagegen-prompt" placeholder="Describe the image to generate..."
@@ -1005,7 +1027,8 @@ if ($cancreate) {
                     <textarea id="edit-extra-instructions" class="kc-textarea" rows="3" 
                         placeholder="Add or modify instructions for the AI to refine the generated questions..."></textarea>
                     <small class="kc-help">Edit these instructions and click Regenerate to refine your questions.
-                        First 3 regenerations are free.</small>
+                        <?php echo $byokstate['text'] ? get_string('byok:regenfree', 'mod_aiknowledgecheck')
+                            : 'First 3 regenerations are free.'; ?></small>
                 </div>
                 <div class="kc-regen-controls">
                     <button id="edit-regenerate-btn" class="kc-btn kc-btn-secondary">
@@ -1267,6 +1290,7 @@ if ($cancreate) {
             'wwwroot' => $CFG->wwwroot,
             'sesskey' => sesskey(),
             'isTeacher' => true,
+            'byok' => $byokstate,
             'inProgressAttempts' => (int)$inprogresscount,
             'gradePass' => $gradepass,
             'maxGrade' => $maxgrade,

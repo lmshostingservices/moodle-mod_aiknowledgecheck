@@ -89,6 +89,15 @@ class provider implements
             'privacy:metadata:essaygraderai'
         );
 
+        // Bring your own AI: the same authoring content goes to the site's chosen AI provider instead.
+        $collection->add_external_location_link(
+            'byok_aiprovider',
+            [
+                'sourcecontent' => 'privacy:metadata:byok_aiprovider:sourcecontent',
+            ],
+            'privacy:metadata:byok_aiprovider'
+        );
+
         return $collection;
     }
 

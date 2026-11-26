@@ -39,6 +39,7 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use mod_aiknowledgecheck\byok;
 
 /**
  * Reruns generation with extra instructions, grounded in the stored source context.
@@ -117,7 +118,8 @@ class regenerate_instructions extends external_api {
         }
 
         [$apibase, $siteid, $apikey] = saas_client::credentials();
-        if ($siteid === '' || $apikey === '') {
+        // Bring your own AI: checked again once the request is built, below.
+        if (!byok::uses('text') && ($siteid === '' || $apikey === '')) {
             return saas_client::failure(get_string('error:notconfigured', 'mod_aiknowledgecheck'));
         }
 
@@ -168,6 +170,16 @@ class regenerate_instructions extends external_api {
         // BUG-REGEN-TIMEOUT (v1.5.84) / FIX-KC-REGEN-BATCH (v1.5.88): the client sends every
         // question in one batch with a 180s timeout, so the curl timeout sits below that and
         // the PHP time limit above the curl timeout.
+        // Bring your own AI: with text set to the site's own AI, the rewrite runs here, not at LMS Labs.
+        if (byok::uses('text')) {
+            return byok::regenerate('instructions', $payload, $context);
+        }
+        // Text on LMS Labs, voice on the site's own AI: LMS Labs rewrites without voiceover, the site narrates.
+        $ownvoice = $payload['voiceoverEnabled'] && byok::uses('voice');
+        if ($ownvoice) {
+            $payload['voiceoverEnabled'] = false;
+        }
+
         [$raw, $httpcode, $connectionerror] = saas_client::post_json(
             $apibase . '/api/knowledgecheck-regenerate-instructions',
             $payload,
@@ -176,7 +188,11 @@ class regenerate_instructions extends external_api {
         );
 
         saas_client::report_usage($context, $raw, $httpcode, 'questions');
-        return saas_client::envelope($raw, $httpcode, $connectionerror);
+        $result = saas_client::envelope($raw, $httpcode, $connectionerror);
+        if ($ownvoice && $result['ok']) {
+            $result['resultjson'] = byok::narrate_result($result['resultjson'], $params['voiceLanguage'], $params['voiceId']);
+        }
+        return $result;
     }
 
     /**

@@ -60,6 +60,7 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use mod_aiknowledgecheck\byok;
 
 /**
  * Returns the current status of an asynchronous question generation job.
@@ -103,6 +104,12 @@ class get_generation_status extends external_api {
         // stay gated on the authoring capability rather than :view.
         require_capability('mod/aiknowledgecheck:create', $context);
 
+        // Bring your own AI: a generation running on the site's own AI is polled here, not at LMS Labs.
+        $own = byok::status($params['jobid'], $context);
+        if ($own !== null) {
+            return ['ok' => true, 'payload' => $own, 'error' => ''];
+        }
+
         $apibase = trim((string)get_config('mod_aiknowledgecheck', 'apiurl'));
         if ($apibase === '') {
             $apibase = 'https://lms-labs.com';
@@ -132,6 +139,12 @@ class get_generation_status extends external_api {
 
         // A finished job carries its questions: Client Portal (when installed) bills it once.
         saas_client::report_usage($context, (string)$response, $httpcode, 'questions', (string)$params['jobid']);
+
+        // Written by LMS Labs, to be narrated on the site's own voice: the site takes the finished job over.
+        $own = byok::status($params['jobid'], $context, (string)$response);
+        if ($own !== null) {
+            return ['ok' => true, 'payload' => $own, 'error' => ''];
+        }
 
         // Passed through verbatim — see the design note at the top of this file.
         return [
