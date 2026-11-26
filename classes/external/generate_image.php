@@ -43,6 +43,7 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use mod_aiknowledgecheck\byok;
 
 /**
  * Generates a question image through the external service. Costs 5 credits per image.
@@ -88,6 +89,19 @@ class generate_image extends external_api {
         $prompt = trim($params['prompt']);
         if ($prompt === '') {
             return self::result(false, get_string('error:emptyprompt', 'mod_aiknowledgecheck'));
+        }
+
+        // Bring your own AI: with images set to the site's own AI, the picture is made here, not at LMS Labs.
+        if (byok::uses('image')) {
+            [$ok, $error, $url] = byok::image(['prompt' => $prompt]);
+            if (!$ok) {
+                return self::result(false, $error);
+            }
+            $imagedataurl = mod_aiknowledgecheck_sanitize_image_url($url);
+            if ($imagedataurl === null) {
+                return self::result(false, get_string('error:invalidimageurl', 'mod_aiknowledgecheck'));
+            }
+            return self::result(true, '', $imagedataurl);
         }
 
         [$apibase, $siteid, $apikey] = saas_client::credentials();

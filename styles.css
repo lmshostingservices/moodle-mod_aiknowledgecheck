@@ -113,6 +113,50 @@ body[data-bs-theme="dark"] .kc-container,
     opacity: 0.9;
 }
 
+/* Bring your own AI: no balance to show without LMS Labs credentials */
+.kc-credit-balance-box[hidden] {
+    display: none;
+}
+
+/* Bring your own AI badge */
+.kc-byok-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 8px 20px 0;
+    padding: 7px 14px;
+    border: 1px solid rgba(53, 122, 50, 0.28);
+    border-radius: 999px;
+    background: rgba(53, 122, 50, 0.08);
+    color: #2b632a;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.kc-byok-badge .fa {
+    font-size: 14px;
+}
+
+.kc-byok-badge-detail {
+    padding-left: 8px;
+    border-left: 1px solid rgba(53, 122, 50, 0.28);
+    color: #3f464d;
+    font-weight: 400;
+}
+
+[data-bs-theme="dark"] .kc-byok-badge {
+    border-color: rgba(93, 149, 91, 0.4);
+    background: rgba(93, 149, 91, 0.14);
+    color: #aecaad;
+}
+
+[data-bs-theme="dark"] .kc-byok-badge-detail {
+    border-left-color: rgba(93, 149, 91, 0.4);
+    color: #c4c9cf;
+}
+
 /* Cards */
 .kc-card {
     background: #fff;

@@ -2,6 +2,28 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.7.0] - 2026-11-26
+
+Bring your own AI: with a Bring your own AI licence (AI Grader Central Config 1.1.0 or later), question
+writing, narration and pictures can each run on the site's own AI provider instead of LMS Labs credits.
+
+### Added — Bring your own AI
+
+- Questions (topics, pasted text, your own questions, surveys), "Regenerate with settings" and
+  "Regenerate questions" run the LMS Labs Knowledge Check service's own logic inside the plugin when text
+  is set to the site's own AI: the same prompts, token budgets, retries, repairs, de-duplication, answer
+  shuffling and correct-answer balancing. It was checked against the service code on 877 randomised runs.
+- Narration uses the site's own voice when voice is set to it: the same Google Chirp 3 HD voices (or the
+  closest OpenAI voice), in Ogg Opus at the service's speaking rate.
+- Question pictures use the site's own image provider: portrait, high quality, delivered as JPEG.
+- Each kind of work can be on credits or on the site's own AI independently. Text on own AI with voice on
+  credits narrates through LMS Labs; text on credits with voice on own AI narrates on the site.
+- Own-AI generations run as a background task and are polled like the service's jobs; LMS Labs
+  credentials are not needed for work set to the site's own AI.
+- A "Your own AI" badge shows which work runs on the site's own AI, and the cost line counts only the
+  credits still used.
+- Privacy: the site's chosen AI provider is declared as an external location.
+
 ## [1.6.3] - 2026-11-13
 
 Fixes a survey defect that discarded a teacher's edits to the answer options without telling

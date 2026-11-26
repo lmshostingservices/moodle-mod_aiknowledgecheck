@@ -39,6 +39,7 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use mod_aiknowledgecheck\byok;
 
 /**
  * Asks the generation service for fresh voiceover audio.
@@ -102,6 +103,14 @@ class regenerate_audio extends external_api {
         }
 
         [$apibase, $siteid, $apikey] = saas_client::credentials();
+        // Bring your own AI: with voice set to the site's own AI, the narration is made here, not at LMS Labs.
+        if (byok::uses('voice')) {
+            return byok::audio([
+                'questions' => $questionsdata,
+                'voiceLanguage' => $params['voiceLanguage'],
+                'voiceId' => $params['voiceId'],
+            ]);
+        }
         if ($siteid === '' || $apikey === '') {
             return saas_client::failure(get_string('error:notconfigured', 'mod_aiknowledgecheck'));
         }

@@ -39,6 +39,7 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use mod_aiknowledgecheck\byok;
 use core_text;
 use Throwable;
 
@@ -384,7 +385,9 @@ class generate extends external_api {
         }
 
         [$apibase, $siteid, $apikey] = saas_client::credentials();
-        if ($siteid === '' || $apikey === '') {
+        // Bring your own AI: with text set to the site's own AI, the questions are written here, not by LMS Labs.
+        $owntext = byok::uses('text');
+        if (!$owntext && ($siteid === '' || $apikey === '')) {
             return saas_client::failure(get_string('error:notconfigured', 'mod_aiknowledgecheck'));
         }
 
@@ -451,6 +454,17 @@ class generate extends external_api {
             ]
         );
 
+        if ($owntext) {
+            return byok::start_generation($payload, $context);
+        }
+
+        // Text on LMS Labs, voice on the site's own AI: LMS Labs writes the questions without voiceover and
+        // the site narrates them once the job is done.
+        $ownvoice = $payload['voiceoverEnabled'] && byok::uses('voice');
+        if ($ownvoice) {
+            $payload['voiceoverEnabled'] = false;
+        }
+
         [$raw, $httpcode, $connectionerror] = saas_client::post_json(
             $apibase . '/api/generate-knowledgecheck',
             $payload,
@@ -459,7 +473,14 @@ class generate extends external_api {
         );
 
         saas_client::report_usage($context, $raw, $httpcode, 'questions');
-        return saas_client::envelope($raw, $httpcode, $connectionerror);
+        $result = saas_client::envelope($raw, $httpcode, $connectionerror);
+        if ($ownvoice && $result['ok']) {
+            $started = json_decode($result['resultjson'], true);
+            if (is_array($started) && !empty($started['jobId']) && is_string($started['jobId'])) {
+                byok::narrate_later($started['jobId'], $context, $params['voiceLanguage'], $params['voiceId']);
+            }
+        }
+        return $result;
     }
 
     /**

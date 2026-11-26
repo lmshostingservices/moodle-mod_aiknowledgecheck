@@ -39,6 +39,7 @@ use external_single_structure;
 use external_value;
 use context_module;
 use mod_aiknowledgecheck\saas_client;
+use mod_aiknowledgecheck\byok;
 
 /**
  * Reruns generation with new voice settings.
@@ -110,8 +111,26 @@ class regenerate_with_settings extends external_api {
         }
 
         [$apibase, $siteid, $apikey] = saas_client::credentials();
+        $payload = [
+            'siteId' => $siteid,
+            'apiKey' => $apikey,
+            'questions' => $questionsdata,
+            'voiceLanguage' => $params['voiceLanguage'],
+            'voiceoverEnabled' => (bool)$params['voiceoverEnabled'],
+            'voiceGender' => $params['voiceGender'],
+            'voiceId' => $params['voiceId'],
+        ];
+        // Bring your own AI: with text set to the site's own AI, the rewrite runs here, not at LMS Labs.
+        if (byok::uses('text')) {
+            return byok::regenerate('settings', $payload, $context);
+        }
         if ($siteid === '' || $apikey === '') {
             return saas_client::failure(get_string('error:notconfigured', 'mod_aiknowledgecheck'));
+        }
+        // Text on LMS Labs, voice on the site's own AI: LMS Labs rewrites without voiceover, the site narrates.
+        $ownvoice = $payload['voiceoverEnabled'] && byok::uses('voice');
+        if ($ownvoice) {
+            $payload['voiceoverEnabled'] = false;
         }
 
         // BUG-REGEN-TIMEOUT (v1.5.84): a single server-side attempt, with a PHP time limit
@@ -126,21 +145,17 @@ class regenerate_with_settings extends external_api {
         // and 75s was cutting off legitimate work.
         [$raw, $httpcode, $connectionerror] = saas_client::post_json(
             $apibase . '/api/knowledgecheck-regenerate-settings',
-            [
-                'siteId' => $siteid,
-                'apiKey' => $apikey,
-                'questions' => $questionsdata,
-                'voiceLanguage' => $params['voiceLanguage'],
-                'voiceoverEnabled' => (bool)$params['voiceoverEnabled'],
-                'voiceGender' => $params['voiceGender'],
-                'voiceId' => $params['voiceId'],
-            ],
+            $payload,
             160,
             200
         );
 
         saas_client::report_usage($context, $raw, $httpcode, 'questions');
-        return saas_client::envelope($raw, $httpcode, $connectionerror);
+        $result = saas_client::envelope($raw, $httpcode, $connectionerror);
+        if ($ownvoice && $result['ok']) {
+            $result['resultjson'] = byok::narrate_result($result['resultjson'], $params['voiceLanguage'], $params['voiceId']);
+        }
+        return $result;
     }
 
     /**

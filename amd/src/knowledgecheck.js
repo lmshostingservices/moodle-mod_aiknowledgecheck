@@ -630,7 +630,10 @@ define('mod_aiknowledgecheck/knowledgecheck',
         {key: 'js_sourcetoolong', component: 'mod_aiknowledgecheck'},
         {key: 'js_toomanyquestions', component: 'mod_aiknowledgecheck'},
         {key: 'js_shortfall', component: 'mod_aiknowledgecheck'},
-        {key: 'js_shortfalltitle', component: 'mod_aiknowledgecheck'}
+        {key: 'js_shortfalltitle', component: 'mod_aiknowledgecheck'},
+        {key: 'js_byokformula', component: 'mod_aiknowledgecheck'},
+        {key: 'js_byokpartformula', component: 'mod_aiknowledgecheck'},
+        {key: 'js_byokregen', component: 'mod_aiknowledgecheck'}
     ];
 
     /**
@@ -755,7 +758,10 @@ define('mod_aiknowledgecheck/knowledgecheck',
         'sourcetoolong',
         'toomanyquestions',
         'shortfall',
-        'shortfalltitle'
+        'shortfalltitle',
+        'byokformula',
+        'byokpartformula',
+        'byokregen'
     ];
 
     /**
@@ -1874,11 +1880,15 @@ define('mod_aiknowledgecheck/knowledgecheck',
         var overCap = totalQuestions > MAX_TOTAL_QUESTIONS;
 
         var voiceoverOn = $('#voiceover-toggle').is(':checked');
-        var creditsPerQuestion = voiceoverOn ? 2 : 1;
+        // Bring your own AI: work set to the site's own AI uses no LMS Labs credits.
+        var own = config.byok || {};
+        var creditsPerQuestion = (own.text ? 0 : 1) + (voiceoverOn && !own.voice ? 1 : 0);
         var credits = totalQuestions * creditsPerQuestion;
         var audAmount = (credits / 10).toFixed(2);
 
-        var formulaHtml = '<strong>' +
+        var formulaHtml = creditsPerQuestion === 0 ? escapeHtml(fmt(S.byokformula, {
+            questions: totalQuestions.toLocaleString()
+        })) : '<strong>' +
              totalQuestions +
              ' questions</strong> x ' +
              creditsPerQuestion +
@@ -1888,7 +1898,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
              credits.toLocaleString() +
              ' credits</strong> ($' +
              audAmount +
-             ' AUD)';
+             ' AUD)' +
+             (own.text || (voiceoverOn && own.voice) ? ' ' + escapeHtml(S.byokpartformula) : '');
         if (overCap) {
             formulaHtml += '<div class="kc-over-cap">' +
                 escapeHtml(fmt(S.toomanyquestions, {
@@ -6257,7 +6268,10 @@ define('mod_aiknowledgecheck/knowledgecheck',
     function updateRegenCountDisplay() {
         var remaining = Math.max(0, 3 - regenerationCount);
         var countText = '';
-        if (regenerationCount === 0) {
+        if (config.byok && config.byok.text) {
+            countText = S.byokregen;
+            remaining = 1;
+        } else if (regenerationCount === 0) {
             countText = '3 free regenerations remaining';
         } else if (remaining > 0) {
             countText = remaining + ' free regeneration' + (remaining !== 1 ? 's' : '') + ' remaining';
@@ -6343,7 +6357,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
             return;
         }
 
-        var isFree = regenerationCount < 3;
+        // Bring your own AI: a rewrite on the site's own AI uses no LMS Labs credits.
+        var isFree = regenerationCount < 3 || !!(config.byok && config.byok.text);
         if (!isFree) {
             var voiceoverOn = $('#voiceover-toggle').is(':checked') || !!config.voiceoverEnabled;
             var creditsNeeded = voiceoverOn ? quizData.length * 2 : quizData.length;
