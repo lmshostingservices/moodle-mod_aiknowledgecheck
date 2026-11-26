@@ -40,6 +40,8 @@ require_once($CFG->dirroot . '/mod/aiknowledgecheck/lib.php');
  * @package    mod_aiknowledgecheck
  * @copyright  2026 LMS Hosting Services
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \mod_aiknowledgecheck\byok
+ * @covers     \mod_aiknowledgecheck\local\byok\engine
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(byok::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(engine::class)]
