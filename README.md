@@ -56,9 +56,23 @@ or audio.
 - Per-question breakdown of responses.
 - CSV export for both attempts and survey responses.
 
+### Responsible AI (EU AI Act)
+
+- Teachers approve AI-written questions before learners see them; new AI output withdraws approval.
+- Administrators can pause all new AI work on the site.
+- Learners see an "AI-generated content" notice naming who approved the questions.
+- AI pictures and narration are marked as AI-generated inside the file (IPTC `trainedAlgorithmicMedia`).
+- An AI activity log (kept at least six months) and oversight figures on the attempts report.
+- Instructions for use and the provider's analysis: [docs/eu-ai-act.md](docs/eu-ai-act.md).
+
+### Design
+
+- Built on Moodle Design System tokens and components (Button, Alert, Badge, Checkbox, Link), with the
+  LMS Labs premium finish. Follows the theme's dark mode on Moodle 5.3.
+
 ## Requirements
 
-- Moodle 4.0 or later (tested against Moodle 4.x and 5.x).
+- Moodle 4.0 or later. Version 1.8.0 was tested on Moodle 4.5, 5.2 and 5.3.
 - An Essay Grader AI account and API key. Question generation is performed by an external
   service — see Privacy below.
 
@@ -76,13 +90,19 @@ or audio.
 2. Choose quiz mode or survey mode, and configure attempts, grading and any content gates.
 3. Enter topics or source material, then generate the questions.
 4. Review and edit the generated questions, then save.
-5. Students complete the activity. Results appear in the Attempts report and, in quiz mode,
+5. Check every question, answer key and explanation, tick the confirmation and select
+   **Approve for learners**.
+6. Students complete the activity. Results appear in the Attempts report and, in quiz mode,
    in the gradebook.
 
 ## Privacy
 
 The plugin stores attempt records containing the user ID, the responses given, and the start
 and end times. Extra-attempt overrides are stored against the user ID.
+
+Responsible AI records (v1.8.0): the AI activity log stores the user ID of the teacher or
+administrator who generated, edited or approved questions, and the activity stores who approved
+its questions. On an erasure request these entries are kept but no longer name the person.
 
 Topic names and any source material supplied for question generation are sent to the Essay
 Grader AI external service in order to generate questions. Student responses are **not** sent
@@ -96,6 +116,7 @@ through Moodle's standard privacy request tools.
 - `mod/aiknowledgecheck:addinstance` — add a new activity to a course.
 - `mod/aiknowledgecheck:view` — view the activity.
 - `mod/aiknowledgecheck:create` — generate and edit questions.
+- `mod/aiknowledgecheck:approve` — approve AI-written questions for learners.
 - `mod/aiknowledgecheck:viewreports` — view the attempts report.
 - `mod/aiknowledgecheck:manageoverrides` — grant extra attempts to individual users.
 

@@ -76,6 +76,19 @@ class start_attempt extends external_api {
         self::validate_context($context);
         require_capability('mod/aiknowledgecheck:view', $context);
 
+        // Responsible AI: learners cannot start until a teacher has approved the AI-written questions.
+        $released = \mod_aiknowledgecheck\local\responsibleai::is_released($knowledgecheck);
+        if (!$released && !has_capability('mod/aiknowledgecheck:create', $context)) {
+            return [
+                'ok' => false,
+                'error' => get_string('notreleased_student', 'mod_aiknowledgecheck'),
+                'attemptid' => 0,
+                'resumed' => false,
+                'currentquestion' => 0,
+                'answersjson' => '{}',
+            ];
+        }
+
         $userid = $USER->id;
 
         // Use a transaction to prevent race conditions (duplicate in-progress attempts).

@@ -891,7 +891,9 @@ function mod_aiknowledgecheck_sanitize_image_url($url) {
     $trimmed = trim($url);
     // Allow inline raster data URLs only (png/jpeg/gif/webp) — never SVG.
     if (preg_match('#^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=\s]+$#i', $trimmed)) {
-        return $trimmed;
+        // Inline pictures only ever come from AI generation (teachers paste links), so each one is marked as
+        // AI-generated in the file itself before it is stored (EU AI Act Article 50(2)).
+        return \mod_aiknowledgecheck\local\aimarker::mark_image_dataurl($trimmed);
     }
     // Otherwise it must be a normal http(s) URL.
     $clean = clean_param($trimmed, PARAM_URL);

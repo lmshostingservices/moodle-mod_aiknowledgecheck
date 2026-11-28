@@ -162,4 +162,13 @@ $functions = [
         'capabilities' => 'mod/aiknowledgecheck:create',
     ],
 
+    'mod_aiknowledgecheck_approve_questions' => [
+        'classname'   => 'mod_aiknowledgecheck\\external\\approve_questions',
+        'methodname'  => 'execute',
+        'description' => 'Approve the activity\'s AI-written questions for learners, or withdraw approval.',
+        'type'        => 'write',
+        'ajax'        => true,
+        'capabilities' => 'mod/aiknowledgecheck:approve',
+    ],
+
 ];

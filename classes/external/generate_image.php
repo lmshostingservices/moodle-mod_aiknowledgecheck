@@ -86,6 +86,14 @@ class generate_image extends external_api {
         // Image generation spends the site's credits, so it is teacher-only.
         require_capability('mod/aiknowledgecheck:create', $context);
 
+        // Responsible AI: an administrator can pause new AI work on the whole site (EU AI Act Article 26(5)).
+        \mod_aiknowledgecheck\local\responsibleai::require_not_paused((object)['id' => (int)$cm->instance], 'image');
+        \mod_aiknowledgecheck\local\responsibleai::log(
+            (int)$cm->instance,
+            \mod_aiknowledgecheck\local\responsibleai::ACTION_IMAGE,
+            ['runson' => \mod_aiknowledgecheck\local\responsibleai::runs_on('image')]
+        );
+
         $prompt = trim($params['prompt']);
         if ($prompt === '') {
             return self::result(false, get_string('error:emptyprompt', 'mod_aiknowledgecheck'));

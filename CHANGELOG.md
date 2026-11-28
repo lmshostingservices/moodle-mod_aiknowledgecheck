@@ -2,6 +2,58 @@
 
 All notable changes to this plugin will be documented in this file.
 
+## [1.8.0] - 2026-11-28
+
+Responsible AI for the EU AI Act, and the Moodle Design System. Teachers now approve AI-written questions
+before learners see them, administrators can pause the AI, learners are told what AI made, AI pictures and
+narration are marked as AI-generated inside the file, and every screen is built from Moodle Design System
+tokens and components. See docs/eu-ai-act.md.
+
+### Added: responsible AI (EU AI Act)
+
+- **Review before learners see it.** With approval required (new setting, on by default), learners cannot read
+  or start AI-written questions until a teacher confirms they checked every question, answer key and
+  explanation and selects Approve for learners. New AI output withdraws approval; a teacher's own edits do not.
+  Enforced on the server (`start_attempt`, `get_questions`), not just hidden. New capability
+  `mod/aiknowledgecheck:approve` and service `mod_aiknowledgecheck_approve_questions` (Article 14).
+- **Oversight figures.** Each question records whether the AI wrote it and a fingerprint of what the AI wrote, so
+  the review panel and the attempts report show how many AI questions a person changed (Article 14(4)(b)).
+- **Pause AI on this site.** One switch refuses all new AI work (questions, explanations, pictures, narration)
+  and logs the refusal; editing, approval and approved activities carry on (Article 26(5)).
+- **AI activity log.** Generated, regenerated, picture, narration, edited, approved, withdrawn and refused
+  events, with who, when and whether LMS Labs credits or the site's own AI was used. Kept one year by default,
+  never under six months, purged by a scheduled task. Shown on the attempts report (Articles 12, 26(6)).
+- **Learner notice.** An "AI-generated content" notice names what AI made and who approved it, with a
+  machine-readable page marker. AI pictures carry a visible label and alt text (Articles 50, 26(11)).
+- **Machine-readable marking.** AI pictures (JPEG, PNG) get XMP with the IPTC digital source type
+  `trainedAlgorithmicMedia`; AI narration (Ogg Opus) gets matching comments. Applied when content is stored,
+  idempotent, and never damages a file it cannot parse (Article 50(2), due 2 December 2026).
+- **Using AI responsibly** panel for teachers (Article 4) and a Responsible AI section in the plugin settings.
+- Privacy API covers the AI log and the approver; erasure anonymises the oversight record.
+- Upgrade: activities learners could already see stay visible (approval carried over without a name).
+
+### Changed: Moodle Design System
+
+- Every colour, radius, spacing step and font now comes from Moodle Design System tokens (`--mds-*`, with MDS
+  values as fallbacks on Moodle 4.x and 5.0-5.2). Moodle blue replaces the purple gradients; Noto Sans (the MDS
+  font) replaces Inter; flat MDS surfaces replace gradients; dark mode follows Moodle 5.3 Boost.
+- Buttons use the MDS Button markup and variants (`mds-btn btn btn-primary|secondary|outline-primary`,
+  sizes sm/md/lg) with the LMS Labs premium finish; alerts, badges, checkboxes and links follow MDS specs.
+- The review panel, learner notice and report panel are Mustache templates (`review_panel`, `learner_notice`,
+  `oversight_panel`).
+- Google Fonts is no longer loaded, so a learner's browser no longer contacts Google to show the page.
+
+### Fixed
+
+- Saving from the question editor removed every per-question picture, video and audio, because the editor
+  did not send them. They are now saved with the question.
+- Four stray `#page` prefixes in styles.css turned the first selector of their rule into one that never
+  matched.
+
+### Tests
+New PHPUnit tests for approval, provenance, the pause, log retention, privacy and the file markers (including
+checksums on every page of a real Ogg Opus clip).
+
 ## [1.7.0] - 2026-11-26
 
 Bring your own AI: with a Bring your own AI licence (AI Grader Central Config 1.1.0 or later), question

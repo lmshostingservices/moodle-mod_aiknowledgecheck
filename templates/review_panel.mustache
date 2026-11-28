@@ -1,0 +1,126 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_aiknowledgecheck/review_panel
+
+    Teacher review of AI-written questions before learners see them (EU AI Act Article 14 human oversight,
+    Article 4 AI literacy). Built from Moodle Design System components: Badge, Checkbox, Button, Alert.
+
+    Context variables required for this template:
+    * hidden - Hide the panel (no questions yet).
+    * approved - Questions are approved for learners.
+    * required - The site requires approval before learners see questions.
+    * canapprove - The viewer may approve.
+    * status - Status line.
+    * statai, statchanged, statteacher - Oversight figures.
+    * runsontext - Where question writing runs.
+
+    Example context (json):
+    {
+        "hidden": false,
+        "approved": false,
+        "required": true,
+        "canapprove": true,
+        "status": "Draft: learners cannot see these questions yet.",
+        "statai": 10,
+        "statchanged": 2,
+        "statteacher": 1,
+        "runsontext": "Questions are written by LMS Labs AI (credits)."
+    }
+}}
+<section id="kc-review-panel" class="kc-review lx-card" data-state="{{#approved}}approved{{/approved}}{{^approved}}draft{{/approved}}"
+    aria-labelledby="kc-review-title" data-testid="panel-review" {{#hidden}}hidden{{/hidden}}>
+    <div class="kc-review-head">
+        <div>
+            <span class="lx-eyebrow">{{#str}} review_eyebrow, mod_aiknowledgecheck {{/str}}</span>
+            <h4 id="kc-review-title" class="kc-review-title">{{#str}} review_title, mod_aiknowledgecheck {{/str}}</h4>
+        </div>
+        {{#required}}
+        <span class="mds-badge mds-badge--warning mds-badge--subtle mds-badge--has-icon" data-region="badge-draft" {{#approved}}hidden{{/approved}}>
+            <i class="fa fa-eye-slash" aria-hidden="true"></i> {{#str}} review_badge_draft, mod_aiknowledgecheck {{/str}}
+        </span>
+        <span class="mds-badge mds-badge--success mds-badge--subtle mds-badge--has-icon" data-region="badge-approved" {{^approved}}hidden{{/approved}}>
+            <i class="fa fa-circle-check" aria-hidden="true"></i> {{#str}} review_badge_approved, mod_aiknowledgecheck {{/str}}
+        </span>
+        {{/required}}
+    </div>
+
+    {{#required}}
+    <p class="kc-review-status" data-region="status" aria-live="polite">{{status}}</p>
+    {{/required}}
+    {{^required}}
+    <div class="mds-alert alert alert-info kc-alert" role="note">
+        <i class="fa fa-circle-info mds-alert-icon" aria-hidden="true"></i>
+        <div class="mds-alert-content">{{#str}} review_notrequired, mod_aiknowledgecheck {{/str}}</div>
+    </div>
+    {{/required}}
+
+    <div class="kc-review-stats" role="group" aria-label="{{#str}} review_stats_label, mod_aiknowledgecheck {{/str}}">
+        <div class="kc-stat-tile">
+            <span class="lx-eyebrow">{{#str}} review_stat_ai, mod_aiknowledgecheck {{/str}}</span>
+            <span class="lx-stat" data-region="stat-ai">{{statai}}</span>
+        </div>
+        <div class="kc-stat-tile">
+            <span class="lx-eyebrow">{{#str}} review_stat_changed, mod_aiknowledgecheck {{/str}}</span>
+            <span class="lx-stat" data-region="stat-changed">{{statchanged}}</span>
+        </div>
+        <div class="kc-stat-tile">
+            <span class="lx-eyebrow">{{#str}} review_stat_teacher, mod_aiknowledgecheck {{/str}}</span>
+            <span class="lx-stat" data-region="stat-teacher">{{statteacher}}</span>
+        </div>
+    </div>
+
+    <ul class="kc-review-checklist">
+        <li><i class="fa fa-check" aria-hidden="true"></i> {{#str}} review_check_key, mod_aiknowledgecheck {{/str}}</li>
+        <li><i class="fa fa-check" aria-hidden="true"></i> {{#str}} review_check_explanations, mod_aiknowledgecheck {{/str}}</li>
+        <li><i class="fa fa-check" aria-hidden="true"></i> {{#str}} review_check_fair, mod_aiknowledgecheck {{/str}}</li>
+        <li><i class="fa fa-check" aria-hidden="true"></i> {{#str}} review_check_media, mod_aiknowledgecheck {{/str}}</li>
+    </ul>
+
+    {{#required}}{{#canapprove}}
+    <div class="kc-review-actions">
+        <div class="mds-checkbox form-check" data-region="confirm" {{#approved}}hidden{{/approved}}>
+            <input class="form-check-input mds-checkbox-input" type="checkbox" id="kc-review-confirm" data-testid="checkbox-review-confirm">
+            <label class="form-check-label mds-checkbox-label" for="kc-review-confirm">{{#str}} review_confirm, mod_aiknowledgecheck {{/str}}</label>
+        </div>
+        <div class="kc-review-buttons">
+            <button type="button" class="mds-btn btn btn-outline-secondary mds-btn--size-md" data-action="withdraw"
+                data-testid="button-review-withdraw" {{^approved}}hidden{{/approved}}>
+                {{#str}} review_withdraw, mod_aiknowledgecheck {{/str}}
+            </button>
+            <button type="button" class="mds-btn btn btn-primary mds-btn--size-md" data-action="approve"
+                data-testid="button-review-approve" disabled {{#approved}}hidden{{/approved}}>
+                <i class="fa fa-user-check" aria-hidden="true"></i> {{#str}} review_approve, mod_aiknowledgecheck {{/str}}
+            </button>
+        </div>
+    </div>
+    {{/canapprove}}{{/required}}
+
+    <details class="kc-ailiteracy">
+        <summary><i class="fa fa-graduation-cap" aria-hidden="true"></i> {{#str}} ailiteracy_title, mod_aiknowledgecheck {{/str}}</summary>
+        <div class="kc-ailiteracy-body">
+            <p>{{runsontext}}</p>
+            <ul>
+                <li>{{#str}} ailiteracy_responsible, mod_aiknowledgecheck {{/str}}</li>
+                <li>{{#str}} ailiteracy_limits, mod_aiknowledgecheck {{/str}}</li>
+                <li>{{#str}} ailiteracy_bias, mod_aiknowledgecheck {{/str}}</li>
+                <li>{{#str}} ailiteracy_data, mod_aiknowledgecheck {{/str}}</li>
+                <li>{{#str}} ailiteracy_report, mod_aiknowledgecheck {{/str}}</li>
+            </ul>
+        </div>
+    </details>
+</section>

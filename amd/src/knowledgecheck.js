@@ -514,6 +514,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
      * @type {Array}
      */
     var STRING_REQUESTS = [
+        {key: 'js_aigenerated', component: 'mod_aiknowledgecheck'},
+        {key: 'js_aiimagealt', component: 'mod_aiknowledgecheck'},
         {key: 'pluginname', component: 'mod_aiknowledgecheck'},
         {key: 'continue', component: 'core'},
         {key: 'yes', component: 'core'},
@@ -642,6 +644,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
      * @type {Array}
      */
     var STRING_NAMES = [
+        'aigenerated',
+        'aiimagealt',
         'dialogtitle',
         'dialogcontinue',
         'dialogyes',
@@ -967,7 +971,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
 
                     // Add regenerate-audio button if needed (generate audio is missing)
                     if (!$('#regenerate-audio-btn').length && missingAudio) {
-                        var audioBtnHtml = '<button type="button" id="regenerate-audio-btn" class="kc-btn kc-btn-primary" style="' +
+                        var audioBtnHtml = '<button type="button" id="regenerate-audio-btn" ' +
+                            'class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md" style="' +
                             'margin-left: 10px;">Generate Audio</button>';
                         $('#kc-ready-section .kc-ready-actions').append(audioBtnHtml);
                         $('#regenerate-audio-btn').on('click', function() {
@@ -2507,6 +2512,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
         }])[0].done(function(response) {
                 if (response.ok) {
                     kcLog('[KC] Questions saved to database:', response.saved);
+                    // Responsible AI (v1.8.0): new AI output withdraws approval; the review panel shows that.
+                    $(document).trigger('kc:questionssaved', [response, 'ai']);
                 } else {
                     kcError('[KC] Failed to save questions:', response.error);
                     kcAlert(fmt(S.errorsavetomoodlefailed, response.error || S.errorunknown));
@@ -3429,11 +3436,7 @@ define('mod_aiknowledgecheck/knowledgecheck',
         if (hasQMedia) {
             var qMediaHtml = '<div id="kc-question-media" style="margin-bottom: 14px;">';
             if (hasQImage) {
-                qMediaHtml += '<div style="text-align: center; margin-bottom: 10px;">' +
-                    '<img src="' + q.imageUrl.replace(/"/g, '&quot;') + '" alt="Question image" ' +
-                        'style="max-width: 100%; max-height: 400px; border-radius: 8px; ' +
-                        'object-fit: contain; display: inline-block;">' +
-                    '</div>';
+                qMediaHtml += questionImageHtml(q.imageUrl);
             }
             if (hasQVideo) {
                 var qVidId = extractYouTubeId(q.questionVideoUrl);
@@ -3455,7 +3458,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
             }
             if (needsQMediaGate) {
                 qMediaHtml += '<div id="kc-q-media-gate" style="text-align: center; margin-top: 10px;">' +
-                    '<button id="kc-q-media-ack-btn" class="kc-btn kc-btn-primary" type="button">' +
+                    '<button id="kc-q-media-ack-btn" type="button" ' +
+                        'class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md">' +
                     'I\'ve reviewed this content &#8212; Continue' +
                     '</button></div>';
             } else {
@@ -4858,11 +4862,7 @@ define('mod_aiknowledgecheck/knowledgecheck',
         if (hasWQMedia) {
             var wqMediaHtml = '<div id="kc-question-media" style="margin-bottom: 14px;">';
             if (hasWQImage) {
-                wqMediaHtml += '<div style="text-align: center; margin-bottom: 10px;">' +
-                    '<img src="' + q.imageUrl.replace(/"/g, '&quot;') + '" alt="Question image" ' +
-                        'style="max-width: 100%; max-height: 400px; border-radius: 8px; ' +
-                        'object-fit: contain; display: inline-block;">' +
-                    '</div>';
+                wqMediaHtml += questionImageHtml(q.imageUrl);
             }
             if (hasWQVideo) {
                 var wqVidId = extractYouTubeId(q.questionVideoUrl);
@@ -4884,7 +4884,8 @@ define('mod_aiknowledgecheck/knowledgecheck',
             }
             if (needsWQMediaGate) {
                 wqMediaHtml += '<div id="kc-q-media-gate" style="text-align: center; margin-top: 10px;">' +
-                    '<button id="kc-q-media-ack-btn" class="kc-btn kc-btn-primary" type="button">' +
+                    '<button id="kc-q-media-ack-btn" type="button" ' +
+                        'class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md">' +
                     'I\'ve reviewed this content &#8212; Continue' +
                     '</button></div>';
             } else {
@@ -5273,7 +5274,9 @@ define('mod_aiknowledgecheck/knowledgecheck',
                         '<input type="url" class="kc-edit-image-url" data-index="' + idx + '" value="' + escapeAttr(imgUrl) + '" ' +
                             'placeholder="https://example.com/image.jpg" style="flex: 1; min-width: 200px; padding: 5px 8px; bord' +
                             'er: 1px solid #ced4da; border-radius: 4px; font-size: 12px;">' +
-                        '<button type="button" class="kc-btn kc-btn-secondary kc-question-imagegen-btn" data-index="' +
+                        '<button type="button" ' +
+                            'class="kc-btn kc-btn-secondary kc-question-imagegen-btn mds-btn btn btn-secondary mds-btn--size-sm" ' +
+                            'data-index="' +
                              idx +
                              '" style="font-size: 12px; white-space: nowrap;">Generate (5 credits)</button>' +
                     '</div>' +
@@ -5719,6 +5722,24 @@ define('mod_aiknowledgecheck/knowledgecheck',
         });
     }
 
+    /**
+     * Markup for a question picture. Inline (data:) pictures are made by AI, so they carry a visible label and a
+     * machine-readable marker (EU AI Act Article 50).
+     *
+     * @param {String} url Picture URL.
+     * @return {String} HTML.
+     */
+    function questionImageHtml(url) {
+        var isAi = url.indexOf('data:') === 0;
+        return '<figure class="kc-question-figure"' + (isAi ? ' data-ai-generated="true"' : '') + '>' +
+            '<img class="kc-question-image" src="' + url.replace(/"/g, '&quot;') + '" alt="' +
+                escapeAttr(isAi ? S.aiimagealt : 'Question image') + '">' +
+            (isAi ? '<figcaption><span class="mds-badge mds-badge--info mds-badge--subtle mds-badge--has-icon kc-ai-badge">' +
+                '<i class="fa fa-wand-magic-sparkles" ' +
+                'aria-hidden="true"></i> ' + escapeAttr(S.aigenerated) + '</span></figcaption>' : '') +
+            '</figure>';
+    }
+
     // Save edited questions with callback for proper async handling
     /**
      * Send the edited questions to the server.
@@ -5755,7 +5776,15 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 mappingCriteria: q.mappingCriteria || '',
                 // FIX-KC-TIMESTAMP-SAVE: preserve timestamp_seconds so "Show chapter
                 // timestamp links" (Video Gate) buttons survive edit → save round-trip.
-                timestamp_seconds: (q.timestamp_seconds !== undefined && q.timestamp_seconds !== null) ? q.timestamp_seconds : null
+                timestamp_seconds: (q.timestamp_seconds !== undefined && q.timestamp_seconds !== null) ? q.timestamp_seconds : null,
+                // FIX-KC-EDIT-MEDIA (v1.8.0): the editor payload omitted the per-question picture, video and audio, so
+                // saving any edit removed them. They travel with the question now, as they do after generation.
+                imageUrl: q.imageUrl || '',
+                imageEnabled: q.imageEnabled ? 1 : 0,
+                questionVideoUrl: q.questionVideoUrl || '',
+                questionVideoEnabled: q.questionVideoEnabled ? 1 : 0,
+                questionAudioUrl: q.questionAudioUrl || '',
+                questionAudioEnabled: q.questionAudioEnabled ? 1 : 0
             };
         });
 
@@ -5773,11 +5802,14 @@ define('mod_aiknowledgecheck/knowledgecheck',
                 // FIX-KC-SURVEY-EDIT (v1.6.3): the teacher is saving their own wording, so the
                 // service must not replace a survey's options with its scale labels. Generation
                 // still enforces them; this is the one caller that opts out.
-                enforceScale: 0
+                enforceScale: 0,
+                // Responsible AI (v1.8.0): a teacher's edits keep the approval and the record of what the AI wrote.
+                source: 'editor'
             }
         }])[0].done(function(response) {
                 if (response.ok) {
                     kcLog('[KC] Questions saved:', response.saved);
+                    $(document).trigger('kc:questionssaved', [response, 'editor']);
                     // FIX-KC-EDITOR-REREAD (v1.6.3): read the questions back rather than trusting
                     // the local copy. The editor used to keep showing whatever was typed, so
                     // anything the server altered or rejected on the way in stayed invisible here

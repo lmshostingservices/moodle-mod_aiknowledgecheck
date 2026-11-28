@@ -1,0 +1,40 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_aiknowledgecheck/learner_notice
+
+    Tells learners which content in the activity was made by AI and who checked it (EU AI Act Article 50 and
+    Article 26(11)). The data attributes are the machine-readable marker. Moodle Design System Alert (info).
+
+    Context variables required for this template:
+    * made - What AI made.
+    * checked - Who checked it and when; may be empty.
+
+    Example context (json):
+    {
+        "made": "The questions, answer explanations and voice narration in this activity were created with AI.",
+        "checked": "Sam Taylor checked and approved them on 28/11/26."
+    }
+}}
+<aside class="mds-alert alert alert-info kc-alert kc-ai-notice" role="note" data-ai-generated="true"
+    data-ai-disclosure="eu-ai-act-art50" data-testid="notice-ai-generated">
+    <i class="fa fa-wand-magic-sparkles mds-alert-icon" aria-hidden="true"></i>
+    <div class="mds-alert-content">
+        <strong class="mds-alert-title">{{#str}} learnernotice_title, mod_aiknowledgecheck {{/str}}</strong>
+        <div class="mds-alert-body">{{made}} {{checked}} {{#str}} learnernotice_report, mod_aiknowledgecheck {{/str}}</div>
+    </div>
+</aside>

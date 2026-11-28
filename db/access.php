@@ -58,6 +58,18 @@ $capabilities = [
         ],
     ],
 
+    // Approve AI-written questions for learners (EU AI Act Article 14 human oversight). Added v1.8.0.
+    'mod/aiknowledgecheck:approve' => [
+        'riskbitmask' => RISK_XSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'mod/aiknowledgecheck:create',
+    ],
+
     'mod/aiknowledgecheck:viewreports' => [
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',

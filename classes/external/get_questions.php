@@ -83,11 +83,12 @@ class get_questions extends external_api {
             || has_capability('mod/aiknowledgecheck:viewreports', $context)
             || has_capability('mod/aiknowledgecheck:addinstance', $context);
 
-        $questions = $DB->get_records(
-            'aiknowledgecheck_questions',
-            ['aiknowledgecheckid' => $cm->instance],
-            'questionnumber ASC'
-        );
+        // Responsible AI: until a teacher approves the AI-written questions, only staff can read them.
+        $knowledgecheck = $DB->get_record('aiknowledgecheck', ['id' => $cm->instance], '*', MUST_EXIST);
+        $released = \mod_aiknowledgecheck\local\responsibleai::is_released($knowledgecheck);
+        $questions = ($released || $canseeanswers || has_capability('mod/aiknowledgecheck:create', $context))
+            ? $DB->get_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $cm->instance], 'questionnumber ASC')
+            : [];
 
         $result = [];
         foreach ($questions as $q) {

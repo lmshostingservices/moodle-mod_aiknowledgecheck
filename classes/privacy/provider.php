@@ -81,6 +81,25 @@ class provider implements
             'privacy:metadata:aiknowledgecheck_quizzes'
         );
 
+        // Responsible AI (v1.8.0): the AI activity log and the approver of an activity's questions.
+        $collection->add_database_table(
+            'aiknowledgecheck_ailog',
+            [
+                'userid' => 'privacy:metadata:aiknowledgecheck_ailog:userid',
+                'action' => 'privacy:metadata:aiknowledgecheck_ailog:action',
+                'timecreated' => 'privacy:metadata:aiknowledgecheck_ailog:timecreated',
+            ],
+            'privacy:metadata:aiknowledgecheck_ailog'
+        );
+        $collection->add_database_table(
+            'aiknowledgecheck',
+            [
+                'approvedby' => 'privacy:metadata:aiknowledgecheck:approvedby',
+                'timeapproved' => 'privacy:metadata:aiknowledgecheck:timeapproved',
+            ],
+            'privacy:metadata:aiknowledgecheck'
+        );
+
         $collection->add_external_location_link(
             'essaygraderai',
             [
@@ -126,7 +145,16 @@ class provider implements
                   JOIN {modules} m2 ON m2.id = cm2.module AND m2.name = :modname2
                   JOIN {aiknowledgecheck} kc2 ON kc2.id = cm2.instance
                   JOIN {aiknowledgecheck_overrides} ko ON ko.aiknowledgecheckid = kc2.id
-                 WHERE ko.userid = :userid2";
+                 WHERE ko.userid = :userid2
+                 UNION
+                SELECT ctx3.id
+                  FROM {context} ctx3
+                  JOIN {course_modules} cm3 ON cm3.id = ctx3.instanceid AND ctx3.contextlevel = :contextlevel3
+                  JOIN {modules} m3 ON m3.id = cm3.module AND m3.name = :modname3
+                  JOIN {aiknowledgecheck} kc3 ON kc3.id = cm3.instance
+                 WHERE kc3.approvedby = :userid3
+                    OR EXISTS (SELECT 1 FROM {aiknowledgecheck_ailog} al
+                                WHERE al.aiknowledgecheckid = kc3.id AND al.userid = :userid4)";
 
         $params = [
             'contextlevel' => CONTEXT_MODULE,
@@ -135,6 +163,10 @@ class provider implements
             'contextlevel2' => CONTEXT_MODULE,
             'modname2' => 'aiknowledgecheck',
             'userid2' => $userid,
+            'contextlevel3' => CONTEXT_MODULE,
+            'modname3' => 'aiknowledgecheck',
+            'userid3' => $userid,
+            'userid4' => $userid,
         ];
 
         $contextlist->add_from_sql($sql, $params);
@@ -167,13 +199,29 @@ class provider implements
                   JOIN {aiknowledgecheck} kc2 ON kc2.id = ko.aiknowledgecheckid
                   JOIN {course_modules} cm2 ON cm2.instance = kc2.id
                   JOIN {modules} m2 ON m2.id = cm2.module AND m2.name = :modname2
-                 WHERE cm2.id = :cmid2";
+                 WHERE cm2.id = :cmid2
+                 UNION
+                SELECT al.userid
+                  FROM {aiknowledgecheck_ailog} al
+                  JOIN {course_modules} cm3 ON cm3.instance = al.aiknowledgecheckid
+                  JOIN {modules} m3 ON m3.id = cm3.module AND m3.name = :modname3
+                 WHERE cm3.id = :cmid3
+                 UNION
+                SELECT kc4.approvedby AS userid
+                  FROM {aiknowledgecheck} kc4
+                  JOIN {course_modules} cm4 ON cm4.instance = kc4.id
+                  JOIN {modules} m4 ON m4.id = cm4.module AND m4.name = :modname4
+                 WHERE cm4.id = :cmid4 AND kc4.approvedby > 0";
 
         $params = [
             'modname' => 'aiknowledgecheck',
             'cmid' => $context->instanceid,
             'modname2' => 'aiknowledgecheck',
             'cmid2' => $context->instanceid,
+            'modname3' => 'aiknowledgecheck',
+            'cmid3' => $context->instanceid,
+            'modname4' => 'aiknowledgecheck',
+            'cmid4' => $context->instanceid,
         ];
 
         $userlist->add_from_sql('userid', $sql, $params);
@@ -249,6 +297,32 @@ class provider implements
                     $odata
                 );
             }
+
+            // Responsible AI: what this person asked the AI to do, and any approval they gave.
+            $logs = $DB->get_records(
+                'aiknowledgecheck_ailog',
+                ['aiknowledgecheckid' => $cm->instance, 'userid' => $userid],
+                'timecreated ASC'
+            );
+            $kc = $DB->get_record('aiknowledgecheck', ['id' => $cm->instance], 'id, approvedby, timeapproved');
+            if ($logs || ($kc && (int)$kc->approvedby === (int)$userid)) {
+                $entries = [];
+                foreach ($logs as $log) {
+                    $entries[] = [
+                        'action' => $log->action,
+                        'runson' => $log->runson,
+                        'timecreated' => transform::datetime($log->timecreated),
+                    ];
+                }
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'mod_aiknowledgecheck'), 'ailog'],
+                    (object)[
+                        'entries' => $entries,
+                        'approvedquestions' => ($kc && (int)$kc->approvedby === (int)$userid)
+                            ? transform::datetime($kc->timeapproved) : null,
+                    ]
+                );
+            }
         }
     }
 
@@ -271,6 +345,8 @@ class provider implements
 
         $DB->delete_records('aiknowledgecheck_attempts', ['aiknowledgecheckid' => $cm->instance]);
         $DB->delete_records('aiknowledgecheck_overrides', ['aiknowledgecheckid' => $cm->instance]);
+        $DB->delete_records('aiknowledgecheck_ailog', ['aiknowledgecheckid' => $cm->instance]);
+        $DB->set_field('aiknowledgecheck', 'approvedby', 0, ['id' => $cm->instance]);
 
         // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
         // table_exists() because it is vestigial — some sites may not have it — and an
@@ -315,6 +391,10 @@ class provider implements
                     'userid' => $userid,
                 ]
             );
+
+            // The AI activity log is an oversight record, so entries are kept but no longer name the person.
+            $DB->set_field('aiknowledgecheck_ailog', 'userid', 0, ['aiknowledgecheckid' => $cm->instance, 'userid' => $userid]);
+            $DB->set_field('aiknowledgecheck', 'approvedby', 0, ['id' => $cm->instance, 'approvedby' => $userid]);
 
             // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with
             // table_exists() because it is vestigial — some sites may not have it — and an
@@ -368,6 +448,23 @@ class provider implements
             'aiknowledgecheck_overrides',
             "aiknowledgecheckid = :aiknowledgecheckid AND userid $insql",
             $params
+        );
+
+        // The AI activity log is an oversight record, so entries are kept but no longer name the person.
+        $DB->set_field_select(
+            'aiknowledgecheck_ailog',
+            'userid',
+            0,
+            "aiknowledgecheckid = :aiknowledgecheckid AND userid $insql",
+            $params
+        );
+        [$insql2, $inparams2] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'apr');
+        $DB->set_field_select(
+            'aiknowledgecheck',
+            'approvedby',
+            0,
+            "id = :kcid AND approvedby $insql2",
+            array_merge(['kcid' => $cm->instance], $inparams2)
         );
 
         // FIX-KC-PRIVACY-QUIZZES (v1.5.143): the legacy quizzes table is guarded with

@@ -137,16 +137,8 @@ $PAGE->set_pagelayout('incourse');
 // The Google Fonts stylesheet below is a genuine external resource and is still required
 // explicitly, because an @import inside styles.css breaks Moodle's CSS minifier.
 
-// Load Google Fonts via PHP (NOT via @import in styles.css which breaks Moodle CSS minifier).
-$PAGE->requires->css(
-    new moodle_url(
-        'https://fonts.googleapis.com/css2',
-        [
-            'family' => 'Inter:wght@400;500;600;700',
-            'display' => 'swap',
-        ]
-    )
-);
+// Typography follows the Moodle Design System: the theme's font (Noto Sans in the design system tokens). Nothing is
+// loaded from Google Fonts any more, so a learner's browser no longer contacts a third party to show this page.
 
 // Trigger module viewed event.
 aiknowledgecheck_view($knowledgecheck, $course, $cm, $context);
@@ -163,6 +155,17 @@ if ((empty($siteid) || empty($apikey)) && !$byokstate['text']) {
 
 // Check if there are questions saved.
 $questioncount = $DB->count_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $knowledgecheck->id]);
+
+// Responsible AI (EU AI Act): approval state, the site-wide pause and the learner notice.
+$aipaused = \mod_aiknowledgecheck\local\responsibleai::is_paused();
+$approvalrequired = \mod_aiknowledgecheck\local\responsibleai::approval_required();
+$released = \mod_aiknowledgecheck\local\responsibleai::is_released($knowledgecheck);
+$canapprove = has_capability('mod/aiknowledgecheck:approve', $context);
+$approvername = \mod_aiknowledgecheck\local\responsibleai::approver_name($knowledgecheck);
+$approvedate = !empty($knowledgecheck->timeapproved)
+    ? userdate((int)$knowledgecheck->timeapproved, get_string('strftimedatefullshort', 'langconfig')) : '';
+$oversight = \mod_aiknowledgecheck\local\responsibleai::oversight_stats((int)$knowledgecheck->id);
+$mdsclass = 'kc-container mds-premium';
 
 // Load passing grade from gradebook (authoritative source).
 $gradepass = 0;
@@ -263,19 +266,19 @@ $gatedattrs = $gatedclass . '"' . $gateddisabled;
 // requires it -- offering that link to someone the page will reject is worse than not
 // offering it.
 if ($canviewreports) {
-    echo html_writer::start_div('kc-teacher-nav mb-3');
+    echo html_writer::start_div('kc-teacher-nav');
     $reporturl = new moodle_url('/mod/aiknowledgecheck/report.php', ['id' => $cm->id]);
     echo html_writer::link(
         $reporturl,
         $str('attemptsreport'),
-        ['class' => 'btn btn-secondary mr-2']
+        ['class' => 'mds-btn btn btn-secondary mds-btn--size-md']
     );
     if ($canoverride) {
         $moreattemptsurl = new moodle_url('/mod/aiknowledgecheck/moreattempts.php', ['id' => $cm->id]);
         echo html_writer::link(
             $moreattemptsurl,
             $str('moreattempts'),
-            ['class' => 'btn btn-secondary']
+            ['class' => 'mds-btn btn btn-secondary mds-btn--size-md']
         );
     }
     echo html_writer::end_div();
@@ -284,8 +287,24 @@ if ($canviewreports) {
 // Show different views based on capability.
 if ($cancreate) {
     ?>
-    <div id="kc-app" class="kc-container">
+    <div id="kc-app" class="<?php echo $mdsclass; ?>" data-aipaused="<?php echo $aipaused ? 1 : 0; ?>">
         <?php
+        if ($aipaused) {
+            echo html_writer::div(
+                html_writer::tag('i', '', ['class' => 'fa fa-circle-pause mds-alert-icon', 'aria-hidden' => 'true']) .
+                html_writer::div(
+                    html_writer::tag(
+                        'strong',
+                        get_string('aipaused_title', 'mod_aiknowledgecheck'),
+                        ['class' => 'mds-alert-title']
+                    ) .
+                    html_writer::div(get_string('aipaused_teacher', 'mod_aiknowledgecheck'), 'mds-alert-body'),
+                    'mds-alert-content'
+                ),
+                'mds-alert alert alert-warning kc-alert',
+                ['role' => 'status', 'data-testid' => 'alert-aipaused']
+            );
+        }
         // Bring your own AI: say which work runs on the site's own AI, and drop the credits badge when no
         // LMS Labs credentials are set (nothing is charged to credits then).
         $byokparts = array_keys(array_filter($byokstate));
@@ -766,7 +785,8 @@ if ($cancreate) {
                 </div>
 
                 <!-- Generate Button -->
-                <button type="submit" id="generate-btn" class="kc-btn kc-btn-primary" disabled>
+                <button type="submit" id="generate-btn"
+                    class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md" disabled>
                     <?php echo $str('generate_btn'); ?>
                 </button>
             </form>
@@ -824,6 +844,27 @@ if ($cancreate) {
             <h3 class="kc-ready-title"><?php echo $str('quiz_ready'); ?></h3>
             <p id="ready-summary" class="kc-ready-summary"></p>
             <div id="kc-teacher-eta"></div>
+            <?php
+            echo $OUTPUT->render_from_template('mod_aiknowledgecheck/review_panel', [
+                'hidden' => $questioncount == 0,
+                'approved' => $released && $approvalrequired,
+                'required' => $approvalrequired,
+                'canapprove' => $canapprove,
+                'status' => $released
+                    ? get_string('review_status_approved', 'mod_aiknowledgecheck', (object)[
+                        'name' => $approvername ?: get_string('review_someone', 'mod_aiknowledgecheck'),
+                        'date' => $approvedate,
+                    ])
+                    : get_string('review_status_draft', 'mod_aiknowledgecheck'),
+                'statai' => $oversight['ai'],
+                'statchanged' => $oversight['changed'],
+                'statteacher' => $oversight['teacher'],
+                'runsontext' => get_string(
+                    'review_runson_' . \mod_aiknowledgecheck\local\responsibleai::runs_on('text'),
+                    'mod_aiknowledgecheck'
+                ),
+            ]);
+            ?>
             <div class="kc-ready-regen-section">
                 <div class="kc-form-group">
                     <label for="ready-extra-instructions" class="kc-label"><?php echo $str('extra_instructions'); ?></label>
@@ -834,7 +875,7 @@ if ($cancreate) {
                             : 'First 3 regenerations are free.'; ?></small>
                 </div>
                 <div class="kc-regen-controls">
-                    <button id="ready-regenerate-btn" class="kc-btn kc-btn-secondary">
+                    <button id="ready-regenerate-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="kc-icon-inline">
@@ -917,7 +958,8 @@ if ($cancreate) {
                 <div class="kc-button-row">
                     <input type="text" id="kc-imagegen-prompt" placeholder="Describe the image to generate..."
                         class="kc-imagegen-prompt">
-                    <button id="kc-imagegen-btn" type="button" class="kc-btn kc-btn-secondary kc-btn-sm">
+                    <button id="kc-imagegen-btn" type="button"
+                        class="kc-btn kc-btn-secondary kc-btn-sm mds-btn btn btn-secondary mds-btn--size-sm">
                         <?php echo $str('generate_image'); ?>
                     </button>
                 </div>
@@ -928,9 +970,11 @@ if ($cancreate) {
                         >Copy the URL below and paste it into the Image Gate field in Settings, or click "Set as Gate Image":</div>
                     <textarea id="kc-imagegen-url-output" rows="2" readonly class="kc-imagegen-url"></textarea>
                     <div class="kc-button-row-top">
-                        <button id="kc-imagegen-save-gate" type="button" class="kc-btn kc-btn-primary kc-btn-xs"
+                        <button id="kc-imagegen-save-gate" type="button"
+                            class="kc-btn kc-btn-primary kc-btn-xs mds-btn btn btn-primary mds-btn--size-sm"
                             ><?php echo $str('set_as_gate_image'); ?></button>
-                        <button id="kc-imagegen-copy" type="button" class="kc-btn kc-btn-secondary kc-btn-xs"
+                        <button id="kc-imagegen-copy" type="button"
+                            class="kc-btn kc-btn-secondary kc-btn-xs mds-btn btn btn-secondary mds-btn--size-sm"
                             ><?php echo $str('copy_url'); ?></button>
                     </div>
                     <div id="kc-imagegen-save-status" class="kc-imagegen-save-status"></div>
@@ -948,10 +992,11 @@ if ($cancreate) {
                 $gateddisabled = $takegated ? ' disabled' : '';
                 $gatedattrs = $gatedclass . '"' . $gateddisabled;
                 ?>
-                <button id="take-quiz-btn" class="kc-btn kc-btn-primary<?php echo $gatedattrs; ?>>
+                <button id="take-quiz-btn"
+                    class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md<?php echo $gatedattrs; ?>>
                     <?php echo $str('review_questions_btn'); ?>
                 </button>
-                <button id="add-more-questions-btn" class="kc-btn kc-btn-success">
+                <button id="add-more-questions-btn" class="kc-btn kc-btn-success mds-btn btn btn-primary mds-btn--size-md">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="kc-icon-inline"
                         >
@@ -961,7 +1006,7 @@ if ($cancreate) {
                     </svg>
                     <?php echo $str('add_more_questions'); ?>
                 </button>
-                <button id="edit-questions-btn" class="kc-btn kc-btn-secondary">
+                <button id="edit-questions-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="kc-icon-inline"
                         >
@@ -970,7 +1015,7 @@ if ($cancreate) {
                     </svg>
                     <?php echo $str('edit_questions'); ?>
                 </button>
-                <button id="download-excel-btn" class="kc-btn kc-btn-secondary">
+                <button id="download-excel-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="kc-icon-inline"
                         >
@@ -990,7 +1035,8 @@ if ($cancreate) {
             <div class="kc-edit-header">
                 <h3 class="kc-card-title"><?php echo $str('edit_questions'); ?></h3>
                 <div class="kc-edit-actions">
-                    <button id="edit-settings-btn" class="kc-btn kc-btn-outline" title="Settings">
+                    <button id="edit-settings-btn"
+                        class="kc-btn kc-btn-outline mds-btn btn btn-outline-primary mds-btn--size-md" title="Settings">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="kc-icon-inline">
@@ -1007,7 +1053,7 @@ if ($cancreate) {
                         </svg>
                         <?php echo $str('settings_btn'); ?>
                     </button>
-                    <button id="save-edits-btn" class="kc-btn kc-btn-primary">
+                    <button id="save-edits-btn" class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="kc-icon-inline">
@@ -1017,7 +1063,8 @@ if ($cancreate) {
                         </svg>
                         <?php echo $str('save_changes'); ?>
                     </button>
-                    <button id="cancel-edits-btn" class="kc-btn kc-btn-secondary">Cancel</button>
+                    <button id="cancel-edits-btn"
+                        class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">Cancel</button>
                 </div>
             </div>
             <p class="kc-edit-info"><?php echo $str('edit_questions_help'); ?></p>
@@ -1031,7 +1078,7 @@ if ($cancreate) {
                             : 'First 3 regenerations are free.'; ?></small>
                 </div>
                 <div class="kc-regen-controls">
-                    <button id="edit-regenerate-btn" class="kc-btn kc-btn-secondary">
+                    <button id="edit-regenerate-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="kc-icon-inline">
@@ -1215,8 +1262,9 @@ if ($cancreate) {
                         <span id="settings-warning-msg"><?php echo $str('settings_language_warning'); ?></span>
                     </p>
                     <div class="kc-settings-footer-actions">
-                        <button id="settings-cancel-btn" class="kc-btn kc-btn-secondary">Cancel</button>
-                        <button id="settings-save-btn" class="kc-btn kc-btn-primary">
+                        <button id="settings-cancel-btn"
+                            class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">Cancel</button>
+                        <button id="settings-save-btn" class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" class="kc-icon-inline">
                                 <polyline points="23 4 11.5 15.5 6 10"/></svg>
@@ -1244,15 +1292,16 @@ if ($cancreate) {
                 aria-live="polite">
                 <div id="feedback-result" class="kc-feedback-result"></div>
                 <p id="feedback-explanation" class="kc-feedback-explanation"></p>
-                <button id="play-audio-btn" class="kc-btn kc-btn-secondary">
+                <button id="play-audio-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                     <?php echo $str('play_explanation'); ?>
                 </button>
             </div>
             <div class="kc-quiz-actions">
-                <button id="check-answer-btn" class="kc-btn kc-btn-primary" disabled>
+                <button id="check-answer-btn" class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md" disabled>
                     <?php echo $str('check_answer'); ?>
                 </button>
-                <button id="next-question-btn" class="kc-btn kc-btn-primary" style="display: none;">
+                <button id="next-question-btn"
+                    class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md" style="display: none;">
                     <?php echo $str('next_question'); ?>
                 </button>
             </div>
@@ -1264,7 +1313,7 @@ if ($cancreate) {
             <h3 class="kc-card-title"><?php echo $str('quiz_complete'); ?></h3>
             <div id="results-score" class="kc-results-score"></div>
             <p id="results-message" class="kc-results-message"></p>
-            <button id="retake-btn" class="kc-btn kc-btn-secondary">
+            <button id="retake-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                 <?php echo $str('retake_btn'); ?>
             </button>
         </div>
@@ -1282,6 +1331,11 @@ if ($cancreate) {
 
     $PAGE->requires->js_call_amd('mod_aiknowledgecheck/mediagates', 'init', [$gatesconfig]);
     $PAGE->requires->js_call_amd('mod_aiknowledgecheck/imagegen', 'init', [(int)$cm->id]);
+    $PAGE->requires->js_call_amd('mod_aiknowledgecheck/responsibleai', 'init', [[
+        'cmid' => (int)$cm->id,
+        'required' => $approvalrequired,
+        'paused' => $aipaused,
+    ]]);
     $PAGE->requires->js_call_amd(
         'mod_aiknowledgecheck/knowledgecheck',
         'init',
@@ -1309,9 +1363,20 @@ if ($cancreate) {
     <?php
 } else {
     // Student view.
-    if ($questioncount == 0) {
-        // No questions yet.
-        echo html_writer::div($str('students_view_message'), 'alert alert-info');
+    if ($questioncount == 0 || !$released) {
+        // No questions yet, or the AI-written questions are waiting for a teacher's approval.
+        echo html_writer::div(
+            html_writer::div(
+                html_writer::tag('i', '', ['class' => 'fa fa-hourglass-half mds-alert-icon', 'aria-hidden' => 'true']) .
+                html_writer::div(
+                    $questioncount == 0 ? $str('students_view_message') : $str('notreleased_student'),
+                    'mds-alert-content'
+                ),
+                'mds-alert alert alert-info kc-alert',
+                ['role' => 'status', 'data-testid' => 'alert-notreleased']
+            ),
+            $mdsclass
+        );
     } else {
         // Get attempt info.
         $userid = $USER->id;
@@ -1373,7 +1438,38 @@ if ($cancreate) {
 
         // Gate variables already computed at top of file.
         ?>
-        <div id="kc-app" class="kc-container">
+        <div id="kc-app" class="<?php echo $mdsclass; ?>">
+            <?php
+            // Responsible AI: tell learners which content AI made and who checked it (EU AI Act Article 50, and
+            // the deployer's duty to inform people under Article 26(11)). The data attributes are the machine-readable
+            // marker for the AI-generated content on this page.
+            if (\mod_aiknowledgecheck\local\responsibleai::learner_notice_enabled()) {
+                $hasaiimages = $DB->record_exists_select(
+                    'aiknowledgecheck_questions',
+                    'aiknowledgecheckid = ? AND imageenabled = 1 AND ' . $DB->sql_like('imageurl', '?'),
+                    [$knowledgecheck->id, 'data:%']
+                ) || (strpos((string)$knowledgecheck->imageurl, 'data:') === 0);
+                $parts = [$str('learnernotice_questions')];
+                if ($hasaiimages) {
+                    $parts[] = $str('learnernotice_images');
+                }
+                if (!empty($knowledgecheck->voiceoverenabled)) {
+                    $parts[] = $str('learnernotice_voice');
+                }
+                $checked = '';
+                if ($approvalrequired && $approvername !== '') {
+                    $checked = $str('learnernotice_checked', (object)['name' => $approvername, 'date' => $approvedate]);
+                } else if ($approvalrequired) {
+                    $checked = $str('learnernotice_checked_noname');
+                }
+                echo $OUTPUT->render_from_template('mod_aiknowledgecheck/learner_notice', [
+                    'made' => $str('learnernotice_made', count($parts) > 1
+                        ? implode(', ', array_slice($parts, 0, -1)) . ' ' . get_string('and', 'moodle') . ' ' . end($parts)
+                        : $parts[0]),
+                    'checked' => $checked,
+                ]);
+            }
+            ?>
             <?php if (!$canattempt && !$inprogress) : ?>
                 <!-- Limit reached -->
                 <div class="kc-card">
@@ -1471,7 +1567,8 @@ if ($cancreate) {
                     <img src="<?php echo s($imageurlgate); ?>" alt="Activity image" class="kc-activity-image">
                     <?php if ($imagegated && !$isstaff) : ?>
                     <div id="kc-image-status" class="kc-gate-status-centre">
-                        <button id="kc-image-acknowledge-btn" class="kc-btn kc-btn-secondary" type="button">
+                        <button id="kc-image-acknowledge-btn"
+                            class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md" type="button">
                             <?php echo $str('imagegate_acknowledge'); ?>
                         </button>
                     </div>
@@ -1544,7 +1641,8 @@ if ($cancreate) {
                     
                     <?php if ($inprogress) : ?>
                         <button id="continue-attempt-btn"
-                            class="kc-btn kc-btn-primary kc-btn-lg<?php echo $gatedattrs; ?>
+                            class="kc-btn kc-btn-primary kc-btn-lg mds-btn btn btn-primary mds-btn--size-lg<?php
+                                echo $gatedattrs; ?>
                             data-attemptid="<?php echo $inprogress->id; ?>">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1554,7 +1652,8 @@ if ($cancreate) {
                         </button>
                     <?php else : ?>
                         <button id="start-attempt-btn"
-                            class="kc-btn kc-btn-primary kc-btn-lg<?php echo $gatedattrs; ?>>
+                            class="kc-btn kc-btn-primary kc-btn-lg mds-btn btn btn-primary mds-btn--size-lg<?php
+                                echo $gatedattrs; ?>>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -1602,10 +1701,12 @@ if ($cancreate) {
                         <p id="feedback-explanation" class="kc-feedback-explanation"></p>
                     </div>
                     <div class="kc-quiz-actions">
-                        <button id="check-answer-btn" class="kc-btn kc-btn-primary" disabled>
+                        <button id="check-answer-btn"
+                            class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md" disabled>
                             <?php echo $str('check_answer'); ?>
                         </button>
-                        <button id="next-question-btn" class="kc-btn kc-btn-primary" style="display: none;">
+                        <button id="next-question-btn"
+                            class="kc-btn kc-btn-primary mds-btn btn btn-primary mds-btn--size-md" style="display: none;">
                             <?php echo $str('next_question'); ?>
                         </button>
                     </div>
@@ -1618,12 +1719,12 @@ if ($cancreate) {
                     <div id="results-score" class="kc-results-score"></div>
                     <p id="results-message" class="kc-results-message"></p>
                     <?php if ($canattempt || $maxattempts == 0) : ?>
-                        <button id="retake-btn" class="kc-btn kc-btn-secondary">
+                        <button id="retake-btn" class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                             <?php echo $str('retake_btn'); ?>
                         </button>
                     <?php endif; ?>
                     <a href="<?php echo (new moodle_url('/course/view.php', ['id' => $course->id]))->out(); ?>"
-                        class="kc-btn kc-btn-secondary">
+                        class="kc-btn kc-btn-secondary mds-btn btn btn-secondary mds-btn--size-md">
                         <?php echo $str('backtocourse'); ?>
                     </a>
                 </div>

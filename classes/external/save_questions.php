@@ -39,6 +39,8 @@ use external_single_structure;
 use external_value;
 use context_module;
 use stdClass;
+use mod_aiknowledgecheck\local\aimarker;
+use mod_aiknowledgecheck\local\responsibleai;
 
 /**
  * Writes a generated or edited question set to the database.
@@ -88,6 +90,12 @@ class save_questions extends external_api {
                     VALUE_DEFAULT,
                     1
                 ),
+                'source' => new external_value(
+                    PARAM_ALPHA,
+                    'ai when the questions come from the AI (approval is withdrawn), editor when a teacher saves edits',
+                    VALUE_DEFAULT,
+                    'ai'
+                ),
             ]
         );
     }
@@ -102,6 +110,7 @@ class save_questions extends external_api {
      * @param string $voicegender Voice gender.
      * @param string $voicestyle Voice style.
      * @param int $enforcescale 1 to reset survey options to the scale labels, 0 to keep them.
+     * @param string $source ai when the AI wrote the questions, editor when a teacher saved edits.
      * @return array Result array matching execute_returns().
      */
     public static function execute(
@@ -111,7 +120,8 @@ class save_questions extends external_api {
         string $voicelanguage = '',
         string $voicegender = '',
         string $voicestyle = '',
-        int $enforcescale = 1
+        int $enforcescale = 1,
+        string $source = 'ai'
     ): array {
         global $DB;
 
@@ -125,6 +135,7 @@ class save_questions extends external_api {
                 'voiceGender' => $voicegender,
                 'voiceStyle' => $voicestyle,
                 'enforceScale' => $enforcescale,
+                'source' => $source,
             ]
         );
 
@@ -149,17 +160,49 @@ class save_questions extends external_api {
                 'saved' => 0];
         }
 
+        $fromeditor = ($params['source'] === 'editor');
+        $oldrows = array_values($DB->get_records(
+            'aiknowledgecheck_questions',
+            ['aiknowledgecheckid' => $cm->instance],
+            'questionnumber ASC, id ASC'
+        ));
+
         $DB->delete_records('aiknowledgecheck_questions', ['aiknowledgecheckid' => $cm->instance]);
 
         $enforce = !empty($params['enforceScale']);
+        $records = [];
         $questionnumber = 1;
         foreach ($questionsdata as $q) {
             if (!is_array($q)) {
                 $q = [];
             }
-            $DB->insert_record(
-                'aiknowledgecheck_questions',
-                self::build_record($q, $questionnumber++, $cm, $knowledgecheck, $enforce)
+            $records[] = self::build_record($q, $questionnumber++, $cm, $knowledgecheck, $enforce);
+        }
+
+        // Responsible AI: record which questions the AI wrote and what it wrote, so the approval panel and the
+        // report can show how much a person changed (EU AI Act Article 14).
+        if ($fromeditor) {
+            self::carry_provenance($records, $oldrows);
+        } else {
+            foreach ($records as $record) {
+                $record->aigenerated = 1;
+                $record->aihash = responsibleai::content_hash($record);
+            }
+        }
+
+        foreach ($records as $record) {
+            $DB->insert_record('aiknowledgecheck_questions', $record);
+        }
+
+        if ($fromeditor) {
+            responsibleai::log((int)$knowledgecheck->id, responsibleai::ACTION_EDITED, ['questions' => count($records)]);
+        } else {
+            // New AI output: learners must not see it until a teacher approves it again.
+            responsibleai::reset_approval($knowledgecheck);
+            responsibleai::log(
+                (int)$knowledgecheck->id,
+                $oldrows ? responsibleai::ACTION_REGENERATED : responsibleai::ACTION_GENERATED,
+                ['questions' => count($records), 'runson' => responsibleai::runs_on('text')]
             );
         }
 
@@ -178,7 +221,16 @@ class save_questions extends external_api {
 
         self::persist_voice_settings($cm, $questionsdata, $params);
 
-        return ['ok' => true, 'error' => '', 'saved' => count($questionsdata)];
+        $stats = responsibleai::oversight_stats((int)$knowledgecheck->id);
+        return [
+            'ok' => true,
+            'error' => '',
+            'saved' => count($questionsdata),
+            'released' => responsibleai::is_released($knowledgecheck),
+            'aiquestions' => $stats['ai'],
+            'changed' => $stats['changed'],
+            'teacherwritten' => $stats['teacher'],
+        ];
     }
 
     /**
@@ -281,7 +333,16 @@ class save_questions extends external_api {
 
         // Audio data: a JSON list of base64 clips, one per answer option.
         if (!empty($q['audioData'])) {
-            $record->audiodata = json_encode($q['audioData']);
+            // Narration is AI-generated: mark each clip in the file itself (EU AI Act Article 50(2)).
+            $clips = $q['audioData'];
+            if (is_array($clips)) {
+                foreach ($clips as $key => $clip) {
+                    if (is_string($clip) && $clip !== '') {
+                        $clips[$key] = aimarker::mark_audio_clip($clip);
+                    }
+                }
+            }
+            $record->audiodata = json_encode($clips);
         }
 
         // Topic/criteria mapping metadata for the Excel export.
@@ -309,6 +370,54 @@ class save_questions extends external_api {
             ? (int)$q['questionAudioEnabled'] : 0;
 
         return $record;
+    }
+
+    /**
+     * Keep the record of which questions the AI wrote across a save from the teacher's editor.
+     *
+     * The editor sends every question and the rows are re-inserted, so each new question is matched to the row it
+     * came from: first an unchanged row with identical content, then an unmatched row at the same position (the teacher
+     * edited it). A question with neither was added by the teacher.
+     *
+     * @param stdClass[] $records New records, updated in place.
+     * @param stdClass[] $oldrows Rows before the save, in question order.
+     * @return void
+     */
+    private static function carry_provenance(array $records, array $oldrows): void {
+        $used = [];
+        $byhash = [];
+        foreach ($oldrows as $i => $row) {
+            $byhash[responsibleai::content_hash($row)][] = $i;
+        }
+        $pending = [];
+        foreach ($records as $n => $record) {
+            $hash = responsibleai::content_hash($record);
+            $match = null;
+            foreach ($byhash[$hash] ?? [] as $i) {
+                if (!isset($used[$i])) {
+                    $match = $i;
+                    break;
+                }
+            }
+            if ($match === null) {
+                $pending[] = $n;
+                continue;
+            }
+            $used[$match] = true;
+            $record->aigenerated = (int)($oldrows[$match]->aigenerated ?? 0);
+            $record->aihash = $oldrows[$match]->aihash ?? null;
+        }
+        foreach ($pending as $n) {
+            $record = $records[$n];
+            if (isset($oldrows[$n]) && !isset($used[$n])) {
+                $used[$n] = true;
+                $record->aigenerated = (int)($oldrows[$n]->aigenerated ?? 0);
+                $record->aihash = $oldrows[$n]->aihash ?? null;
+            } else {
+                $record->aigenerated = 0;
+                $record->aihash = null;
+            }
+        }
     }
 
     /**
@@ -392,6 +501,14 @@ class save_questions extends external_api {
                 'ok' => new external_value(PARAM_BOOL, 'True when the questions were saved'),
                 'error' => new external_value(PARAM_TEXT, 'Error message, empty on success'),
                 'saved' => new external_value(PARAM_INT, 'Number of questions written'),
+                'released' => new external_value(
+                    PARAM_BOOL,
+                    'Whether learners can see the questions (false while they wait for approval)',
+                    VALUE_OPTIONAL
+                ),
+                'aiquestions' => new external_value(PARAM_INT, 'Questions written by AI', VALUE_OPTIONAL),
+                'changed' => new external_value(PARAM_INT, 'AI-written questions a person has changed', VALUE_OPTIONAL),
+                'teacherwritten' => new external_value(PARAM_INT, 'Questions written by a teacher', VALUE_OPTIONAL),
             ]
         );
     }

@@ -97,6 +97,14 @@ class regenerate_audio extends external_api {
         self::validate_context($context);
         require_capability('mod/aiknowledgecheck:create', $context);
 
+        // Responsible AI: an administrator can pause new AI work on the whole site (EU AI Act Article 26(5)).
+        \mod_aiknowledgecheck\local\responsibleai::require_not_paused((object)['id' => (int)$cm->instance], 'voice');
+        \mod_aiknowledgecheck\local\responsibleai::log(
+            (int)$cm->instance,
+            \mod_aiknowledgecheck\local\responsibleai::ACTION_VOICE,
+            ['runson' => \mod_aiknowledgecheck\local\responsibleai::runs_on('voice')]
+        );
+
         $questionsdata = json_decode($params['questions'], true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             return saas_client::failure(get_string('error:invalidquestions', 'mod_aiknowledgecheck'));

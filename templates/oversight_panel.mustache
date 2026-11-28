@@ -1,0 +1,66 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_aiknowledgecheck/oversight_panel
+
+    Responsible AI summary on the attempts report: approval, oversight figures and recent AI activity
+    (EU AI Act Articles 12 and 14).
+
+    Example context (json):
+    {
+        "approval": "Approved by Sam Taylor on 28/11/26, 10:15",
+        "approved": true,
+        "statai": 10, "statchanged": 3, "statpct": "30%", "statteacher": 1,
+        "haslog": true,
+        "log": [{"when": "28/11/26, 10:15", "action": "Approved for learners", "who": "Sam Taylor", "runson": ""}]
+    }
+}}
+<div class="kc-container mds-premium kc-container--wide">
+<section class="lx-card kc-oversight" aria-labelledby="kc-oversight-title" data-testid="panel-oversight">
+    <div class="kc-review-head">
+        <div>
+            <span class="lx-eyebrow">{{#str}} review_eyebrow, mod_aiknowledgecheck {{/str}}</span>
+            <h3 id="kc-oversight-title" class="kc-review-title">{{#str}} report_oversight_title, mod_aiknowledgecheck {{/str}}</h3>
+        </div>
+        {{#approved}}<span class="mds-badge mds-badge--success mds-badge--subtle mds-badge--has-icon"><i class="fa fa-circle-check" aria-hidden="true"></i> {{#str}} review_badge_approved, mod_aiknowledgecheck {{/str}}</span>{{/approved}}
+        {{^approved}}<span class="mds-badge mds-badge--warning mds-badge--subtle mds-badge--has-icon"><i class="fa fa-eye-slash" aria-hidden="true"></i> {{#str}} review_badge_draft, mod_aiknowledgecheck {{/str}}</span>{{/approved}}
+    </div>
+    <p class="kc-review-status">{{approval}}</p>
+    <div class="kc-review-stats kc-review-stats--4">
+        <div class="kc-stat-tile"><span class="lx-eyebrow">{{#str}} review_stat_ai, mod_aiknowledgecheck {{/str}}</span><span class="lx-stat">{{statai}}</span></div>
+        <div class="kc-stat-tile"><span class="lx-eyebrow">{{#str}} review_stat_changed, mod_aiknowledgecheck {{/str}}</span><span class="lx-stat">{{statchanged}}</span></div>
+        <div class="kc-stat-tile"><span class="lx-eyebrow">{{#str}} report_stat_changedpct, mod_aiknowledgecheck {{/str}}</span><span class="lx-stat">{{statpct}}</span></div>
+        <div class="kc-stat-tile"><span class="lx-eyebrow">{{#str}} review_stat_teacher, mod_aiknowledgecheck {{/str}}</span><span class="lx-stat">{{statteacher}}</span></div>
+    </div>
+    {{#haslog}}
+    <details class="kc-ailiteracy">
+        <summary><i class="fa fa-clock-rotate-left" aria-hidden="true"></i> {{#str}} report_ailog_title, mod_aiknowledgecheck {{/str}}</summary>
+        <table class="table kc-ailog-table">
+            <thead><tr>
+                <th scope="col">{{#str}} date {{/str}}</th>
+                <th scope="col">{{#str}} report_ailog_event, mod_aiknowledgecheck {{/str}}</th>
+                <th scope="col">{{#str}} user {{/str}}</th>
+                <th scope="col">{{#str}} report_ailog_runson, mod_aiknowledgecheck {{/str}}</th>
+            </tr></thead>
+            <tbody>
+            {{#log}}<tr><td>{{when}}</td><td>{{action}}</td><td>{{who}}</td><td>{{runson}}</td></tr>{{/log}}
+            </tbody>
+        </table>
+    </details>
+    {{/haslog}}
+</section>
+</div>

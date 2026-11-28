@@ -27,9 +27,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_aiknowledgecheck';
-$plugin->version = 2026112600;
+$plugin->version = 2026112800;
 $plugin->requires = 2022041900;
-$plugin->supported = [400, 500];
+$plugin->supported = [400, 503];
 $plugin->maturity = MATURITY_STABLE;
 // Keep release notes for this file in CHANGELOG.md, not here. Two rules apply to any comment
 // that does end up in version.php, because both have already cost a release. First, the release
@@ -38,4 +38,4 @@ $plugin->maturity = MATURITY_STABLE;
 // v1.5.163. Second, a line comment may not carry a hanging indent, because the Moodle inline
 // comment sniff rejects more than one space after the slashes; that mistake was made in v1.5.164
 // and was caught only by an audit after the release had shipped. Flat sentences avoid both.
-$plugin->release = '1.7.0';
+$plugin->release = '1.8.0';

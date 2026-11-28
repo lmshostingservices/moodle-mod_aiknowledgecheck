@@ -156,6 +156,49 @@ $PAGE->set_heading(format_string($course->fullname));
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('attemptsreport', 'mod_aiknowledgecheck'));
 
+// Responsible AI (EU AI Act Articles 12 and 14): who approved the questions, how much of the AI's work a person changed,
+// and the latest AI activity for this activity.
+$rai = \mod_aiknowledgecheck\local\responsibleai::class;
+$oversight = $rai::oversight_stats((int)$knowledgecheck->id);
+if (!$rai::approval_required()) {
+    $approvalline = get_string('report_oversight_notrequired', 'mod_aiknowledgecheck');
+} else if (!empty($knowledgecheck->timeapproved)) {
+    $approvalline = get_string('report_oversight_approved', 'mod_aiknowledgecheck', (object)[
+        'name' => $rai::approver_name($knowledgecheck) ?: get_string('review_someone', 'mod_aiknowledgecheck'),
+        'date' => userdate((int)$knowledgecheck->timeapproved, get_string('strftimedatetimeshort', 'langconfig')),
+    ]);
+} else {
+    $approvalline = get_string('report_oversight_draft', 'mod_aiknowledgecheck');
+}
+$recentlog = $DB->get_records(
+    'aiknowledgecheck_ailog',
+    ['aiknowledgecheckid' => $knowledgecheck->id],
+    'timecreated DESC, id DESC',
+    '*',
+    0,
+    8
+);
+$logrows = [];
+foreach ($recentlog as $entry) {
+    $who = $entry->userid ? $DB->get_record('user', ['id' => $entry->userid]) : null;
+    $logrows[] = [
+        'when' => userdate((int)$entry->timecreated, get_string('strftimedatetimeshort', 'langconfig')),
+        'action' => get_string('ailog_' . $entry->action, 'mod_aiknowledgecheck'),
+        'who' => $who ? fullname($who) : '-',
+        'runson' => $entry->runson ? get_string('ailog_runson_' . $entry->runson, 'mod_aiknowledgecheck') : '',
+    ];
+}
+echo $OUTPUT->render_from_template('mod_aiknowledgecheck/oversight_panel', [
+    'approval' => $approvalline,
+    'approved' => !empty($knowledgecheck->timeapproved),
+    'statai' => $oversight['ai'],
+    'statchanged' => $oversight['changed'],
+    'statpct' => $oversight['changedpct'] === null ? '-' : $oversight['changedpct'] . '%',
+    'statteacher' => $oversight['teacher'],
+    'log' => $logrows,
+    'haslog' => !empty($logrows),
+]);
+
 // Show user filter info.
 if ($user) {
     echo html_writer::div(
@@ -248,7 +291,7 @@ foreach ($useroptions as $opt) {
     echo html_writer::empty_tag('option', ['value' => $opt['label']]);
 }
 echo html_writer::end_tag('datalist');
-echo ' ' . html_writer::link($allurl, get_string('allparticipants'), ['class' => 'btn btn-link p-1']);
+echo ' ' . html_writer::link($allurl, get_string('allparticipants'), ['class' => 'mds-link']);
 // L-5: HEX-escape so a display name containing </script> or quotes can't break out of the
 // inline JSON <script> block (defence-in-depth on top of Moodle's PARAM_NOTAGS on names).
 echo html_writer::tag(
@@ -599,9 +642,9 @@ if (!empty($knowledgecheck->surveymode)) {
         'stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;">' .
         '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/>' .
         '<line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV',
-        ['class' => 'btn btn-secondary btn-sm']
+        ['class' => 'mds-btn btn btn-secondary mds-btn--size-sm']
     );
-    echo ' <button onclick="window.print()" class="btn btn-secondary btn-sm" style="margin-left:4px;">' .
+    echo ' <button onclick="window.print()" class="mds-btn btn btn-secondary mds-btn--size-sm">' .
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" ' .
         'stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px;">' .
         '<polyline points="6 9 6 2 18 2 18 9"/>' .

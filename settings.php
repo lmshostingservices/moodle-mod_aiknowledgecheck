@@ -101,4 +101,51 @@ if ($hassiteconfig) {
             get_string('credits_info', 'mod_aiknowledgecheck')
         )
     );
+
+    // Responsible AI (EU AI Act). Added v1.8.0.
+    $settings->add(
+        new admin_setting_heading(
+            'mod_aiknowledgecheck/responsibleai_heading',
+            get_string('responsibleai_heading', 'mod_aiknowledgecheck'),
+            get_string('responsibleai_heading_desc', 'mod_aiknowledgecheck')
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'mod_aiknowledgecheck/aipaused',
+            get_string('aipaused', 'mod_aiknowledgecheck'),
+            get_string('aipaused_desc', 'mod_aiknowledgecheck'),
+            0
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'mod_aiknowledgecheck/requireapproval',
+            get_string('requireapproval', 'mod_aiknowledgecheck'),
+            get_string('requireapproval_desc', 'mod_aiknowledgecheck'),
+            1
+        )
+    );
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'mod_aiknowledgecheck/learnernotice',
+            get_string('learnernotice', 'mod_aiknowledgecheck'),
+            get_string('learnernotice_desc', 'mod_aiknowledgecheck'),
+            1
+        )
+    );
+    $settings->add(
+        new admin_setting_configselect(
+            'mod_aiknowledgecheck/logretention',
+            get_string('logretention', 'mod_aiknowledgecheck'),
+            get_string('logretention_desc', 'mod_aiknowledgecheck'),
+            365,
+            [
+                183 => get_string('numdays', 'core', 183),
+                365 => get_string('numyear', 'core', 1),
+                730 => get_string('numyears', 'core', 2),
+                1825 => get_string('numyears', 'core', 5),
+            ]
+        )
+    );
 }

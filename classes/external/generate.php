@@ -276,6 +276,9 @@ class generate extends external_api {
         self::validate_context($context);
         require_capability('mod/aiknowledgecheck:create', $context);
 
+        // Responsible AI: an administrator can pause new AI work on the whole site (EU AI Act Article 26(5)).
+        \mod_aiknowledgecheck\local\responsibleai::require_not_paused((object)['id' => (int)$cm->instance], 'generate');
+
         $topics = trim(clean_param($params['topics'], PARAM_TEXT));
         if ($topics === '') {
             return saas_client::failure(get_string('error_no_topics', 'mod_aiknowledgecheck'));

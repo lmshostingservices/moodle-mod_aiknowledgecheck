@@ -217,4 +217,40 @@ final class privacy_provider_test extends provider_testcase {
             'The other activity must be untouched.'
         );
     }
+
+    /**
+     * The AI activity log and the approver are declared, found, exported, and anonymised on erasure.
+     */
+    public function test_ai_log_and_approver_are_handled(): void {
+        global $DB;
+        $teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
+        $this->setUser($teacher);
+        \mod_aiknowledgecheck\local\responsibleai::log((int)$this->activity->id, 'approved');
+        $DB->set_field('aiknowledgecheck', 'approvedby', $teacher->id, ['id' => $this->activity->id]);
+        $DB->set_field('aiknowledgecheck', 'timeapproved', time(), ['id' => $this->activity->id]);
+
+        $collection = provider::get_metadata(new \core_privacy\local\metadata\collection('mod_aiknowledgecheck'));
+        $tables = [];
+        foreach ($collection->get_collection() as $item) {
+            $tables[] = $item->get_name();
+        }
+        $this->assertContains('aiknowledgecheck_ailog', $tables);
+
+        $this->assertEqualsCanonicalizing([$this->context->id], provider::get_contexts_for_userid($teacher->id)->get_contextids());
+        $userlist = new userlist($this->context, 'mod_aiknowledgecheck');
+        provider::get_users_in_context($userlist);
+        $this->assertContains((int)$teacher->id, array_map('intval', $userlist->get_userids()));
+
+        $contextlist = new approved_contextlist($teacher, 'mod_aiknowledgecheck', [$this->context->id]);
+        provider::export_user_data($contextlist);
+        $exported = writer::with_context($this->context)->get_data([get_string('pluginname', 'mod_aiknowledgecheck'), 'ailog']);
+        $this->assertNotEmpty($exported->entries);
+
+        provider::delete_data_for_user($contextlist);
+        $this->assertSame(0, $this->count_rows('ailog', (int)$teacher->id));
+        $this->assertSame(1, $this->count_rows('ailog', 0), 'The oversight record is kept without the name.');
+        $record = $DB->get_record('aiknowledgecheck', ['id' => $this->activity->id]);
+        $this->assertEquals(0, $record->approvedby);
+        $this->assertNotEmpty($record->timeapproved, 'Learners keep access to approved questions.');
+    }
 }

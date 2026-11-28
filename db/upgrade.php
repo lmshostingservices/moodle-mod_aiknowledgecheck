@@ -1806,5 +1806,58 @@ function xmldb_aiknowledgecheck_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026110901, 'aiknowledgecheck');
     }
 
+    if ($oldversion < 2026112800) {
+        // Responsible AI (EU AI Act): teacher approval of AI-written questions, a record of which questions the AI
+        // wrote, and an AI activity log.
+        $table = new xmldb_table('aiknowledgecheck');
+        $field = new xmldb_field('approvedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'showcorrectanswer');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('timeapproved', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'approvedby');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $table = new xmldb_table('aiknowledgecheck_questions');
+        $field = new xmldb_field('aigenerated', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'questionaudioenabled');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('aihash', XMLDB_TYPE_CHAR, '40', null, null, null, null, 'aigenerated');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $table = new xmldb_table('aiknowledgecheck_ailog');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('aiknowledgecheckid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('action', XMLDB_TYPE_CHAR, '30', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('runson', XMLDB_TYPE_CHAR, '10', null, null, null, null);
+            $table->add_field('detail', XMLDB_TYPE_TEXT, null, null, null, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('aiknowledgecheckid', XMLDB_KEY_FOREIGN, ['aiknowledgecheckid'], 'aiknowledgecheck', ['id']);
+            $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $table->add_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']);
+            $dbman->create_table($table);
+        }
+
+        // Questions learners can already see stay visible: approval is carried over (approvedby 0 records that it
+        // was not given by a named person). Their questions are marked as AI-written with no fingerprint, because
+        // the AI's original wording was never stored.
+        $DB->execute(
+            "UPDATE {aiknowledgecheck} SET timeapproved = :now
+              WHERE timeapproved = 0
+                AND EXISTS (SELECT 1 FROM {aiknowledgecheck_questions} q WHERE q.aiknowledgecheckid = {aiknowledgecheck}.id)",
+            ['now' => time()]
+        );
+        $DB->set_field('aiknowledgecheck_questions', 'aigenerated', 1);
+
+        upgrade_mod_savepoint(true, 2026112800, 'aiknowledgecheck');
+    }
+
     return true;
 }

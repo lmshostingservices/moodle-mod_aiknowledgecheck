@@ -121,6 +121,9 @@ class mod_aiknowledgecheck_generator extends testing_module_generator {
             ['aiknowledgecheckid' => $instanceid]
         );
         $DB->set_field('aiknowledgecheck', 'questioncount', $questioncount, ['id' => $instanceid]);
+        // Questions made here stand for questions a teacher has already approved for learners (v1.8.0), so tests
+        // of the learner journey are not held back by the approval gate. responsibleai_test covers the gate itself.
+        $DB->set_field_select('aiknowledgecheck', 'timeapproved', time(), 'id = ? AND timeapproved = 0', [$instanceid]);
         return $id;
     }
 

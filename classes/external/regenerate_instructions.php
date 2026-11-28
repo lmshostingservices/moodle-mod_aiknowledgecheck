@@ -112,6 +112,9 @@ class regenerate_instructions extends external_api {
         self::validate_context($context);
         require_capability('mod/aiknowledgecheck:create', $context);
 
+        // Responsible AI: an administrator can pause new AI work on the whole site (EU AI Act Article 26(5)).
+        \mod_aiknowledgecheck\local\responsibleai::require_not_paused((object)['id' => (int)$cm->instance], 'instructions');
+
         $questionsdata = json_decode($params['questions'], true);
         if (!is_array($questionsdata) || empty($questionsdata)) {
             return saas_client::failure(get_string('error:invalidquestions', 'mod_aiknowledgecheck'));
